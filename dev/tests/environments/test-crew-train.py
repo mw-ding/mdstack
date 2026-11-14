@@ -40,7 +40,8 @@ PASS, PENDING, FAIL = ([{"name": name, "bucket": b, "link": LINK + "/job/%d" % i
 # Fake gh: pr view / issue view serve $FAKE_GH_DIR/pr-<n>.json / issue-<n>.json; pr checks plays checks.json in order
 # (null: no checks reported yet, exit 1), keeping the last; pr merge squashes refs/pull/<n>/head onto the origin's main
 # like GitHub does, refusing a head that is not --match-head-commit; pr list serves open.json (default none open);
-# every call is logged with its time.
+# a pr or issue view reports its acme/widgets url unless the served JSON names one (#1859); every call is logged with
+# its time.
 FAKE_GH = textwrap.dedent("""\
     #!/usr/bin/env python3
     import json, os, re, subprocess, sys, tempfile, time
@@ -48,6 +49,8 @@ FAKE_GH = textwrap.dedent("""\
     with open(os.path.join(d, "gh.log"), "a") as f:
         f.write(json.dumps({"t": time.time(), "args": args}) + "\\n")
     pr = lambda n: json.load(open(os.path.join(d, "pr-%s.json" % n)))
+    url = lambda kind, view: dict({"url": "https://github.com/acme/widgets/%s/%s" % (kind, args[2])}, **view) \
+        if isinstance(view, dict) else view
     if args[:2] == ["pr", "create"]:
         body = args[args.index("--body") + 1]
         members = re.search(r"Members, in landing order: (.*)", body).group(1)
@@ -80,14 +83,14 @@ FAKE_GH = textwrap.dedent("""\
             json.dump(seq[1:] or seq, open(path, "w"))
             if isinstance(seq[0], str):
                 sys.exit(seq[0])
-            print(json.dumps(seq[0]))
+            print(json.dumps(url("pull", seq[0])))
             sys.exit(0)
-        print(json.dumps(pr(args[2])))
+        print(json.dumps(url("pull", pr(args[2]))))
     elif args[:2] == ["issue", "view"]:
         path = os.path.join(d, "issue-%s.json" % args[2])
         if not os.path.exists(path):
             sys.exit("GraphQL: Could not resolve to an Issue or PullRequest")
-        print(open(path).read())
+        print(json.dumps(url("issues", json.load(open(path)))))
     elif args[0] == "api":
         failure = os.path.join(d, "update-error.txt")
         if os.path.exists(failure):
@@ -1226,7 +1229,7 @@ class Land(TrainBase):
         merges = [c["args"] for c in self.gh_calls("pr", "merge")]
         self.assertEqual(merges, [["pr", "merge", str(n), "-R", "acme/widgets", "--squash", "--match-head-commit", h]
                                   for n, h in zip((1, 2, 3), heads)])
-        self.assertTrue(self.gh_calls("pr", "view")[-1]["args"][-1].endswith(",comments,mergeable,closingIssuesReferences"))
+        self.assertTrue(self.gh_calls("pr", "view")[-1]["args"][-1].endswith(",comments,mergeable,closingIssuesReferences,url"))
         main = self.remote("refs/heads/main")
         self.assertEqual(self.git("rev-parse", main + "^{tree}"), self.git("rev-parse", rec["sha"] + "^{tree}"))
         posts = [c["args"] for c in self.gh_calls("pr", "review")]
@@ -1398,7 +1401,7 @@ class Land(TrainBase):
         self.assertFalse(os.path.exists(os.path.join(self.state, "schedule", "errors.jsonl")))  # not a gateway error
         self.assertTrue(self.record()["stopped"]["paused"])
         self.assertFalse(self.record().get("closed", False))
-        self.assertEqual(sum(c["args"][-1].endswith(",comments,mergeable,closingIssuesReferences")
+        self.assertEqual(sum(c["args"][-1].endswith(",comments,mergeable,closingIssuesReferences,url")
                              for c in self.gh_calls("pr", "view", "2")), 10)
         self.assertEqual(self.gh_calls("pr", "close"), [])
         self.serve(2, head, reviews)
@@ -1415,7 +1418,7 @@ class Land(TrainBase):
             json.dump(["HTTP 502 Bad Gateway", dict(ready, mergeable="UNKNOWN"), ready], f)
         r = self.train("land", "1", "1")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
-        self.assertEqual(sum(c["args"][-1].endswith(",comments,mergeable,closingIssuesReferences")
+        self.assertEqual(sum(c["args"][-1].endswith(",comments,mergeable,closingIssuesReferences,url")
                              for c in self.gh_calls("pr", "view", "1")), 3)
         with open(os.path.join(self.state, "schedule", "errors.jsonl")) as f:  # #621: recovered read still recorded
             self.assertEqual([(e["source"], e["text"]) for e in map(json.loads, f)],
@@ -2045,6 +2048,134 @@ class Delegated(TrainBase):
         self.assertEqual([(m["pr"], m["head"]) for m in survivor["members"]], [(1, heads[0]), (3, heads[2])])
         self.assertEqual(self.gh_calls("pr", "merge"), [])
         self.assertEqual([x.returncode for x in self.land_all(survivor["n"], (1, 3))], [0, 0])
+
+
+class RepoBound(TrainBase):
+    """#1859 (team §9.5): a train action reads its records, members and gate records only from the selected repo. Each
+    foreign source refuses before any write, merge or cleanup; the same source from acme/widgets is the control."""
+
+    def tree(self):
+        """Every file under the state dir and its bytes: a refusal leaves it unchanged."""
+        found = {}
+        for top, _, names in os.walk(self.state):
+            for n in names:
+                with open(os.path.join(top, n), "rb") as f:
+                    found[os.path.relpath(os.path.join(top, n), self.state)] = f.read()
+        return found
+
+    def writes(self):
+        with open(self.git_log) as f:
+            git = [line for line in f.read().splitlines() if line.split()[:1] in (["clone"], ["push"])]
+        return [c["args"][:2] for c in self.gh_calls() if c["args"][:2] in (
+            ["pr", "create"], ["pr", "merge"], ["pr", "close"], ["pr", "review"], ["pr", "edit"])] + git
+
+    def edit(self, name, **fields):
+        path = os.path.join(self.gh_dir, name)
+        with open(path) as f:
+            data = json.load(f)
+        with open(path, "w") as f:
+            json.dump(dict(data, **fields), f)
+
+    def test_gate_reads_from_another_repo_land_nothing(self):
+        hold = "<!-- crew:v1 role=coordinator pass=steer --> hold-until-#77"
+
+        def verdict(n, repo):
+            self.edit("pr-%d.json" % n, url="https://github.com/%s/pull/%d" % (repo, n))
+
+        def dependency(n, repo):
+            head, reviews = self.view(n)
+            self.serve(n, head, reviews + [{"body": hold}])
+            self.issue(77, "CLOSED")
+            self.edit("issue-77.json", url="https://github.com/%s/issues/77" % repo)
+
+        def control(n, repo):
+            self.put("landing-control.json", '{"issue": 99}')
+            with open(os.path.join(self.gh_dir, "issue-99.json"), "w") as f:
+                json.dump({"state": "OPEN", "comments": [], "url": "https://github.com/%s/issues/99" % repo}, f)
+
+        cases = [(verdict, "change #%d's verdict and permission read"), (dependency, "hold-until-#77 dependency"),
+                 (control, "landing control #99")]
+        n = 0
+        for setup, what in cases:
+            for repo in ("example/beta", "acme/widgets"):
+                n += 1
+                with self.subTest(source=what, repo=repo):
+                    self.built(n)
+                    setup(n, repo)
+                    result = self.train("land", str(n), str(n))
+                    merged = [c["args"][2] for c in self.gh_calls("pr", "merge")]
+                    if repo == "acme/widgets":
+                        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                        self.assertIn(str(n), merged)
+                    else:
+                        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+                        self.assertIn("is example/beta, not acme/widgets", result.stdout)
+                        self.assertIn(what % n if "%d" in what else what, result.stdout)
+                        self.assertNotIn(str(n), merged)
+                    with contextlib.suppress(FileNotFoundError):
+                        os.remove(os.path.join(self.state, "landing-control.json"))
+
+    def test_foreign_record_or_member_refuses_whole_action_with_nothing_written(self):
+        self.built(1)
+        for n in (2, 3):
+            self.pr(n, {"f%d.txt" % n: "x\n"})
+        own = self.record()
+        self.assertEqual((own["context"]["team"], own["context"]["repo"]), ("repo:acme/widgets", "acme/widgets"))
+        path = os.path.join(self.state, "trains", "train-1.json")
+        beta = dict(own, context=dict(own["context"], team="repo:example/beta", repo="example/beta"))
+        delegated = dict(beta, members=[{"pr": 2, "head": own["members"][0]["head"]}])
+
+        def record(rec):
+            with open(path, "w") as f:
+                f.write(rec if isinstance(rec, str) else json.dumps(rec))
+
+        def delegation(rec):
+            with open(os.path.join(self.state, "trains", "delegated-4.json"), "w") as f:
+                json.dump(rec, f)
+
+        def member_url(n):
+            return lambda: self.edit("pr-%d.json" % n, url="https://github.com/example/beta/pull/%d" % n)
+
+        cases = [  # (setup, train arguments, the refused source)
+            (lambda: record(beta), ("land", "1", "1"), "train 1 record is example/beta"),
+            (lambda: record(beta), ("close", "1"), "train 1 record is example/beta"),
+            (lambda: record(beta), ("wait", "1"), "train 1 record is example/beta"),
+            (lambda: record(beta), ("route", "1"), "train 1 record is example/beta"),
+            (lambda: record(beta), ("build", "2", "--after", "1"), "train 1 record is example/beta"),
+            (lambda: record("not json"), ("close", "1"), "train 1 record names no readable repo context"),
+            (lambda: delegation(delegated), ("build", "--train", "4"), "train 4 delegation is example/beta"),
+            (lambda: None, ("build", "2", "example/beta#3"), "example/beta#3 is example/beta, not acme/widgets"),
+            (lambda: None, ("delegate", "example/beta#2", "3"), "example/beta#2 is example/beta, not acme/widgets"),
+            (member_url(3), ("build", "2", "3"), "member #3 is example/beta, not acme/widgets"),
+            (member_url(3), ("delegate", "2", "3"), "member #3 is example/beta, not acme/widgets"),
+        ]
+        for setup, argv, why in cases:
+            with self.subTest(argv=argv):
+                record(own)
+                for n in (2, 3):
+                    self.edit("pr-%d.json" % n, url="https://github.com/acme/widgets/pull/%d" % n)
+                setup()
+                before, writes = self.tree(), self.writes()
+                result = self.train(*argv)
+                self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+                self.assertIn("crew: refusing train %s: " % argv[0], result.stdout)
+                self.assertIn(why, result.stdout)
+                self.assertEqual(self.tree(), before)
+                self.assertEqual(self.writes(), writes)
+                with contextlib.suppress(FileNotFoundError):
+                    os.remove(os.path.join(self.state, "trains", "delegated-4.json"))
+        record(own)  # controls: this repo's record and a member qualified with this repo act
+        self.edit("pr-3.json", url="https://github.com/acme/widgets/pull/3")
+        result = self.train("build", "2", "acme/widgets#3")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual([m["pr"] for m in self.record(2)["members"]], [2, 3])
+        self.assertEqual(self.record(2)["context"], own["context"])
+        legacy = dict(own)
+        legacy.pop("context")
+        record(legacy)  # a one-repo record from before #1859: the selected state is its only project
+        result = self.train("close", "1")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual([c["args"][2] for c in self.gh_calls("pr", "close")][-1:], ["900"])
 
 
 if __name__ == "__main__":

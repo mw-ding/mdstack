@@ -82,6 +82,12 @@ message's inbox id. Worker window names end in the repo tag, its owner and
 name joined by `__`: take names from that repo's run records, never from
 another repo's same number.
 
+Team land (#1859): before each land, read the change's URL with
+`context.project` and refuse (`blocked:`) unless its repo is
+`context.repo`. Gate reads, the land lock and the land use only that repo:
+another repo's verdict, merge-ok, grant or train result never counts, at
+any number or SHA. `train` and `land` refuse foreign records and members.
+
 Restart: a token-free supervisor restarts a dead or missing lead once with
 its inbox intact. Replay every queued id. An unsettled land restarts at
 step 1 of the merge gate with live state: never merge a merged PR twice.

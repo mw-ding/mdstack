@@ -584,6 +584,24 @@ pane matches as the liveness probe reads it), removes a worktree only under this
 tag, and releases only this repo's allocation, so A's kill, restart or
 replay never touches B's same-number run.
 
+Landing is bound to the repo the command's `--project` selects (#1859,
+[team §9.5](../specs/team.md#95-landing-authority-and-refusals)). The land
+lock lives in that repo's state, so one land runs at a time inside A while
+B's lock, and B's red default branch, never block A; `locks/merge.pid`
+records the repo's `context` and the acquiring `window` (a shared lead's
+too). Train and delegation records and async land and stack intents record
+the `context` as well. Before any write, `train` compares every record and
+delegation it names, every member qualifier (`<owner>/<name>#<n>`, also
+`<owner>/<name>#<n>:<sha>` in `land stack --stack`) and, for `build` and
+`delegate`, each member's URL read back from the backend; `train land` reads
+the member's verdict, permission, landing control and holds only when their
+URLs are the selected repo's. `land request|resume|done`, the stack land and
+`land-lock acquire|release` refuse a record naming another repo before any
+read, request, cleanup or drop. One foreign or unreadable source refuses the
+whole action with nothing written; in a one-repo config a record written
+before #1859, without `context`, stays the selected repo's. Gate
+satisfaction, actors and fail-open paths are unchanged.
+
 ## Reviewer lead
 
 The default binding installs `reviewer-lead.md` and starts the reviewer lead
@@ -1986,7 +2004,9 @@ lock is held and the live process with the recorded PID has the recorded
 start time and is an `mdstack land-lock acquire`; otherwise (a stale or reused
 PID, or a lock held by another process) it signals nothing and exits 1.
 It then waits for the unlock and removes `merge.pid`; with no lock held it
-is a no-op. The lock is local to the machine.
+is a no-op. The lock is local to the machine and to the selected repo:
+`merge.pid` records its `context` and both commands refuse one naming another
+repo ([Team pools](#team-pools), #1859).
 
 Under an asynchronous land, `sam` holds the lock until the terminal land
 status and the merge post, and takes no lock when the backend declares

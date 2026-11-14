@@ -12,6 +12,10 @@ strategy.update_from_base = "rebase".
 Membership is decided before the push (#1425): drops leaving one member under lone_pr_land = "direct" close the
 train unpushed (`path=direct`, collapsed-to-direct) for the synthesizer's direct land, and `check`'s `train-merge`
 gate runs the build's drop checks per PR on the default branch with merge-tree.
+Repo binding (#1859, team §9.5): before any write, every train record, delegation and qualified member (`<owner>/<name>#<n>`)
+an action names must be the selected repo's, and build and delegate read each member's URL from the backend; one foreign
+or unreadable source refuses the whole action with nothing written. Train and delegation records carry the selected
+project's context, and land reads the member's verdict, permission, control and hold records only from that repo.
 
 Usage: mdstack train build PR... [--after N] [--no-wait] [--local] | build --train N | delegate PR... [--after N] | check PR...
        | wait N | land N PR [--mirror-deferred] | close N | route N | bisect N
@@ -33,6 +37,7 @@ from crew_shared import (checkout, commands, coordinator_window, fetch, GATEWAY,
 
 precheck = load("crew_precheck", "scripts/crew-precheck.py")
 item_flavor = load("crew_item_flavor", "scripts/item-flavor.py")
+repo_bind = load("crew_repo_bind", "environments/terminal/crew.d/_repo_bind.py")
 
 
 # Merge train (tmux.md mdstack train, #321): build crew/train-<n> = fetched main + each PR head as --no-ff merges, run the
@@ -98,6 +103,7 @@ def train_delegate(args, values, state, repo, slug):
     else:
         base = fetch(repo, values["repo.default_branch"])
     rec = {"n": n, "base": base, "after": args.after, "members": [], "closed": False,
+           "context": repo_bind.context(args.project, values),
            "synthesizer": values.get("identities.synthesizer.name", NAMES["synthesizer"]).lower() +
            ("-lead" if commands()["lead"].enabled(state, "synthesizer") else "")}  # its lead lands (#1569)
     for pr in dict.fromkeys(args.items):
@@ -292,7 +298,8 @@ def train_build(args, values, state, repo, slug):
         print("crew: refusing train: %s exists" % wt)
         return 1
     rec = {"n": n, "branch": "crew/train-%d" % n, "base": base, "sha": base, "members": [], "dropped": [],
-           "pr": None, "local": "none", "ci": "none", "ci_links": [], "after": args.after, "deferred": []}
+           "pr": None, "local": "none", "ci": "none", "ci_links": [], "after": args.after, "deferred": [],
+           "context": repo_bind.context(args.project, values)}
     if delegated and base != delegated["base"]:  # the synthesizer landed meanwhile: a stale base never trains
         rec.update(closed=True, stopped={"reason": "delegated base %s moved to %s" % (delegated["base"], base)})
         train_save(state, rec)
@@ -745,7 +752,7 @@ def train_view(poll, slug, pr, args, state, n):
     Each failed read naming a gateway error is recorded, including reads a later retry recovers from."""
     for attempt in range(10):
         try:
-            view = poll.gh_json("pr", "view", str(pr), "-R", slug, "--json", poll.PR_FIELDS + ",headRefName,isCrossRepository,headRepositoryOwner,headRepository,baseRefName,commits,comments,mergeable,closingIssuesReferences")
+            view = poll.gh_json("pr", "view", str(pr), "-R", slug, "--json", poll.PR_FIELDS + ",headRefName,isCrossRepository,headRepositoryOwner,headRepository,baseRefName,commits,comments,mergeable,closingIssuesReferences,url")
             if view.get("mergeable") != "UNKNOWN":
                 return view
             reason = "GitHub mergeability UNKNOWN"
@@ -894,8 +901,12 @@ def landing_stop(poll, slug, view, state):
                 control = json.load(f)["issue"]
             if not isinstance(control, int) or isinstance(control, bool) or control < 1:
                 raise ValueError("invalid control issue")
-            posts += poll.gh_json("issue", "view", str(control), "-R", slug, "--json", "comments")["comments"]
-        except (OSError, ValueError, KeyError, TypeError, RuntimeError):
+            read = poll.gh_json("issue", "view", str(control), "-R", slug, "--json", "comments,url")
+            foreign = repo_bind.off_repo(slug, [("landing control #%d" % control, read.get("url"))])
+            if foreign:
+                return "%s; nothing may land" % foreign
+            posts += read["comments"]
+        except (OSError, ValueError, KeyError, TypeError, RuntimeError, AttributeError):
             return "landing control unreadable; nothing may land"
     stops = poll.landing_steers(posts)["stops"]
     return "open stop-landing: %s" % ", ".join(sorted(set(stops))) if stops else None
@@ -945,9 +956,13 @@ def train_gate(poll, values, slug, view, head, state, verified_head=None, lane=F
     hold_miss = None
     for x in sorted(holds):
         try:
-            state = poll.gh_json("issue", "view", x, "-R", slug, "--json", "state")["state"]
+            dependency = poll.gh_json("issue", "view", x, "-R", slug, "--json", "state,url")
+            state = dependency["state"]
         except RuntimeError:
             hold_miss = "unresolved coordinator hold-until-#%s: dependency missing or lookup failed" % x
+            break
+        hold_miss = repo_bind.off_repo(slug, [("hold-until-#%s dependency" % x, dependency.get("url"))])
+        if hold_miss:
             break
         if state == "OPEN":
             hold_miss = "open coordinator hold-until-#%s" % x
@@ -965,7 +980,8 @@ def train_gate(poll, values, slug, view, head, state, verified_head=None, lane=F
             unclassified = str(e)
     sensitive = any(lb["name"] == "crew:sensitive" for lb in view["labels"])
     release = release_hold(poll, values, slug, view["number"])
-    why = (stop if stop else
+    foreign = repo_bind.off_repo(slug, [("change #%d's verdict and permission read" % view["number"], view.get("url"))])
+    why = (foreign if foreign else stop if stop else
            "PR is %s" % view["state"] if view["state"] != "OPEN" else
            "head changed: %s, tested %s" % (view["headRefOid"], head) if view["headRefOid"] != head else
            "state tag %s" % ", ".join(sorted(tags)) if tags else
@@ -1143,7 +1159,7 @@ def train_close_cmd(args, values, state, repo, slug):
 def register(sub):
     p = sub.add_parser("train", help="merge train: CI once on main + approved PRs, then land them in order")
     p.add_argument("action", choices=["build", "delegate", "wait", "check", "land", "close", "route", "bisect"])
-    p.add_argument("items", nargs="*", type=int,
+    p.add_argument("items", nargs="*", type=repo_bind.member,
                    help="build: PR numbers in landing order; land: the train number and its next PR; close/route/bisect: the number")
     p.add_argument("--after", type=int, help="build on this predecessor train's tested tip")
     p.add_argument("--train", type=int, help="build: the delegated train N, its members, heads and base (#1391)")
@@ -1158,7 +1174,39 @@ def register(sub):
     p.add_argument("--org-profile")
 
 
+def recorded(path):
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return None
+    except (OSError, ValueError):
+        return "unreadable"
+
+
+def train_foreign(args, values, state, slug, qualified):
+    """Why this action would act outside the selected repo, or None: one comparison over every train record and
+    delegation it names, every member qualifier and, for build and delegate, each member's URL read from the backend."""
+    numbers = [n for n in (args.train, args.after) if n]
+    numbers += args.items[:1] if args.action in ("wait", "land", "close", "route", "bisect") else []
+    records = [("train %d %s" % (n, kind), recorded(path(state, n))) for n in numbers
+               for kind, path in (("record", train_path), ("delegation", delegation_path))]
+    members = list(args.items) if args.action in ("build", "delegate") else []
+    if args.train and isinstance(records[1][1], dict):
+        members = [m.get("pr") for m in records[1][1].get("members", []) if isinstance(m, dict)]
+    urls = []
+    for pr in dict.fromkeys(members):
+        try:
+            urls.append(("member #%s" % pr, commands()["poll"].gh_json("pr", "view", str(pr), "-R", slug, "--json",
+                                                                       "url").get("url")))
+        except (RuntimeError, ValueError, AttributeError) as e:
+            return "member #%s's repo is unreadable (%s)" % (pr, e)
+    return repo_bind.foreign(repo_bind.context(args.project, values), "team.name" in values, records=records,
+                             urls=urls, repos=[("%s#%d" % (q, n), q) for q, n in qualified])
+
+
 def run(args):
+    qualified, args.items = args.items, [n for _, n in args.items]
     many = len(args.items) or -1
     if args.train and (args.action != "build" or args.items or args.after):
         print("crew: train build --train N takes no PRs or --after")
@@ -1177,6 +1225,10 @@ def run(args):
               "each patch on the tip; land each PR alone with mdstack land request" % args.action)
         return 1
     slug = "%s/%s" % (values["repo.owner"], values["repo.name"])
+    problem = train_foreign(args, values, state, slug, qualified)
+    if problem:  # before any clone, branch, record, push, CI, merge or cleanup (team §9.5)
+        print("crew: refusing train %s: %s; nothing written" % (args.action, problem))
+        return 1
     try:
         repo = git(checkout(values, args.project), "rev-parse", "--show-toplevel")
         if args.action == "route":

@@ -9,7 +9,9 @@ import os
 import signal
 import subprocess
 import time
-from crew_shared import commands, profile, refuse_paused, runs, tmux
+from crew_shared import commands, load, profile, refuse_paused, runs, tmux
+
+repo_bind = load("crew_repo_bind", "environments/terminal/crew.d/_repo_bind.py")
 
 
 def proc_identity(pid):
@@ -83,9 +85,22 @@ def register(sub):
 
 def run(args):
     """Serial land (tmux.md C7): acquire takes an flock on locks/merge.lock, held by a detached child until
-    release; a second acquire fails fast."""
-    _, session, state = profile(args)
+    release; a second acquire fails fast. The lock is the selected repo's (team §9.5, #1859): its record names that
+    repo and its owner, and a record naming another repo is refused before any cleanup, signal or removal."""
+    values, session, state = profile(args)
     lock, pidfile = os.path.join(state, "locks", "merge.lock"), os.path.join(state, "locks", "merge.pid")
+    ctx = repo_bind.context(args.project, values)
+    try:
+        with open(pidfile) as f:
+            recorded = json.load(f)
+    except FileNotFoundError:
+        recorded = None
+    except (OSError, ValueError):
+        recorded = "unreadable"
+    problem = repo_bind.foreign(ctx, "team.name" in values, records=[("land lock record %s" % pidfile, recorded)])
+    if problem:
+        print("crew: refusing %s: %s; nothing cleaned, signalled or removed" % (args.action, problem))
+        return 1
     os.makedirs(os.path.dirname(lock), exist_ok=True)
     if args.action == "acquire":
         cleanup(state)
@@ -118,7 +133,7 @@ def run(args):
                 time.sleep(0.5)
             os._exit(0)
         with open(pidfile, "w") as f:
-            json.dump({"pid": pid, "start": proc_identity(pid)[0], "owner": owner}, f)
+            json.dump({"pid": pid, "start": proc_identity(pid)[0], "owner": owner, "window": me, "context": ctx}, f)
         print("crew: land lock acquired (holder pid %d)" % pid)
         return 0
     with open(lock, "a") as f:

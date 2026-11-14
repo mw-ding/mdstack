@@ -20,6 +20,10 @@ from change.read-revision-id at each member's checked head, must be single safe 
 before the first status read; a rerun or resume uses the recorded set, never a new one. land.stack_status =
 "per-change" reads each member's change.land-status (mapped by land.status, change.read-landed for the revision) in
 place of change.stack-status; members in different states, queued against landing included, are unknown.
+
+#1859 (team §9.5): a member may be qualified `<owner>/<name>#<n>:<sha>`; the caller refuses the whole stack when
+one names another repo. Each intent records the selected project's context, and request, resume and stack-done refuse
+an intent naming another repo before any read, request or drop.
 """
 import datetime
 import glob
@@ -28,23 +32,28 @@ import os
 import re
 import time
 
+QUALIFIED = re.compile(r"(?:([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)#)?(.*)")
 MEMBER = re.compile(r"(\S+) (?:(none|queued|landing)|landed ([0-9a-f]{40}|[0-9a-f]{64})|failed (\S.*))")
 CHECK = re.compile(r"check (\S+)")
 SHA = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
 REVISION = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:+@-]{0,127}")  # one shell-safe word, substituted into commands
 
 
-def parse(text):
-    """--stack N:SHA,N:SHA,... (base first) -> [(change, head)]; ValueError unless two or more distinct changes."""
-    members = []
+def parse(text, qualified=False):
+    """--stack N:SHA,N:SHA,... (base first) -> [(change, head)]; ValueError unless two or more distinct changes.
+    qualified: members may carry an `<owner>/<name>#` prefix; returns (members, [lowercase qualifier or None])."""
+    members, qualifiers = [], []
     for part in (text or "").split(","):
-        change, _, head = part.partition(":")
+        repo, rest = QUALIFIED.fullmatch(part).groups() if qualified else (None, part)
+        change, _, head = rest.partition(":")
         if not change.isdigit() or not SHA.fullmatch(head):
-            raise ValueError("--stack member %r is not <n>:<full lowercase head sha>" % part)
+            raise ValueError("--stack member %r is not <n>:<full lowercase head sha>%s" % (
+                part, ", optionally <owner>/<name>#-qualified" if qualified else ""))
         members.append((int(change), head))
+        qualifiers.append(repo.lower() if repo else None)
     if len(members) < 2 or len({c for c, _ in members}) != len(members):
         raise ValueError("--stack needs two or more distinct changes, base first")
-    return members
+    return (members, qualifiers) if qualified else members
 
 
 def tag(members):
@@ -202,14 +211,25 @@ def finish(path, intent, members, values, state, detail):
     return 1
 
 
-def request(call, cmds, members, values, need, state_dir, build=None, read_one=None):
-    """cmds from commands(); build(revisions) rebuilds them once revision ids are known."""
+def recorded_intent(path):
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return "unreadable"
+
+
+def request(call, cmds, members, values, need, state_dir, build=None, read_one=None, bind=(None, None)):
+    """cmds from commands(); build(revisions) rebuilds them once revision ids are known. bind: (the context the intent
+    records, foreign(recorded intent) -> why it is not this repo's, or None)."""
     path = intent_path(state_dir, members)
-    intent = {"members": [list(m) for m in members],
+    intent = {"members": [list(m) for m in members], "context": bind[0],
               "recorded": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}
     if os.path.exists(path):
-        with open(path) as f:
-            recorded = json.load(f)
+        recorded = recorded_intent(path)
+        if bind[1] and bind[1](recorded):
+            print("blocked: land %s: %s; nothing read, requested or dropped" % (tag(members), bind[1](recorded)))
+            return 1
         if [tuple(m) for m in recorded.get("members", [])] != members:
             print("blocked: land %s: another stack intent from this base is recorded; mdstack land resume "
                   "reads it back" % tag(members))
@@ -256,11 +276,17 @@ def request(call, cmds, members, values, need, state_dir, build=None, read_one=N
     return finish(path, intent, members, values, state, detail)
 
 
-def resume(call, build, values, need, state_dir, read_one=None):
+def resume(call, build, values, need, state_dir, read_one=None, bind=(None, None)):
     """Read every recorded stack intent back; never requests. build(members, revisions) -> cmds, with the recorded
     revision ids."""
     code = 0
     for path in sorted(glob.glob(os.path.join(state_dir, "land", "stack", "*.json"))):
+        problem = bind[1] and bind[1](recorded_intent(path))
+        if problem:
+            print("blocked: stack land intent %s: %s; nothing read, requested or dropped" % (
+                os.path.basename(path), problem))
+            code = 1
+            continue
         try:
             with open(path) as f:
                 intent = json.load(f)
@@ -284,13 +310,16 @@ def resume(call, build, values, need, state_dir, read_one=None):
     return code
 
 
-def done(members, state_dir):
+def done(members, state_dir, foreign=None):
     path = intent_path(state_dir, members)
     try:
         with open(path) as f:
             intent = json.load(f)
     except (OSError, ValueError):
         intent = {}
+    if foreign and isinstance(intent, dict) and intent and foreign(intent):
+        print("crew: refusing stack-done %s: %s; intent kept" % (tag(members), foreign(intent)))
+        return 1
     if not intent.get("landed") or [tuple(m) for m in intent.get("members", [])] != members:
         print("crew: refusing stack-done %s: no matching intent marked landed; only a confirmed landed stack "
               "completes a land" % tag(members))

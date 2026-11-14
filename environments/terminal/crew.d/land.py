@@ -27,6 +27,9 @@ stack, stack-done: a session profile whose change backend declares land.stack = 
 atomic request (`--stack N:SHA,N:SHA,...`, base first; _land_stack.py, #1605); resume reads stack intents back too.
 #1722: land.change_placeholder fills every per-member stack command in either mode; change.read-revision-id must carry
 <head-sha>; land.stack_status = "per-change" reads each member through land-status as `status` does.
+#1859 (team §9.5): every intent records the selected project's context; request, resume and done refuse an intent
+naming another repo before any read, request or drop, and a stack member may be qualified `<owner>/<name>#<n>:<sha>`:
+one naming another repo refuses the whole stack with nothing written.
 """
 import datetime
 import glob
@@ -38,6 +41,7 @@ import time
 from crew_shared import crew_render, load, profile, refuse_paused, require_ownership
 
 land_stack = load("crew_land_stack", "environments/terminal/crew.d/_land_stack.py")
+repo_bind = load("crew_repo_bind", "environments/terminal/crew.d/_repo_bind.py")
 
 STATUS = re.compile(r"(none|queued|landing)|landed ([0-9a-f]{40}|[0-9a-f]{64})|failed (\S.*)")
 SHA = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
@@ -129,6 +133,12 @@ def drop_intent(path):
         os.remove(path)
 
 
+def binder(args, values):
+    """(the context an intent records, why a recorded intent is not this repo's or None)."""
+    ctx, team = repo_bind.context(args.project, values), "team.name" in values
+    return ctx, lambda intent: repo_bind.foreign(ctx, team, records=[("recorded land intent", intent)])
+
+
 def poll(cmds, values, tag, state, detail, status):
     """Poll a queued or landing land to its end: ("landed", revision), ("timeout", why) or (state, detail)."""
     deadline = time.monotonic() + values["runtime.options.land_timeout"]
@@ -184,14 +194,19 @@ def run(args):
     elif not SHA.fullmatch(args.head):
         print("crew: --head must be a full lowercase commit SHA, got %r" % args.head)
         return 1
+    ctx, foreign = binder(args, values)
     if args.action == "done":
         path = intent_path(state_dir, args.pr, args.head)
         try:
             with open(path) as f:
-                landed = json.load(f).get("landed")
-        except (OSError, ValueError):
-            landed = None
+                intent = json.load(f)
+            landed = intent.get("landed")
+        except (OSError, ValueError, AttributeError):
+            intent = landed = None
         tag = "#%d @ %s" % (args.pr, args.head[:7])
+        if landed and foreign(intent):
+            print("crew: refusing done %s: %s; intent kept" % (tag, foreign(intent)))
+            return 1
         if not landed:
             print("crew: refusing done %s: no intent marked landed; only a confirmed landed status completes a land"
                   % tag)
@@ -213,7 +228,7 @@ def run(args):
     renderer = crew_render.Renderer(values, os.path.join(os.path.dirname(crew_render.HERE), "templates"),
                                     overlay=crew_render.pack_overlay(args.project, args.org_profile, values))
     if args.action == "resume":
-        code = resume_stacks(renderer, values, meta, land, state_dir) if stacked else 0
+        code = resume_stacks(renderer, values, meta, land, state_dir, ctx, foreign) if stacked else 0
         if meta.get("land.mode", ("sync",))[0] != "async":
             return code
         for path in sorted(glob.glob(os.path.join(state_dir, "land", "*.json"))):
@@ -224,6 +239,11 @@ def run(args):
                 cmds = commands_for(renderer, intent["pr"], intent["head"], land)
             except (OSError, ValueError, KeyError, TypeError) as e:
                 print("blocked: land intent %s unreadable (%s); nothing requested" % (os.path.basename(path), e))
+                code = 1
+                continue
+            if foreign(intent):
+                print("blocked: land intent %s: %s; nothing read, requested or dropped" % (
+                    os.path.basename(path), foreign(intent)))
                 code = 1
                 continue
             state, detail = read_status(cmds, land["status"])
@@ -247,9 +267,18 @@ def run(args):
         print(" ".join(filter(None, (state, detail))))
         return 1 if state == "unknown" else 0
     path = intent_path(state_dir, args.pr, args.head)
-    intent = {"pr": args.pr, "head": args.head,
+    intent = {"pr": args.pr, "head": args.head, "context": ctx,
               "recorded": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}
-    if not os.path.exists(path):
+    if os.path.exists(path):
+        try:
+            with open(path) as f:
+                recorded = json.load(f)
+        except (OSError, ValueError):
+            recorded = "unreadable"
+        if foreign(recorded):
+            print("crew: refusing land %s: %s; nothing read, requested or dropped" % (tag, foreign(recorded)))
+            return 1
+    else:
         save_intent(path, intent)  # intent first: a restart reads this change and head back before anything else
     state, detail = read_status(cmds, land["status"])
     if state == "none":
@@ -291,11 +320,11 @@ def stack_reader(land):
     return (lambda cmds: read_status(cmds, land["status"])) if land["per_change"] else None
 
 
-def resume_stacks(renderer, values, meta, land, state_dir):
+def resume_stacks(renderer, values, meta, land, state_dir, ctx, foreign):
     need = meta.get("land.stack_tests_against_tip", (False,))[0]
     land = stack_land(meta)
     return land_stack.resume(call, lambda members, revisions: stack_commands(renderer, members, land, revisions),
-                             values, need, state_dir, stack_reader(land))
+                             values, need, state_dir, stack_reader(land), (ctx, foreign))
 
 
 def run_stack(args):
@@ -305,12 +334,18 @@ def run_stack(args):
         print("crew: land %s takes --stack, not --pr or --head" % args.action)
         return 1
     try:
-        members = land_stack.parse(args.stack)
+        members, qualifiers = land_stack.parse(args.stack, qualified=True)
     except ValueError as e:
         print("crew: %s" % e)
         return 1
+    ctx, foreign = binder(args, values)
+    problem = repo_bind.foreign(ctx, "team.name" in values,
+                                repos=[("stack member #%d" % c, q) for (c, _), q in zip(members, qualifiers)])
+    if problem:  # a mixed-repo stack: refused whole, before any intent, read or request (team §9.5)
+        print("crew: refusing land %s: %s; nothing written, read or requested" % (land_stack.tag(members), problem))
+        return 1
     if args.action == "stack-done":
-        return land_stack.done(members, state_dir)
+        return land_stack.done(members, state_dir, foreign)
     meta = {}
     crew_render.crew_config.resolve_profile(args.project, args.org_profile, meta=meta)
     if not stack_declared(meta, values):
@@ -329,4 +364,5 @@ def run_stack(args):
         return 1
     need = meta.get("land.stack_tests_against_tip", (False,))[0]
     return land_stack.request(call, cmds, members, values, need, state_dir,
-                              lambda revisions: stack_commands(renderer, members, land, revisions), stack_reader(land))
+                              lambda revisions: stack_commands(renderer, members, land, revisions), stack_reader(land),
+                              (ctx, foreign))

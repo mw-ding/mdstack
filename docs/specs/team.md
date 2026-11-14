@@ -765,7 +765,7 @@ their issues, from
 [M56 plan record](https://github.com/mw-ding/mdstack/issues/1854#issuecomment-6866347368).
 S0 is recorded `built` for this opening slice, effective on merge; T1 is
 recorded `built` by #1856's change, effective on its merge; T3 by #1858's,
-effective on its merge. No
+effective on its merge; T4 by #1859's, effective on its merge. No
 member dispatches before #1861 merges. One issue → one PR in logical
 commits; the four units are not split further to meet a line budget.
 Estimates exclude tests and are planning ranges, not limits.
@@ -776,7 +776,7 @@ Estimates exclude tests and are planning ranges, not limits.
 | T1 | #1856 | Closed project context and qualified durable routing (§9.1–§9.3) | 250–450 | S0 | built |
 | T2 | #1857 | Shared admission lock, target and ledger (§9.4) | 300–550 | T1; M55 #1836 shared waits | planned |
 | T3 | #1858 | Shared leads and worker lifecycle (§9.3–§9.4) | 400–700 | T1; integrated T2; M55 #1836 and #1830 | built |
-| T4 | #1859 | Repo-bound land, locks and train/stack refusals (§9.5) | 250–450 | T1; integrated T3; M55 #1835 and #1836 | planned |
+| T4 | #1859 | Repo-bound land, locks and train/stack refusals (§9.5) | 250–450 | T1; integrated T3; M55 #1835 and #1836 | built |
 | S1 | #1860 | Delivery references, headers, tracker closure, lessons | 40–90 docs | T1–T4 and M56 acceptance evidence | planned |
 
 Each later land updates its row through the existing delivery references;

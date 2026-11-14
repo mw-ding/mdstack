@@ -1940,9 +1940,12 @@ once; a second failure closes the train and the synthesizer re-surveys.
 The [M51 team/project design](specs/team.md#9-team-and-project-separation-1318-design-only)
 qualifies ownership, claims, evidence, verdicts and landing permission by
 repo. Its [landing contract](specs/team.md#95-landing-authority-and-refusals)
-and refusal matrix guide T1–T4; they are design only and change no current
-marker or gate satisfaction, actor or fail-open rule. The stage 7 gate
-registry remains authoritative for each repository.
+is implemented for the terminal runtime (#1859,
+[Team pools](runtimes/tmux.md#team-pools)): a land reads the selected repo's
+records only, locks per repo, and refuses a train, stack, intent or lock
+record naming another repo before any write. It changes no marker or gate
+satisfaction, actor or fail-open rule. The stage 7 gate registry remains
+authoritative for each repository.
 
 ## 8. Safety
 

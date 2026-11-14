@@ -18,6 +18,7 @@ backend with no shell in its map lands a three-member stack by its top change an
 per change through land.status; mixed or unknown member states record nothing; resume reuses the recorded ids.
 Run in CI.
 """
+import contextlib
 import json
 import os
 import re
@@ -601,6 +602,46 @@ class SessionStackLand(LandFixture):
         self.assertIn("declares no land.stack; land each change alone", r.stdout)
         self.assertEqual(self.calls(), [])
 
+    def test_foreign_member_refuses_whole_stack_with_nothing_written(self):  # #1859: before any intent or read
+        r = self.stack(members="7:%s,example/beta#8:%s" % (HEAD, STACK_HEAD))
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("stack member #8 is example/beta, not acme/widgets; nothing written, read or requested", r.stdout)
+        self.assertEqual(self.calls(), [])
+        self.assertFalse(os.path.exists(os.path.join(self.state, "land")))
+        self.stack_statuses("7 none\n8 none", self.LANDED_BOTH)
+        r = self.stack(members="7:%s,acme/widgets#8:%s" % (HEAD, STACK_HEAD))
+        self.assertEqual(r.returncode, 0, r.stdout)
+        self.assertEqual(self.stack_intent()["context"], contexts(self.project)[0])
+
+    def test_foreign_stack_intent_refused_and_own_proceeds(self):  # #1859: before any read, request or drop
+        own, beta = contexts(self.project)
+        path = os.path.join(self.state, "land", "stack", "7-%s.json" % HEAD)
+        refusal = "stack land intent 7-%s.json: recorded land intent %s" % (HEAD, FOREIGN)
+        for action, extra, refused in (("stack", {}, "blocked: land stack #7 @ aaaaaaa, #8 @ ddddddd: "),
+                                       ("resume", {}, "blocked: " + refusal),
+                                       ("stack-done", {"landed": [LANDED, STACK_LANDED]}, "crew: refusing stack-done")):
+            for ctx in (beta, own):
+                with self.subTest(action=action, repo=ctx["repo"]):
+                    os.makedirs(os.path.dirname(path), exist_ok=True)
+                    with open(path, "w") as f:
+                        json.dump(dict({"members": [[7, HEAD], [8, STACK_HEAD]], "context": ctx}, **extra), f)
+                    with open(path, "rb") as f:
+                        before = f.read()
+                    self.stack_statuses(self.LANDED_BOTH)
+                    calls = len(self.calls())
+                    r = self.stack(action)
+                    if ctx is beta:
+                        self.assertEqual(r.returncode, 1, r.stdout)
+                        self.assertIn(refused, r.stdout)
+                        self.assertIn(FOREIGN, r.stdout)
+                        self.assertEqual(len(self.calls()), calls)
+                        with open(path, "rb") as f:
+                            self.assertEqual(f.read(), before)
+                    else:
+                        self.assertEqual(r.returncode, 0, r.stdout)
+                    with contextlib.suppress(FileNotFoundError):
+                        os.remove(path)
+
     def test_tmux_profile_refused(self):
         """tmux trains are unchanged: the stack land is session-only."""
         self.write_profile(runtime="tmux")
@@ -811,6 +852,53 @@ class SessionRevisionStackLand(LandFixture):
         r = self.stack()
         self.assertIn("change.land-stack carries no <stack> or <stack-revisions> placeholder", r.stdout)
         self.assertEqual(self.calls(), [])
+
+
+def contexts(project):
+    """(this one-repo profile's context, another repo's) as an intent records them (#1859)."""
+    own = {"team": "repo:acme/widgets", "project": os.path.realpath(project), "repo": "acme/widgets"}
+    return own, dict(own, team="repo:example/beta", repo="example/beta")
+
+
+FOREIGN = "is example/beta in team repo:example/beta, not acme/widgets in team repo:acme/widgets"
+
+
+class RepoBoundIntents(LandFixture):
+    """#1859 (team §9.5): request, resume and done act only on an intent recorded for the selected repo. Another
+    repo's intent at the same change and head refuses before any status read, request or drop; this repo's is the
+    control."""
+
+    def test_foreign_intent_refused_before_any_read_and_own_intent_proceeds(self):
+        own, beta = contexts(self.project)
+        path = os.path.join(self.state, "land", "7-%s.json" % HEAD)
+        cases = [("request", {}, "crew: refusing land #7 @ aaaaaaa: recorded land intent " + FOREIGN),
+                 ("resume", {}, "blocked: land intent 7-%s.json: recorded land intent %s" % (HEAD, FOREIGN)),
+                 ("done", {"landed": LANDED}, "crew: refusing done #7 @ aaaaaaa: recorded land intent " + FOREIGN)]
+        for action, extra, refusal in cases:
+            for ctx in (beta, own):
+                with self.subTest(action=action, repo=ctx["repo"]):
+                    os.makedirs(os.path.dirname(path), exist_ok=True)
+                    with open(path, "w") as f:
+                        json.dump(dict({"pr": 7, "head": HEAD, "context": ctx, "recorded": "t"}, **extra), f)
+                    with open(path, "rb") as f:
+                        before = f.read()
+                    self.statuses("landed " + LANDED)
+                    calls = len(self.calls())
+                    r = self.land(action)
+                    if ctx is beta:
+                        self.assertEqual(r.returncode, 1, r.stdout)
+                        self.assertIn(refusal, r.stdout)
+                        self.assertEqual(len(self.calls()), calls)  # no status read, head read or request
+                        with open(path, "rb") as f:
+                            self.assertEqual(f.read(), before)
+                    else:
+                        self.assertEqual(r.returncode, 0, r.stdout)
+                        self.assertNotIn("refusing", r.stdout)
+                    with contextlib.suppress(FileNotFoundError):
+                        os.remove(path)
+        self.statuses("none", "landed " + LANDED)
+        self.assertEqual(self.land().returncode, 0)
+        self.assertEqual(self.intent()["context"], own)  # a new intent records this repo
 
 
 if __name__ == "__main__":
