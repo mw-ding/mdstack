@@ -84,6 +84,7 @@ conflicts on ([#325](https://github.com/mw-ding/eng-crew/issues/325)).
 | `docs/backends/notion.md` | Deliverable | all | Protocol bundle (backend binding): Notion knowledge backend binding ([#1229](https://github.com/mw-ding/eng-crew/issues/1229)) |
 | `docs/bootstrap.md` | Deliverable | all | Install and upgrade docs: how to install, pin and upgrade |
 | `docs/campaign-harness.md` | Internal | n/a | Guards and tests: M25 integration campaign contract ([#783](https://github.com/mw-ding/eng-crew/issues/783)) |
+| `docs/campaign-scenarios/*.md` | Internal | n/a | Guards and tests: one M25 campaign scenario per file, indexed in docs/campaign-harness.md ([#1419](https://github.com/mw-ding/mdstack/issues/1419)) |
 | `docs/concepts.md` | Deliverable | all | Protocol bundle (core): the text roles load and cite |
 | `docs/configuration/resolution.md` | Deliverable | all | Profile and pack contract: profile validation reference split from the profile ([#857](https://github.com/mw-ding/eng-crew/issues/857)) |
 | `docs/configuration/runtime-options.md` | Deliverable | all | Profile and pack contract: runtime keys and shared coordinator option split from the profile ([#859](https://github.com/mw-ding/eng-crew/issues/859)) |

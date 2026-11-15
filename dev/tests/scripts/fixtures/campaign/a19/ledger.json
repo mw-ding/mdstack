@@ -1,5 +1,5 @@
 {
- "_doc": "A19 ledger (docs/campaign-harness.md#a19): read by replay.py.",
+ "_doc": "A19 ledger (docs/campaign-scenarios/A19.md#a19): read by replay.py.",
  "harness": {
   "adapters": {
    "claude-code": {
@@ -1015,7 +1015,7 @@
   }
  },
  "live": {
-  "spec": "docs/campaign-harness.md#a19",
+  "spec": "docs/campaign-scenarios/A19.md#a19",
   "claude-code/herdr": {
    "fail": "ready: no ready line (run missing); the run exits 71 under the shared herdr server's inherited seatbelt sandbox, from an owner shell too",
    "finding": "https://github.com/mw-ding/mdstack/issues/1469",
