@@ -1,7 +1,7 @@
 ---
 type: added
 issue: 1912
-pr: TBD
+pr: 1922
 date: 2026-11-15
 box-skill: none
 ---
