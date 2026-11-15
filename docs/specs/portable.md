@@ -2515,23 +2515,28 @@ merge-up, not serialized dispatch. One issue → one PR, with focused commits.
 Sizes are non-test lines (C1 excludes relocated prose), planning ranges, not
 limits.
 
+Statuses below are synced by #1890: all thirteen members landed with the
+PRs shown, none was dropped or superseded, and every member issue is closed
+in the tracker. M57 is built in source only; outcome, proof boundary,
+release status and lessons are in [M57 outcome and lessons](#m57-outcome-and-lessons).
+
 | ID | Issue | Scope / named paths | Size | Depends on | Tier | Status |
 |---|---|---|---|---|---|---|
 | S0 | #1891 | This section (PR #1892) | 110–170 docs | Signed M57 scope and applied choices | default | done |
-| D1 | #1878 | Review readiness: `route.py`, `poll.py`, `reviewer-pool.py`, `review.py`; `lead.py`/`watch.py` for retained waits; `_review_ready.py` only if needed; tmux runtime doc, builder fix fragment | 180–320 | #1891; integrate with D2 and L6 | deep | open |
-| D2 | #1850 | Busy delivery: `send.py`, `acked.py`, `lead.py`, `watch.py`; `_shared.py` only for a necessary primitive; builder-lead template, tmux runtime doc | 160–280 | #1891 | deep | open |
-| D3 | #1871 | Relay disposition: `reviewer-pool.py`, `lead.py`, `watch.py` if its wait fingerprint changes; builder-lead/coordinator templates, tmux runtime doc | 40–90 | #1891; after D2 if sharing its pending state | default | open |
-| O1 | #1845 | Owner start/attach: `up.py`, `environments/terminal/sessions/tmux/adapter.py`, tmux runtime doc; `layout.py` wrapper stays the entry wrapper | 70–120 | #1891 | default | open |
-| C1 | #1419 | Scenario files and index: `docs/campaign-harness.md`, new `docs/campaign-scenarios/Axx.md`, `.gitattributes`, `scripts/check-repo.py`, `scripts/deliverables.txt`; anchor consumers if changed | 50–100 + ~350–600 relocated | #1891 | default | open |
-| L1 | #1444 | Watcher timing lesson; `docs/verification.md` only for the scoped reminder | 25–45 docs | #1891 | default | open |
-| L2 | #1843 | Runtime-row lesson; `templates/policy/reviewer/passes.md` | 25–45 docs | #1891 | default | open |
-| L3 | #1844 | Post-open fragment lesson; `templates/policy/builder/build-pass.md` | 25–45 docs | #1891; integrate with D1's initial/CI-fix cases | default | open |
-| L4 | #1882 | Repaired repo-tag collision lesson | 20–35 docs | #1891 | default | open |
-| L5 | #1883 | Resolved-profile compatibility lesson | 20–35 docs | #1891 | default | open |
-| L6 | #1884 | Inline guard controls lesson; `templates/policy/builder/fix-rounds.md` | 25–45 docs | #1891; after D1's edit to the same fragment | default | open |
-| SD | #1889 | Shared-status contract: [shared-status.md](shared-status.md); its M57 reference here | 120–190 docs | #1891; precedes ST | deep | open |
-| ST | #1313 | Shared status: new `core/status-record.py`, `connectors/github/status.py`; `core/crew-config.py`, GitHub manifest/map, `status.py`, new `_status_shared.py`, `watch.py`; interface/profile/backend/runtime docs; deliverables manifest | 350–600 | #1889 merged; D1–D3 states as observations | deep | open |
-| S1 | #1890 | Status, evidence, decisions, lessons and tracker reconciliation | 40–80 docs | All thirteen members landed or explicitly superseded | default | open |
+| D1 | #1878 | Review readiness: `route.py`, `poll.py`, `reviewer-pool.py`, `review.py`; `lead.py`/`watch.py` for retained waits; `_review_ready.py` only if needed; tmux runtime doc, builder fix fragment (PR #1904) | 180–320 | #1891; integrate with D2 and L6 | deep | done |
+| D2 | #1850 | Busy delivery: `send.py`, `acked.py`, `lead.py`, `watch.py`; `_shared.py` only for a necessary primitive; builder-lead template, tmux runtime doc (PR #1906) | 160–280 | #1891 | deep | done |
+| D3 | #1871 | Relay disposition: `reviewer-pool.py`, `lead.py`, `watch.py` if its wait fingerprint changes; builder-lead/coordinator templates, tmux runtime doc (PR #1909) | 40–90 | #1891; after D2 if sharing its pending state | default | done |
+| O1 | #1845 | Owner start/attach: `up.py`, `environments/terminal/sessions/tmux/adapter.py`, tmux runtime doc; `layout.py` wrapper stays the entry wrapper (PR #1894) | 70–120 | #1891 | default | done |
+| C1 | #1419 | Scenario files and index: `docs/campaign-harness.md`, new `docs/campaign-scenarios/Axx.md`, `.gitattributes`, `scripts/check-repo.py`, `scripts/deliverables.txt`; anchor consumers if changed (PR #1897) | 50–100 + ~350–600 relocated | #1891 | default | done |
+| L1 | #1444 | Watcher timing lesson; `docs/verification.md` only for the scoped reminder (PR #1895) | 25–45 docs | #1891 | default | done |
+| L2 | #1843 | Runtime-row lesson; `templates/policy/reviewer/passes.md` (PR #1899) | 25–45 docs | #1891 | default | done |
+| L3 | #1844 | Post-open fragment lesson; `templates/policy/builder/build-pass.md` (PR #1908) | 25–45 docs | #1891; integrate with D1's initial/CI-fix cases | default | done |
+| L4 | #1882 | Repaired repo-tag collision lesson (PR #1900) | 20–35 docs | #1891 | default | done |
+| L5 | #1883 | Resolved-profile compatibility lesson (PR #1898) | 20–35 docs | #1891 | default | done |
+| L6 | #1884 | Inline guard controls lesson; `templates/policy/builder/fix-rounds.md` (PR #1907) | 25–45 docs | #1891; after D1's edit to the same fragment | default | done |
+| SD | #1889 | Shared-status contract: [shared-status.md](shared-status.md); its M57 reference here (PR #1896) | 120–190 docs | #1891; precedes ST | deep | done |
+| ST | #1313 | Shared status: new `core/status-record.py`, `connectors/github/status.py`; `core/crew-config.py`, GitHub manifest/map, `status.py`, new `_status_shared.py`, `watch.py`; interface/profile/backend/runtime docs; deliverables manifest (PR #1905) | 350–600 | #1889 merged; D1–D3 states as observations | deep | done |
+| S1 | #1890 | Status, evidence, decisions, lessons and tracker reconciliation (PR #PRNUM, effective on merge) | 40–80 docs | All thirteen members landed or explicitly superseded | default | done |
 
 Lesson units add a dated `docs/lessons/YYYY-MM-DD-<slug>.md` (actual creation
 date) and its lesson Index row, cite the source repair and set Status from
@@ -2591,11 +2596,11 @@ operation class as a recoverable named wait, not an initial build.
 
 | AC | Fail-closed rule over R / state | Table-driven proof shape | Status |
 |---|---|---|---|
-| D1.1 Binding | Fix-review admission needs a complete, consistent R at the live head and a matching published builder record, authenticated by login/signature, after the relevant request/epoch. Missing, truncated, foreign or conflicting fields create no reviewer claim, reservation or spawn. | One valid record; vary each field once, incl. same IDs and SHA in repo A/B, copied signatures, previous epoch, short SHA, unreadable live reads. Rejections preserve reviewer state; the valid counterpart dispatches once. | open |
-| D1.2 Publication | A new head during a pending fix retains demand until its signed note has the required inline proof or justified N/A. A push, trailer, local file or `done:` alone is not the note. Readiness checks presence/placement; the reviewer judges correctness. | Head→note and note→head-event, missing note, note without proof, valid N/A, failed/uncertain post reconciled by readback. No reviewer before readiness, exactly one after. | open |
-| D1.3 Persistence | Pending→ready survives lead/router/watcher restart and duplicate events; only the current epoch/head discharges. Superseded/closed retires its own demand; a hold parks it; unknown stays pending with a named reason. | Both arrival orders with interruption before/after dispatch; H1 superseded by H2; hold→release; two repos with equal IDs. One live successor, no cross-repo cleanup, no lost event. | open |
-| D1.4 Recovery | The token-free backstop re-reads published records; a published note releases a wait even if `done:` was lost or the builder reclaimed. Missing/unreadable records stay pending under existing liveness/escalation, never a time-based waiver. | Delete the local completion signal after a valid note, restart, reconcile. Then remove the note: no admission, visible unresolved wait, existing bounded recovery. | open |
-| D1.5 Other paths | Initial build: signed PR body plus proof. CI fix: `ci-fix`, incl. round 0. Same-head evidence fix: a new note after the current epoch. Clean merge-up keeps identity/carry/recheck rules; a differing patch waits for its note and delta review; a no-op merge-up waits for no note. | Cross `{initial, fix-new-head, fix-same-head, ci-fix-before-verdict, ci-fix-after-verdict, merge-up-identical, merge-up-different, merge-up-no-op}` with valid/missing/wrong-kind records and restart. Keep express self-gate routing, round caps and green-CI-at-land. | open |
+| D1.1 Binding | Fix-review admission needs a complete, consistent R at the live head and a matching published builder record, authenticated by login/signature, after the relevant request/epoch. Missing, truncated, foreign or conflicting fields create no reviewer claim, reservation or spawn. | One valid record; vary each field once, incl. same IDs and SHA in repo A/B, copied signatures, previous epoch, short SHA, unreadable live reads. Rejections preserve reviewer state; the valid counterpart dispatches once. | done |
+| D1.2 Publication | A new head during a pending fix retains demand until its signed note has the required inline proof or justified N/A. A push, trailer, local file or `done:` alone is not the note. Readiness checks presence/placement; the reviewer judges correctness. | Head→note and note→head-event, missing note, note without proof, valid N/A, failed/uncertain post reconciled by readback. No reviewer before readiness, exactly one after. | done |
+| D1.3 Persistence | Pending→ready survives lead/router/watcher restart and duplicate events; only the current epoch/head discharges. Superseded/closed retires its own demand; a hold parks it; unknown stays pending with a named reason. | Both arrival orders with interruption before/after dispatch; H1 superseded by H2; hold→release; two repos with equal IDs. One live successor, no cross-repo cleanup, no lost event. | done |
+| D1.4 Recovery | The token-free backstop re-reads published records; a published note releases a wait even if `done:` was lost or the builder reclaimed. Missing/unreadable records stay pending under existing liveness/escalation, never a time-based waiver. | Delete the local completion signal after a valid note, restart, reconcile. Then remove the note: no admission, visible unresolved wait, existing bounded recovery. | done |
+| D1.5 Other paths | Initial build: signed PR body plus proof. CI fix: `ci-fix`, incl. round 0. Same-head evidence fix: a new note after the current epoch. Clean merge-up keeps identity/carry/recheck rules; a differing patch waits for its note and delta review; a no-op merge-up waits for no note. | Cross `{initial, fix-new-head, fix-same-head, ci-fix-before-verdict, ci-fix-after-verdict, merge-up-identical, merge-up-different, merge-up-no-op}` with valid/missing/wrong-kind records and restart. Keep express self-gate routing, round caps and green-CI-at-land. | done |
 
 #### D2: busy delivery (#1850)
 
@@ -2614,10 +2619,10 @@ ack-like success for busy work.
 
 | AC | Fail-closed rule over D | Table-driven proof shape | Status |
 |---|---|---|---|
-| D2.1 Truthful receipt | Inbox/queued/submitted/busy cannot create `ack:` or imply acceptance; only the target's matching actual ack discharges. An old run's ack cannot settle a successor's message. | Inbox, submitted composer, transcript echo, actual ack and wrong ID/run/context; only the actual valid receipt is acked. | open |
-| D2.2 Busy retention | A live, identity-matching busy worker without ack stays pending under the same ID past the old 45 s wait and one retry: no fault, duplicate, restart, reclaim or repeated Enter. | Fake clock and adapter screens: busy past two waits→ack; duplicate caller; busy→idle→late ack; watcher/lead restart. One inbox message, retained counters. | open |
-| D2.3 Bounded recovery | Busy→dead/missing uses the existing one-restart policy after fresh identity/hold checks, keeping the ID. Idle/unacked gets one re-nudge then a named block; dialog/ambiguous/unreachable gets no input or restart; quota keeps the eligible-engine path. | Busy→dead, replacement process with the same window name, idle/no ack, dialog before/after typing, unknown probe, exhausted retry/restart, held item, quota. No keys in dialogs, no second restart, no discarded work. | open |
-| D2.4 Durable progress | The watcher/backstop re-probes pending delivery without model polling; a changed worker/ack state yields one actionable transition. Invalid context refuses before inbox/nudge/state writes; pending reads are never read as delivered. | Dispatcher→inbox→nudge→status→lead/backstop with fake tmux/clock, interruption at each boundary, duplicate wake, foreign A/B records; snapshot delivery/inbox/worker state and the tmux key log. | open |
+| D2.1 Truthful receipt | Inbox/queued/submitted/busy cannot create `ack:` or imply acceptance; only the target's matching actual ack discharges. An old run's ack cannot settle a successor's message. | Inbox, submitted composer, transcript echo, actual ack and wrong ID/run/context; only the actual valid receipt is acked. | done |
+| D2.2 Busy retention | A live, identity-matching busy worker without ack stays pending under the same ID past the old 45 s wait and one retry: no fault, duplicate, restart, reclaim or repeated Enter. | Fake clock and adapter screens: busy past two waits→ack; duplicate caller; busy→idle→late ack; watcher/lead restart. One inbox message, retained counters. | done |
+| D2.3 Bounded recovery | Busy→dead/missing uses the existing one-restart policy after fresh identity/hold checks, keeping the ID. Idle/unacked gets one re-nudge then a named block; dialog/ambiguous/unreachable gets no input or restart; quota keeps the eligible-engine path. | Busy→dead, replacement process with the same window name, idle/no ack, dialog before/after typing, unknown probe, exhausted retry/restart, held item, quota. No keys in dialogs, no second restart, no discarded work. | done |
+| D2.4 Durable progress | The watcher/backstop re-probes pending delivery without model polling; a changed worker/ack state yields one actionable transition. Invalid context refuses before inbox/nudge/state writes; pending reads are never read as delivered. | Dispatcher→inbox→nudge→status→lead/backstop with fake tmux/clock, interruption at each boundary, duplicate wake, foreign A/B records; snapshot delivery/inbox/worker state and the tmux key log. | done |
 
 #### D3, O1 and C1
 
@@ -2709,12 +2714,12 @@ comment_id, last sequence/content identity}` under a local publisher lock.
 
 | AC | Fail-closed rule | Table-driven acceptance shape | Status |
 |---|---|---|---|
-| S.1 Schema/privacy | Closed schema, correct types/enums/URLs, finite nonnegative counts, ordered sequence and valid UTC times. Missing/extra fields, unknown versions, disallowed payload and conflicting identity refuse before any write; unobserved sections stay unknown. | Valid minimal record plus each missing/wrong/extra field; string/bool numbers, raw payload, invalid URL, future/bad times, unavailable observations; through the CLI/connector entrypoint. | open |
-| S.2 Off/authority | Off or unconfigured: no destination access, registration or publication. Invalid config, lost ownership, pause, unauthorized publisher or foreign registration: zero writes, incl. receipts, locks, queue and telemetry; locks only after acceptance. | Off/unset/invalid destination or ID, wrong account, workers/pools, lost ownership, pause; local snapshots plus fake API audit of POST/PATCH/DELETE; each refusal paired with an authorized positive case. | open |
-| S.3 Destination/isolation | Publication needs the configured issue, authenticated publisher and matching install/registration/comment binding; full pagination and duplicate checks precede mutation; distinct A/B publishers change only their own comment. | N=0–3 installs, equal display names, reused instance ID, copied receipt, wrong issue/comment/author, duplicates on later pages, concurrent distinct publishes; unrelated comments and issue body unchanged. | open |
-| S.4 Idempotency/recovery | Same sequence/content writes nothing; conflicting content, lower sequence or an ambiguous response never blindly writes; uncertain writes reconcile by readback; restart keeps registration and latest accepted state. | Failure before write, after remote write before receipt, lost create/update response, older publication last, interrupted restart; exactly one registration, no older snapshot wins. | open |
-| S.5 Freshness/view | `mdstack status --all` is read-only, works without a local session, lists every valid instance with age/stale/blocked/unknown. Freshness uses observation time; age >= threshold is stale; future/invalid/unsupported records never look fresh. | Fake clock at threshold−1/0/+1, delayed republish, future times, unknown sections, malformed/unknown-version comments, closed destination, API and pagination errors; partial-failure diagnostics, no writes. | open |
-| S.6 Optional seam | Existing profiles/packs validate unchanged with status off/absent; no new required capability. Schema in `core/`, connector in `connectors/`, collection in terminal modules; bounded timer with no model wake that stops on off/pause/lost authority; plain `status` unchanged. | Old manifests/profile outputs, fake optional status pack, unsupported capability, timer→off/pause/ownership loss, missing collector data, duplicate tick; fake CLI create→progress→read-all updates only the intended comment. | open |
+| S.1 Schema/privacy | Closed schema, correct types/enums/URLs, finite nonnegative counts, ordered sequence and valid UTC times. Missing/extra fields, unknown versions, disallowed payload and conflicting identity refuse before any write; unobserved sections stay unknown. | Valid minimal record plus each missing/wrong/extra field; string/bool numbers, raw payload, invalid URL, future/bad times, unavailable observations; through the CLI/connector entrypoint. | done |
+| S.2 Off/authority | Off or unconfigured: no destination access, registration or publication. Invalid config, lost ownership, pause, unauthorized publisher or foreign registration: zero writes, incl. receipts, locks, queue and telemetry; locks only after acceptance. | Off/unset/invalid destination or ID, wrong account, workers/pools, lost ownership, pause; local snapshots plus fake API audit of POST/PATCH/DELETE; each refusal paired with an authorized positive case. | done |
+| S.3 Destination/isolation | Publication needs the configured issue, authenticated publisher and matching install/registration/comment binding; full pagination and duplicate checks precede mutation; distinct A/B publishers change only their own comment. | N=0–3 installs, equal display names, reused instance ID, copied receipt, wrong issue/comment/author, duplicates on later pages, concurrent distinct publishes; unrelated comments and issue body unchanged. | done |
+| S.4 Idempotency/recovery | Same sequence/content writes nothing; conflicting content, lower sequence or an ambiguous response never blindly writes; uncertain writes reconcile by readback; restart keeps registration and latest accepted state. | Failure before write, after remote write before receipt, lost create/update response, older publication last, interrupted restart; exactly one registration, no older snapshot wins. | done |
+| S.5 Freshness/view | `mdstack status --all` is read-only, works without a local session, lists every valid instance with age/stale/blocked/unknown. Freshness uses observation time; age >= threshold is stale; future/invalid/unsupported records never look fresh. | Fake clock at threshold−1/0/+1, delayed republish, future times, unknown sections, malformed/unknown-version comments, closed destination, API and pagination errors; partial-failure diagnostics, no writes. | done |
+| S.6 Optional seam | Existing profiles/packs validate unchanged with status off/absent; no new required capability. Schema in `core/`, connector in `connectors/`, collection in terminal modules; bounded timer with no model wake that stops on off/pause/lost authority; plain `status` unchanged. | Old manifests/profile outputs, fake optional status pack, unsupported capability, timer→off/pause/ownership loss, missing collector data, duplicate tick; fake CLI create→progress→read-all updates only the intended comment. | done |
 
 SD ACs: specify S.1–S.6 with exact field/enum/default/time/identity/registration
 rules and the zero-write boundary, name collectors and unknown handling,
@@ -2740,14 +2745,14 @@ implementation that edits them is reclassified as gate-contract work.
 
 | Unit | Affected local tests (refine against the actual diff) | Status |
 |---|---|---|
-| S0/S1/SD | Required checks; `test-check-repo.py` only if checker behaviour changes | open |
-| D1 | `test-crew-route.py`, `test-crew-poll.py`, `test-crew-reviewer-pool.py`, `test-crew-review.py`, `test-crew-recheck.py`, `test-crew-merge-up.py`; `test-crew-lead.py`, `test-crew-watch.py`, `test-crew-schedule.py` when waits/admission change; `test-crew-team.py` | open |
-| D2 | `test-crew-send.py`, `test-crew-acked.py`, `test-crew-lead.py`, `test-crew-watch.py`, `test-crew-status.py`, `test-crew-restart.py`, `test-crew-team.py`; adapter tests if adapters change; `_shared.py` dependents such as `test-crew-upgrade.py` | open |
-| D3 | `test-crew-reviewer-pool.py`, `test-crew-lead.py`, `test-crew-route.py`, `test-crew-watch.py`, `test-crew-team.py`; `test-crew-schedule.py` if admission changes | open |
-| O1 | `test-crew-up.py`, `test-crew-attach.py`, `test-crew-layout.py`, `test-session-adapters.py`, `test-crew-team.py` | open |
-| C1 | `test-check-repo.py`, `test-campaign-lint.py`, `test-campaign-run.py`; touched fixture consumers such as `test-campaign-sandbox.py` | open |
-| L1–L6 | Required checks; `test-check-changelog-pr.py`, `test-crew-team.py`, `test-crew-grant.py` / `test-crew-config.py` only if their guards or controls change | open |
-| ST | New `dev/tests/core/test-status-record.py`, `dev/tests/connectors/test-github-status.py`; `test-crew-status.py`, `test-crew-watch.py`, `test-crew-config.py`, `test-crew-pack.py`, `test-crew-grant.py`; bootstrap/upgrade if deliverable paths change | open |
+| S0/S1/SD | Required checks; `test-check-repo.py` only if checker behaviour changes | done |
+| D1 | `test-crew-route.py`, `test-crew-poll.py`, `test-crew-reviewer-pool.py`, `test-crew-review.py`, `test-crew-recheck.py`, `test-crew-merge-up.py`; `test-crew-lead.py`, `test-crew-watch.py`, `test-crew-schedule.py` when waits/admission change; `test-crew-team.py` | done |
+| D2 | `test-crew-send.py`, `test-crew-acked.py`, `test-crew-lead.py`, `test-crew-watch.py`, `test-crew-status.py`, `test-crew-restart.py`, `test-crew-team.py`; adapter tests if adapters change; `_shared.py` dependents such as `test-crew-upgrade.py` | done |
+| D3 | `test-crew-reviewer-pool.py`, `test-crew-lead.py`, `test-crew-route.py`, `test-crew-watch.py`, `test-crew-team.py`; `test-crew-schedule.py` if admission changes | done |
+| O1 | `test-crew-up.py`, `test-crew-attach.py`, `test-crew-layout.py`, `test-session-adapters.py`, `test-crew-team.py` | done |
+| C1 | `test-check-repo.py`, `test-campaign-lint.py`, `test-campaign-run.py`; touched fixture consumers such as `test-campaign-sandbox.py` | done |
+| L1–L6 | Required checks; `test-check-changelog-pr.py`, `test-crew-team.py`, `test-crew-grant.py` / `test-crew-config.py` only if their guards or controls change | done |
+| ST | New `dev/tests/core/test-status-record.py`, `dev/tests/connectors/test-github-status.py`; `test-crew-status.py`, `test-crew-watch.py`, `test-crew-config.py`, `test-crew-pack.py`, `test-crew-grant.py`; bootstrap/upgrade if deliverable paths change | done |
 
 Every PR runs `python3 scripts/check-repo.py` and
 `python3 scripts/check-changelog-pr.py --base origin/main --pr N`, with
@@ -2774,6 +2779,57 @@ permission is the owner's next-round approval
 ([c6884105830](https://github.com/mw-ding/mdstack/issues/985#issuecomment-6884105830)),
 recorded per PR at each actual head; it supplies no approval, CI waiver,
 hold clearance, sensitive reason or missing AC proof.
+
+#### M57 outcome and lessons
+
+**Tracker.** S0 (#1891, PR #1892) and all thirteen members landed and are
+closed: D1 #1878 (PR #1904), D2 #1850 (PR #1906), D3 #1871 (PR #1909),
+O1 #1845 (PR #1894), C1 #1419 (PR #1897), L1 #1444 (PR #1895), L2 #1843
+(PR #1899), L3 #1844 (PR #1908), L4 #1882 (PR #1900), L5 #1883 (PR #1898),
+L6 #1884 (PR #1907), SD #1889 (PR #1896) and ST #1313 (PR #1905). None was dropped or superseded and no
+item was added after S0. #1890 closes on this change's merge, then #1885
+and M57 close. M25.2 and the conditional M58 stay outside this closeout.
+
+**Applied decisions.** The five
+[readiness choices](https://github.com/mw-ding/mdstack/issues/985#issuecomment-6884417656)
+in [Applied decisions](#applied-decisions) were built as applied; SD settled
+its open boundaries (collectors, registration binding, field and default
+rules) in [shared-status.md](shared-status.md) before ST started. D1's PR
+reached the review round cap and resumed on a
+[coordinator round-cap extension](https://github.com/mw-ding/mdstack/issues/985#issuecomment-6890245378)
+under the owner's standing pre-approval, for one D1.1 gap: author
+authentication now binds the configured builder identity. Markers,
+`docs/protocol.md` and the stage 7 registry are unchanged.
+
+**Proof boundary.** Acceptance evidence is isolated: disposable state, fake
+forge, fake tmux and fake clocks (`test-crew-review-ready.py`,
+`test-crew-route.py`, `test-crew-poll.py`, `test-crew-reviewer-pool.py`,
+`test-crew-schedule.py`; `test-crew-send.py`, `test-crew-acked.py`,
+`test-crew-lead.py`, `test-crew-watch.py`, `test-crew-restart.py`;
+`test-crew-up.py`; `test-check-repo.py`; `test-status-record.py`,
+`test-github-status.py`, `test-status-shared.py`, `test-crew-config.py`).
+Lesson units are docs only. **Source delivery:** every unit is on `main`.
+**Release:** none is in a release; v7.13.0 predates all of them, and their
+fragments wait in `changes/unreleased/`. **Installation:** nothing here
+claims an installed or deployed crew, a live shared-status registration on a
+real issue, or a real terminal `up --attach` adoption; those stay optional
+operator steps.
+
+**Lessons.** The six learning captures:
+[watcher process timing](../lessons/2026-11-14-watcher-process-timing.md) (L1),
+[runtime state row](../lessons/2026-11-14-runtime-state-row.md) (L2),
+[post-open fragment](../lessons/2026-11-15-post-open-fragment.md) (L3),
+[worker repo tags](../lessons/2026-11-14-worker-repo-tags.md) (L4),
+[resolved-profile context](../lessons/2026-11-14-resolved-profile-context.md) (L5)
+and [inline guard controls](../lessons/2026-11-15-inline-guard-controls.md) (L6).
+From the milestone itself:
+
+- An authentication AC must name its identity source: a foreign login
+  named `builder` passed D1's readiness author check until D1 bound the
+  configured builder identity, which took a round-cap extension.
+- Shared files (`lead.py`, `watch.py`, the tmux runtime doc) needed no
+  serialized dispatch: D2 and ST each took one merge-up of `main`, and the
+  planned order (SD before ST, D1 before L6) still held.
 
 ## 6. Decisions
 

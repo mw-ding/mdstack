@@ -219,6 +219,16 @@ issue #1860 lands ([M56 outcome](docs/specs/team.md#m56-outcome-and-lessons)).
 The proof is isolated (disposable repos, fake backends); none of it is in
 a release yet, and it shows no live team adoption.
 
+M57 delivery, campaign and shared status is built in source: review
+readiness on the published builder record (PR #1904), busy-worker delivery
+(PR #1906), relay disposition (PR #1909), `mdstack up --attach` (PR #1894),
+per-scenario campaign files (PR #1897), opt-in shared status for
+independent crews (design PR #1896, build PR #1905) and six lessons. All
+member issues are closed; M57 closes after status sync #1890 lands
+([M57 outcome](docs/specs/portable.md#m57-outcome-and-lessons)). None of it
+is in a release: v7.13.0 predates every unit. Installation is a separate
+step; no live shared-status registration or terminal adoption is claimed.
+
 Content is built by the crew itself through the normal PR pipeline; every
 change is recorded in `CHANGELOG.md`.
 
