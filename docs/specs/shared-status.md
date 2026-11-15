@@ -153,8 +153,18 @@ The binding is stored only in the receipt, never published.
 
 Receipt `$CREW_STATE/status/receipt.json`, closed object: `schema_version`
 (1), `destination`, `instance_id`, `registration_id`, `publisher`,
-`comment_id`, `binding`, `sequence` and `content_sha256` of the last
-confirmed write, and `pending` (`null` or `{sequence, content_sha256}`).
+`comment_id` (`null` until registration is confirmed), `binding`,
+`sequence` and `content_sha256` of the last confirmed write, and `pending`.
+`pending` is `null` or `{op, state, sequence, content_sha256, body}`: `op`
+is `create` or `update`, `state` is `prepared` or `uncertain`, and `body` is
+the exact slot body bytes (§3.1) to be sent. Every receipt write is atomic:
+a temporary file in `status/`, flushed and synced, renamed over the
+receipt, then the directory synced. A run that loads a receipt validates
+`pending` first: `body` parses as a slot body whose record passes §3.2–§3.4
+(except the future check), carries this `instance_id` and
+`registration_id`, has `sequence` equal to `pending.sequence` (receipt
+`sequence + 1`, or 1 for `create`) and has content identity
+`content_sha256`. Anything else refuses `receipt-invalid` with no write.
 
 `mdstack status register --project FILE` is the only path that creates a
 registration or a slot; the timer never registers. In order:
@@ -162,21 +172,27 @@ registration or a slot; the timer never registers. In order:
 1. Run the §5 read phase with no receipt required.
 2. A receipt for this `destination` and `instance_id` with a matching binding
    and a confirmed slot: print `registered <instance_id>` and write nothing.
-3. A receipt for another destination or instance ID: archive it as
-   `status/receipt-<registration_id>.json` in step 6, never delete it.
-4. Any status comment on the destination with this `instance_id` (any page)
-   refuses, unless it is this install's own `pending` registration from a
-   lost create response (same `registration_id`, publisher-authored): then
-   adopt it and confirm. A copied receipt (binding mismatch) refuses.
-5. Duplicate status comments for one `instance_id` or one `registration_id`
+3. A receipt for this instance with a `create` still pending: adopt the one
+   publisher-authored status comment holding its `registration_id`
+   (any page) when it is exactly `pending.body`, and confirm, with no write
+   to the destination; other content refuses `conflict`. With no such
+   comment, refuse `uncertain` (§5 Outcomes): never generate another
+   `registration_id` and never create again for this instance.
+4. A receipt for another destination or instance ID: archive it, `pending`
+   included, as `status/receipt-<registration_id>.json` in step 7; never
+   delete it.
+5. Any other status comment on the destination with this `instance_id`
+   refuses. A copied receipt (binding mismatch) refuses.
+6. Duplicate status comments for one `instance_id` or one `registration_id`
    anywhere on the destination refuse.
-6. Take the lock, generate `registration_id`, write the receipt with
-   `pending` set, create the slot with `sequence` 1, read it back, then clear
-   `pending`.
+7. Take the lock, generate `registration_id`, build the sequence-1 body,
+   write the receipt with `pending` (`create`, `prepared`), create the slot
+   once, and apply the §5 outcome rules.
 
 A refused `register` names the conflicting comment URL. Recovering a lost
-state dir, or separating a clone, means choosing a new `instance_id`; the
-old slot then ages stale.
+state dir, separating a clone or leaving an unresolved uncertain write means
+choosing a new `instance_id` and running `register`; the old slot then ages
+stale, and a delayed write can land only there.
 
 ## 5. Publication and the zero-write boundary (S.2, S.4)
 
@@ -211,22 +227,40 @@ shares these exits.
 
 **Write phase.** Only after acceptance: take an exclusive lock on
 `$CREW_STATE/status/publish.lock`, re-read the receipt and the bound slot,
-and refuse if either changed since the read phase. Then follow the
-sequence rules below.
+and refuse if either changed since the read phase. Then:
 
-| Bound slot shows | Receipt | Action |
+| Bound slot shows | Receipt `pending` | Action |
 |---|---|---|
-| Receipt `sequence`, same content | `pending: null` | New record at `sequence + 1`: set `pending`, PATCH, read back, confirm |
-| The `pending` sequence and content | `pending` set | Confirm (the earlier write landed): clear `pending`; no write |
-| Receipt `sequence` | `pending` set | The earlier write did not land: PATCH the same `pending` record again, never a newer one |
-| Anything else: lower, higher or same sequence with other content | any | Refuse: publication stops until the owner resolves it; no write |
+| The confirmed record (receipt `sequence` and `content_sha256`) | `null` | Build the record at `sequence + 1`, write `pending` (`update`, `prepared`) with its exact body, send it once, apply the outcome rules |
+| Exactly the `pending.body` record | set | Confirm: set receipt `sequence` and `content_sha256` from it, clear `pending`; no write |
+| The confirmed record | set (`prepared` or `uncertain`) | The earlier send may still apply: refuse `uncertain`; no write. Never resend `pending.body` and never build a newer record |
+| Anything else: lower, higher or same sequence with other content | any | Refuse `conflict`: publication stops until the owner resolves it; no write |
 
-Replaying a record whose sequence and content identity the slot already
-shows writes nothing. A lost or failed PATCH response leaves `pending` set;
-the next run reconciles by readback before anything else. Only the lock holder has a write in
-flight, so an older publication cannot land after a newer one. A restart
-keeps the receipt, so it keeps the registration and the latest accepted
-sequence.
+**Outcomes.** The status connector reports each create or update as exactly
+one of:
+
+- `applied`: a success response naming the slot. Read it back; confirm
+  only when the slot holds exactly `pending.body`, else refuse `conflict`.
+- `rejected`: a response that the backend definitively did not apply
+  (for GitHub, a 4xx with a body). Clear `pending`; no retry in this run.
+- `not-sent`: the request failed before any byte reached the backend.
+  Clear `pending`.
+- `uncertain`: anything else (timeout, lost connection, a 5xx, a run that
+  stopped while `pending` was `prepared`). Set `pending.state` to
+  `uncertain`.
+
+An uncertain send is never repeated, and nothing newer is sent after it:
+the bundled GitHub backend has no conditional write, so a request whose
+outcome is unknown may still apply later and no later write can be fenced
+against it. Each later run only reads back. When the slot shows exactly
+`pending.body`, that send applied: confirm and resume. While it does not,
+publication stays stopped, the row ages stale in `status --all`, and
+`status publish --check` prints `uncertain` with the pending sequence. The
+owner either waits or re-registers under a new `instance_id` (§4). Replaying
+a record whose sequence and content identity the slot already shows writes
+nothing. A restart keeps the receipt, so it keeps the registration, the
+latest confirmed sequence and any pending body byte for byte; fresh
+collector data never replaces a pending body.
 
 **Timer.** The watcher runs `status publish` as a subprocess on a scan at
 least `publish_interval` after its last attempt: no model or coordinator
@@ -275,7 +309,7 @@ both keys are required.
 | Operation | Guarantee |
 |---|---|
 | `read-records` | Returns every comment of the destination with its id, author and body, and whether the listing is complete (all pages) and the destination open; never writes |
-| `publish-record` | Creates (only for `register`) or edits the instance's own slot after verifying the authenticated account; never edits the destination body, another comment or a label, and never deletes |
+| `publish-record` | Sends one create (only for `register`) or one edit of the instance's own slot after verifying the authenticated account, and reports exactly one outcome: `applied`, `rejected`, `not-sent` or `uncertain` (§5 Outcomes); never retries by itself, never edits the destination body, another comment or a label, and never deletes |
 
 Bundled GitHub mapping, in `templates/backends/github.toml` `[status]`:
 `read-records` reads the issue and `--paginate`s
@@ -292,7 +326,9 @@ invoked only through the declared capability.
 Unconfigured → configured (`destination`, `instance_id`, `decision_log`) →
 `register` (slot at sequence 1) → `enabled = true` (timer publishes) →
 `enabled = false` (no later write; the slot ages stale) → optional re-enable
-(sequence continues from the receipt). No removal command is part of ST;
+(sequence continues from the receipt). An `uncertain` outcome pauses
+publication for the instance until readback confirms it, or until the owner
+re-registers under a new `instance_id`. No removal command is part of ST;
 deletion, if ever added, needs its own mutation proof.
 
 ## 9. Test fixtures and acceptance matrix
@@ -301,9 +337,14 @@ Fixtures, all disposable:
 
 - **Fake status API:** in-memory comments per issue, configurable page size
   (2 by default, so page 2+ is exercised), an audit log of every POST, PATCH
-  and DELETE, an authenticated-login setting, and faults: fail before send,
-  apply then lose the response (create and update), 5xx, a failed page N,
-  closed and missing issue.
+  and DELETE, an authenticated-login setting, and faults: fail before send
+  (`not-sent`), definitive 4xx (`rejected`), apply then lose the response,
+  time out and apply only after K later reads or after a restart (delayed
+  application), time out and never apply, 5xx, a failed page N, closed and
+  missing issue; each for create and update.
+- **Interrupted run:** stop the publisher after the receipt holds `pending`
+  (`prepared`) and before the send, and after the send before its outcome
+  is recorded; restart with changed collector data.
 - **Fake clock** through a test-only seam ST names, used for every UTC check.
 - **State snapshot:** recursive file list with SHA-256 of the state dir
   before and after; a refusal row asserts equality.
@@ -321,7 +362,7 @@ control row.
 | S.1 | Missing, extra and wrong-typed field per §3.2/§3.3 key; version 0/2; string, boolean, float, negative and too-large counts; `completed > total`; bad, foreign-repo and credentialed URLs; malformed and future times; unsorted or duplicate repos; known section with `reason`; over-limit list; secret-pattern match; oversize body. Control: a valid minimal record with every section unknown, and a full one |
 | S.2 | Off, unset destination, instance ID or decision log; invalid config; worker or pool-lead caller; ownership refused; pause barrier present and unreadable; wrong authenticated account; foreign registration. Control: the authorized publish |
 | S.3 | N = 0/1/2/3 instances; equal repos and runtime labels; reused instance ID with another registration; copied receipt (binding mismatch); wrong issue, comment or author; duplicates on a later page; concurrent distinct publishers A and B. Control: each changes only its own slot, other comments and the issue body unchanged |
-| S.4 | Same content (no write); failure before write; remote write then lost response (create, update); older record arriving last; interrupted restart; slot showing a higher or conflicting sequence. Control: exactly one registration and the newest confirmed record |
+| S.4 | Same content (no write); `not-sent` and `rejected` (pending cleared, no retry in that run); lost response then readback (confirm, no resend); timeout with delayed application: no resend and no newer record until readback shows the pending body, then confirm; timeout that never applies: publication stays stopped and `register` never creates again for that instance; re-registration under a new `instance_id`, then the old send lands late in the old slot only; interrupted runs replay nothing and keep the original pending bytes despite changed collector data; corrupt or mismatched `pending`; slot showing a higher or conflicting sequence; `applied` with a different readback. Control: each confirmed outcome, exactly one registration per instance and the newest confirmed record in each slot |
 | S.5 | Clock at `stale_after` − 1/0/+1; delayed republish of old observations; future time; unknown sections; malformed and unknown-version comments; duplicates; closed or missing destination; API and page failures; unconfigured. Control: complete fresh view, no writes |
 | S.6 | Old manifests and profiles resolve byte-identical; status pack declared/undeclared/`emulated`; enabled timer then off, pause, ownership loss; collector failure; duplicate tick; plain `status` output unchanged. Control: fake CLI register → publish → publish → `status --all` with only the intended slot changed, then disable with no later write |
 
