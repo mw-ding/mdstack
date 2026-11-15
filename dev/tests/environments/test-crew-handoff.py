@@ -453,7 +453,7 @@ class NativeFixture(Fixture):
     def setUp(self):
         super().setUp()
         github = Path(SCRIPTS, "..", "templates", "backends", "github.toml").read_text()
-        write_pack(os.path.join(self.project_dir, "pack"), mapping=github + '\n[ids]\nitem = "[A-Z][A-Z0-9]+-[0-9]+"\n')
+        write_pack(os.path.join(self.project_dir, "pack"), mapping=github.replace("\n[ids]\n", '\n[ids]\nitem = "[A-Z][A-Z0-9]+-[0-9]+"\n'))
         p = Path(self.project)
         p.write_text(p.read_text().replace("control_item = 99", 'control_item = "OPS-1042"') + 'pack = "pack"\n')
         ex = Path(self.tmp, "bin", "ex")

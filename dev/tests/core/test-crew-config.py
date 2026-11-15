@@ -3340,5 +3340,153 @@ class KnowledgeManifestTest(unittest.TestCase):
         self.assertIn("capabilities.change: missing required key", mixed)
 
 
+class SharedStatusConfigTest(unittest.TestCase):
+    """#1313 (docs/specs/shared-status.md §2, §7; S.2 config rows, S.6): the optional [status] table, the team-level
+    rule, the optional status concern and its resolve refusals. Each refusal row names its valid control."""
+    DEST = "https://github.com/acme/status/issues/5"
+    TABLE = ('[status]\nenabled = true\ndestination = "%s"\ninstance_id = "alpha"\n'
+             'decision_log = "https://github.com/acme/widgets/issues/985"\n' % DEST)
+    EXTERNAL = AsyncLandTest.EXTERNAL
+    BOUND = VALID.replace('[identities]', '[backends.status]\nname = "example"\n\n[identities]') + 'pack = "pack"\n'
+    MAP = ('[status]\nread-records = "example-status read"\npublish-record = "example-status publish"\n\n'
+           '[ids]\nstatus-destination = "https://example\\\\.test/boards/[0-9]+"\n')
+
+    def run_pack(self, project_text, manifest=None, backend_map=None):
+        """resolve with a pack dir (manifest and render/backends/example.toml); (code, lines, meta)."""
+        with tempfile.TemporaryDirectory() as d:
+            os.makedirs(os.path.join(d, "pack", "render", "backends"))
+            for path, text in (("crew.toml", project_text), ("pack/manifest.toml", manifest or self.EXTERNAL),
+                               ("pack/render/backends/example.toml", backend_map)):
+                if text is not None:
+                    with open(os.path.join(d, path), "w") as f:
+                        f.write(text)
+            project, out = os.path.join(d, "crew.toml"), io.StringIO()
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(io.StringIO()):
+                code = cc.main(["resolve", "--project", project])
+            meta = {}
+            cc.resolve_profile(project, meta=meta)
+            return code, [ln.replace(d + os.sep, "") for ln in out.getvalue().splitlines()], meta
+
+    def test_status_table_rows(self):
+        ok = (0, ["crew-config: OK (crew.toml)"])
+        self.assertEqual(validate(VALID), ok)  # control: no [status] table at all
+        self.assertEqual(validate(VALID + self.TABLE), ok)  # control: the full enabled table
+        self.assertEqual(validate(VALID + "[status]\n"), ok)  # control: an empty table is off
+        off = self.TABLE.replace("enabled = true", "enabled = false")
+        rows = [  # (edit of the enabled table, expected problem)
+            ("enabled = true", 'enabled = "yes"', "status.enabled: expected boolean, got string"),
+            ("enabled = true", "enabled = true\nverbose = true", "status.verbose: unknown key"),
+            ("enabled = true", "enabled = true\npublish_interval = \"300\"", "status.publish_interval: expected integer, got string"),
+            ("enabled = true", "enabled = true\npublish_interval = true", "status.publish_interval: expected integer, got boolean"),
+            ("enabled = true", "enabled = true\npublish_interval = 300.0", "status.publish_interval: expected integer, got float"),
+            ("enabled = true", "enabled = true\npublish_interval = 59", "status.publish_interval: must be 60-3600 seconds, got 59"),
+            ("enabled = true", "enabled = true\npublish_interval = 3601", "status.publish_interval: must be 60-3600 seconds, got 3601"),
+            ("enabled = true", "enabled = true\nstale_after = 599", "status.stale_after: must be 2 x publish_interval (600) to 86400 seconds, got 599"),
+            ("enabled = true", "enabled = true\nstale_after = 86401", "status.stale_after: must be 2 x publish_interval (600) to 86400 seconds, got 86401"),
+            ("enabled = true", "enabled = true\npublish_interval = 600\nstale_after = 900", "status.stale_after: must be 2 x publish_interval (1200) to 86400 seconds, got 900"),
+            ('"alpha"', '"Alpha"', 'status.instance_id: expected [a-z0-9][a-z0-9-]{0,62}, got "Alpha"'),
+            ('"alpha"', '"-alpha"', 'status.instance_id: expected [a-z0-9][a-z0-9-]{0,62}, got "-alpha"'),
+            ('"alpha"', '"%s"' % ("a" * 64), 'status.instance_id: expected [a-z0-9][a-z0-9-]{0,62}, got "%s"' % ("a" * 64)),
+            ('"alpha"', "7", "status.instance_id: expected string, got integer"),
+            ("widgets/issues/985", "widgets/pull/985", 'status.decision_log: expected an issue URL https://github.com/<owner>/<repo>/issues/<n>, got "https://github.com/acme/widgets/pull/985"'),
+            ("widgets/issues/985", "widgets/issues/985?x=1", 'status.decision_log: expected an issue URL https://github.com/<owner>/<repo>/issues/<n>, got "https://github.com/acme/widgets/issues/985?x=1"'),
+            ("status/issues/5", "status/pull/5", 'status.destination: "https://github.com/acme/status/pull/5" does not match the status-destination pattern'),
+            ("https://github.com/acme/status", "https://<user>:<password>@github.com/acme/status", 'status.destination: "https://<user>:<password>@github.com/acme/status/issues/5" does not match'),
+            ("status/issues/5", "status/issues/5/", 'status.destination: "https://github.com/acme/status/issues/5/" does not match'),
+        ]
+        for old, new, want in rows:
+            with self.subTest(new=new):
+                code, lines = validate(VALID + self.TABLE.replace(old, new, 1))
+                self.assertEqual(code, 1, lines)
+                self.assertTrue(any(ln.startswith("crew.toml:" + want) for ln in lines), (want, lines))
+        for key in ("destination", "instance_id", "decision_log"):  # enabled needs all three; off needs none
+            line = next(ln for ln in self.TABLE.splitlines() if ln.startswith(key))
+            code, lines = validate(VALID + self.TABLE.replace(line + "\n", ""))
+            self.assertEqual(code, 1, lines)
+            self.assertIn("crew.toml:status.%s: missing; enabled = true needs destination, instance_id and "
+                          "decision_log" % key, lines)
+            self.assertEqual(validate(VALID + off.replace(line + "\n", "")), ok)
+
+    def test_resolve_prints_status_only_when_a_layer_sets_it(self):
+        code, plain = resolve(VALID)
+        self.assertEqual(code, 0, plain)
+        self.assertFalse([ln for ln in plain if ln.startswith(("status.", "backends.status", "ids.status"))], plain)
+        code, lines = resolve(VALID + self.TABLE)
+        self.assertEqual(code, 0, lines)
+        added = [ln for ln in lines if ln not in plain]
+        self.assertEqual(sorted(added), sorted([
+            'status.enabled = true  # project', 'status.destination = "%s"  # project' % self.DEST,
+            'status.instance_id = "alpha"  # project',
+            'status.decision_log = "https://github.com/acme/widgets/issues/985"  # project',
+            'status.publish_interval = 300  # core', 'status.stale_after = 900  # core',
+            'backends.status.name = "github"  # default',
+            'backends.status.capabilities.read-records = "supported"  # pack:github',
+            'backends.status.capabilities.publish-record = "supported"  # pack:github',
+            'ids.status-destination = "https://github\\\\.com/[A-Za-z0-9-]+/[A-Za-z0-9._-]+/issues/[1-9][0-9]*"  '
+            '# backend-map:github',
+            'status.read-records = "\\"${MDSTACK_PYTHON:-python3}\\" \\"$MDSTACK_ROOT/connectors/github/status.py\\" '
+            'read-records"  # pack:github',
+            'status.publish-record = "\\"${MDSTACK_PYTHON:-python3}\\" \\"$MDSTACK_ROOT/connectors/github/status.py\\" '
+            'publish-record"  # pack:github']))
+        self.assertEqual([ln for ln in plain if ln not in lines], [])
+        meta = {}
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "crew.toml")
+            with open(path, "w") as f:
+                f.write(VALID + self.TABLE)
+            cc.resolve_profile(path, meta=meta)
+        self.assertIn("connectors/github/status.py", meta["status.read-records"][0])
+        self.assertEqual(meta["status.publish-record"][1], "pack:github")
+
+    def test_status_pack_declared_undeclared_emulated(self):
+        undeclared = self.EXTERNAL.split("\n[capabilities.status]")[0] + "\n"
+        emulated = self.EXTERNAL.replace('publish-record = "supported"', 'publish-record = "emulated (one comment)"')
+        code, lines, meta = self.run_pack(self.BOUND + self.TABLE.replace(self.DEST, "https://example.test/boards/4"),
+                                          backend_map=self.MAP)
+        self.assertEqual(code, 0, lines)  # control: a pack declaring both operations, its map commands and pattern
+        self.assertEqual(meta["status.publish-record"], ("example-status publish", "pack:example"))
+        self.assertIn('ids.status-destination = "https://example\\\\.test/boards/[0-9]+"  # backend-map:example', lines)
+        table = self.TABLE.replace(self.DEST, "https://example.test/boards/4")
+        for manifest, enabled, want in (
+                (undeclared, True, "backends.status.name: binds example, whose status.read-records is undeclared"),
+                (emulated, True, "backends.status.name: binds example, whose status.publish-record is emulated (one comment)"),
+                (undeclared, False, "backends.status.name: binds example, whose status.read-records is undeclared; "
+                                    "a destination needs it supported")):
+            text = table if enabled else table.replace("enabled = true", "enabled = false")
+            code, lines, _ = self.run_pack(self.BOUND + text, manifest, self.MAP)
+            self.assertEqual(code, 1, lines)
+            self.assertTrue(any(want in ln for ln in lines), (want, lines))
+        off = "[status]\ninstance_id = \"alpha\"\n"  # control: no destination, off: the concern is not checked
+        self.assertEqual(self.run_pack(self.BOUND + off, undeclared, self.MAP)[0], 0)
+        code, lines, _ = self.run_pack(self.BOUND + table, None, "[ids]\nstatus-destination = \"https://example\\\\.test/boards/[0-9]+\"\n")
+        self.assertEqual(code, 1, lines)
+        self.assertTrue(any("status.read-records: no command for the example status backend" in ln for ln in lines), lines)
+        code, lines, _ = self.run_pack(self.BOUND + table, None, self.MAP.split("[ids]")[0])
+        self.assertEqual(code, 1, lines)
+        self.assertTrue(any("declares no [ids] status-destination pattern" in ln for ln in lines), lines)
+        code, lines, _ = self.run_pack(self.BOUND + table, None, self.MAP.replace("example-status read", "x <dest>"))
+        self.assertEqual(code, 1, lines)
+        self.assertTrue(any("status.read-records: unfilled placeholder <dest>" in ln for ln in lines), lines)
+
+    def test_manifest_status_capabilities_are_optional(self):
+        ok = (0, ["crew-config: OK (crew.toml)"])
+        self.assertEqual(validate(GITHUB_MANIFEST), ok)
+        self.assertEqual(validate(GITHUB_MANIFEST.split("\n[capabilities.status]")[0] + "\n"), ok)  # old manifests
+        code, lines = validate(GITHUB_MANIFEST.replace('read-records = "supported"\n', ""))
+        self.assertEqual(code, 1, lines)
+        self.assertIn("crew.toml:capabilities.status.read-records: missing required key", lines)
+        self.assertNotIn("status", cc.OPERATIONS)  # not an <op:> token: bootstrap and a team's pack never bind it
+
+    def test_team_file_status_is_team_level(self):
+        table = self.TABLE.replace(self.DEST, self.DEST)
+        merged, _, problems, _ = TeamFileTest.resolve(None, TEAM + "\n" + table, "#widgets")
+        self.assertEqual(problems, [])  # control: [status] beside [team]
+        self.assertEqual((merged["status"]["instance_id"], merged["backends"]["status"]["name"]), ("alpha", "github"))
+        repo = TEAM.replace('repo = "acme/widgets"', 'repo = "acme/widgets"\nstatus = { enabled = false }')
+        self.assertIn("ext.toml:repos.widgets.status: not allowed in a repo section", TeamFileTest.resolve(None, repo, "#widgets")[2][0])
+        nested = TEAM.replace("[team]\n", "[team]\nstatus = { enabled = false }\n")
+        self.assertEqual(TeamFileTest.resolve(None, nested, "#widgets")[2], ["ext.toml:team.status: unknown team key"])
+
+
 if __name__ == "__main__":
     unittest.main()

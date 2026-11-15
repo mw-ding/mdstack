@@ -46,6 +46,10 @@ first.
   `runtime.options.*`). Any other key fails as team-only, and a per-repo key in
   `[team]` fails too, including `merge_grant` or `merge_grant_scope` under
   `[team.runtime.options]`: a landing grant never spans the team.
+- An optional top-level [`[status]`](../profile.md#status) table sits beside
+  `[team]`: shared status is team-level, publishing every `[repos.<name>]`
+  as the record's source repos from the team root (#1313). `[team.status]`
+  and a `status` key in `[repos.<name>]` fail.
 - Each canonical repo appears once per team. Two sections naming the same
   `<owner>/<name>`, compared case-insensitively, fail whichever one is
   selected.

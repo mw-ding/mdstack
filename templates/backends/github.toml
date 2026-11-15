@@ -74,3 +74,14 @@ cut = "python3 scripts/changelog-cut.py <version>; gh pr create --base <default-
 approve-check = "gh run view <run-id> --json jobs"
 record-release = "gh release view v<version> --json tagName,targetCommitish"
 notify = "gh issue view <n> --json state,comments"
+
+# Optional status concern (docs/specs/shared-status.md §7, #1313): each command
+# reads one JSON request on stdin and prints one JSON object; the runtime sets
+# MDSTACK_ROOT (the install) and MDSTACK_PYTHON. The connector reads the issue,
+# then its comments page by page, and POSTs (register) or PATCHes its own slot.
+[status]
+read-records = '"${MDSTACK_PYTHON:-python3}" "$MDSTACK_ROOT/connectors/github/status.py" read-records'
+publish-record = '"${MDSTACK_PYTHON:-python3}" "$MDSTACK_ROOT/connectors/github/status.py" publish-record'
+
+[ids]
+status-destination = "https://github\\.com/[A-Za-z0-9-]+/[A-Za-z0-9._-]+/issues/[1-9][0-9]*"

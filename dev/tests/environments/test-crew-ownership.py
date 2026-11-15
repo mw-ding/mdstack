@@ -101,7 +101,7 @@ class NativeControlItem(Base):
     def setUp(self):
         super().setUp()
         github = (Path(SCRIPTS).parent / "templates" / "backends" / "github.toml").read_text()
-        write_pack(os.path.join(self.project_dir, "pack"), mapping=github + '\n[ids]\nitem = "[A-Z][A-Z0-9]+-[0-9]+"\n')
+        write_pack(os.path.join(self.project_dir, "pack"), mapping=github.replace("\n[ids]\n", '\n[ids]\nitem = "[A-Z][A-Z0-9]+-[0-9]+"\n'))
         p = Path(self.project)
         p.write_text(p.read_text().replace('[repo]\n', '[repo]\ncontrol_item = "OPS-1042"\n').replace(
             '[runtime]\n', '[runtime]\ninstance = "local"\n') + 'pack = "pack"\n')
