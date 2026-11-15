@@ -576,7 +576,11 @@ class Parity(unittest.TestCase):
         renderer = cr.Renderer(values, INPUTS)
         mapping = renderer.table(os.path.join(INPUTS, "backends", "github.toml"))
         conditional = cr.crew_config.CONDITIONAL_OPERATIONS
-        self.assertEqual({c: sorted(set(t) - set(conditional.get(c, []))) for c, t in mapping.items()},
+        runtime_run = dict(cr.crew_config.STATUS_OPERATIONS, ids=["status-destination"])  # not <op:> tokens (#1313)
+        self.assertEqual({c: sorted(t) for c, t in mapping.items() if c in runtime_run},
+                         {c: sorted(ops) for c, ops in runtime_run.items()})
+        self.assertEqual({c: sorted(set(t) - set(conditional.get(c, []))) for c, t in mapping.items()
+                          if c not in runtime_run},
                          {c: sorted(ops) for c, ops in cr.crew_config.OPERATIONS.items()})
         for concern, ops in cr.crew_config.OPERATIONS.items():
             for op in ops:

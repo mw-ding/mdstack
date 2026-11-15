@@ -232,7 +232,7 @@ class PollDecide(unittest.TestCase):
         _, state = self.crew.decide({}, fixture("prs-ci-passed.json"), [])
         self.assertEqual(state["prs"], {"171": {"head": HEAD, "ci": "passed", "verdict": None, "round": 1,
                                                 "fixed": False, "selfgate": None,
-                                                "verdict_identity": None, "verdict_review_id": None,
+                                                "verdict_identity": None, "verdict_review_id": None, "notes": [],
                                                 "merge_ok_identity": None}})
 
     def test_every_event_has_exactly_one_consumer(self):

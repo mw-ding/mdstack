@@ -46,6 +46,9 @@ only when the scan changed since the last report (docs/project-docs.md#docs-pass
 With `[reflection] enabled`, each scan runs the reflection timer (`mdstack reflection`'s tick): weekly and
 milestone-close windows into a persistent ledger, one researcher reflection run at a time (docs/self-improve.md#reflection,
 #1521).
+With `[status] enabled`, each scan runs the shared-status timer: `mdstack status publish` as a subprocess once
+`[status] publish_interval` passed since its last attempt, stderr discarded, no wake; not while paused or with ownership
+lost (docs/specs/shared-status.md §5, #1313).
 Each scan also scales idle lifecycle role instances down to their min (`mdstack up`'s scale_down, #1231) and runs due
 role routines (`mdstack up`'s routine_tick, #1247); the triage, docs and backstop timers take their cadence from the
 researcher's and coordinator's routine files (docs/routines.md#terminal).
@@ -865,6 +868,7 @@ def run(args):
             # after the sources: the timer reads the queue this scan's mdstack poll wrote, not a pre-pause one (#1098)
             triage_tick(values, state, time.time(), args.project, args.org_profile)
             commands()["reflection"].tick(values, state, time.time(), args.project, args.org_profile)  # #1521
+            commands()["status"].status_shared.tick(values, args.project, args.org_profile, seen, time.time())  # #1313
             if time.time() >= seen.get("pulls_next", 0):  # role hosts' status lines into their mirrors (#346)
                 seen["pulls_next"] = time.time() + values["runtime.options.host_scan_interval"]
                 found += pull_hosts(values, state, seen, time.time(), args.stale)

@@ -466,6 +466,35 @@ independent of `[triage]`; its pending, request and completed windows are in
 |---|---|---|---|
 | `enabled` | boolean | `false` | Run the reflection timer |
 
+### `[status]`
+
+Optional: shared status for independent crews
+([shared status](specs/shared-status.md),
+[#1313](https://github.com/mw-ding/mdstack/issues/1313)). Several installs
+(crews, projects or hosts, each with its own state dir and decision log)
+each publish one compact pointer/count record into one comment of one
+owner-chosen issue, and `mdstack status --all` reads them back as one view
+([mdstack status](runtimes/tmux.md#mdstack-status)). Off until configured:
+absent, every key takes its default and `resolve` prints no `status` key. It
+is team-level: in a [team file](configuration/team-files.md) the table sits
+beside `[team]`, and a `[repos.<name>]` section that sets it is refused.
+
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `enabled` | boolean | `false` | The watcher's publish timer runs `mdstack status publish`; needs `destination`, `instance_id` and `decision_log` |
+| `destination` | string | unset | The issue holding every instance's comment; must fully match the status backend map's `[ids] status-destination` (GitHub: `https://github.com/<owner>/<repo>/issues/<n>`) |
+| `instance_id` | string | unset | This install's identity on the destination, `[a-z0-9][a-z0-9-]{0,62}`; never defaulted from `runtime.instance`, a repo, team, host or path. Different installs need different IDs |
+| `decision_log` | string | unset | The crew's decision log, an issue URL; published as a pointer |
+| `publish_interval` | integer | `300` | Seconds between the timer's attempts, 60-3600 |
+| `stale_after` | integer | `900` | Seconds after which `status --all` marks a record stale, from 2 x `publish_interval` to 86400 |
+
+`validate` refuses an unknown key, a wrong type (a boolean, string or float
+where an integer is due), an out-of-range value and `enabled = true` with a
+required key unset. `mdstack status register` creates this install's one
+slot comment once; the receipt binding it lives in
+`<state-dir>/<owner>__<repo>/status/receipt.json` (a team file's team root).
+Binding and resolve refusals: [status concern](interfaces.md#status).
+
 ### `[docs]`
 
 Optional: the project [docs pass](project-docs.md#docs-pass)

@@ -11,9 +11,15 @@ For a fix dispatched from a train, read the referenced train record (or
 conflict with `merge_up=builder`, or on kind `merge-up`, merge the default branch, resolve the
 conflict, and use the existing merge-up note and re-check; no rebase or force-push.
 Kind `fix`: address each finding and any linked CI failure in the same fix,
-push, post the `[Ben/fix] round <k> @ <sha7>` COMMENT review (`gh pr review <n> --comment --body-file <file>`) with its `pass=fix`
-marker (§3). Kind `ci-red`: fix CI and post `[Ben/ci-fix]` the same way; at the effective caps[1]
-limit write `blocked:` to escalate (§5). Then `done:` with the new head.
+capture the note's inline proof at the committed head, then push and at once post the
+`[Ben/fix] round <k> @ <sha7>` COMMENT review (`gh pr review <n> --comment --body-file <file>`) with its `pass=fix`
+marker (§3). Kind `ci-red`: fix CI and post `[Ben/ci-fix]` the same way (round 0 before any
+verdict); at the effective caps[1] limit write `blocked:` to escalate (§5).
+For a new or changed guard, either note pastes the copyable fail-then-pass
+control of protocol §3 Guard negative control as captured, not a sentence
+saying the guard failed (#1884). Review of the new
+head waits for that signed note with its proof or reasoned N/A; a push or `done:` alone starts
+none (#1878). Then `done:` with the new head.
 
 Express self-gate (`<mdstack>/docs/express-lane.md`): only when the newest
 item record names `express` and the change carries `crew:express`. Pipe the

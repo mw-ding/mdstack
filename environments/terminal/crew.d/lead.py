@@ -24,7 +24,7 @@ from crew_shared import (
 POOLS = {"builder": 2, "reviewer": 3, "synthesizer": 1}
 DEFERRALS = {"capacity", "load", "suites", "probe-unavailable"}
 BLOCKS = {"spawn-failure", "missing-dependency", "owner-decision", "lead-fault"}
-WAITS = {"owner", "hold", "ci"}  # typed waits a lead reports as `waiting: #<n> KIND id=<id>` (#1715)
+WAITS = {"owner", "hold", "ci", "evidence"}  # typed waits a lead reports as `waiting: #<n> KIND id=<id>` (#1715, #1878)
 
 
 def solo(values, issue=None, pr=None):
@@ -213,9 +213,11 @@ def deferred_ids(state, name):
     return found
 
 
-def fingerprint(state, ref):
+def fingerprint(state, ref, kind=None):
     """Token-free fresh state for a waited ref: mdstack poll's observed PR state, head and CI, its hold, its
-    owner-answer count and an open owner ask. Mergeability and verdict churn are not wait state (#1836)."""
+    owner-answer count and an open owner ask; an `evidence` wait adds poll's builder records at head, so a published
+    note wakes it even if no event or `done:` arrives (#1878). Mergeability and verdict churn are not wait state
+    (#1836)."""
     n = ref.lstrip("#")
     try:
         with open(os.path.join(state, "poll-state.json")) as f:
@@ -224,13 +226,14 @@ def fingerprint(state, ref):
         poll = {}
     pr = poll.get("observed", {}).get(n)
     return [None if pr is None else [pr.get(k) for k in ("state", "head", "ci")], "#" + n in poll.get("held", []),
-            poll.get("answers", {}).get("#" + n), os.path.exists(os.path.join(state, "asks", n + ".json"))]
+            poll.get("answers", {}).get("#" + n), os.path.exists(os.path.join(state, "asks", n + ".json"))] + \
+        ([(poll.get("prs", {}).get(n) or {}).get("notes")] if kind == "evidence" else [])
 
 
 def frees(seen, now):
     """Whether a waited ref's fresh state changed in a way that can free its id: any change except a hold appearing
     (with its first owner-answer count), which only confirms the hold the dispatcher parked on (#1836)."""
-    return seen != now and not (now[1] and not seen[1] and [seen[0], seen[3]] == [now[0], now[3]] and
+    return seen != now and not (now[1] and not seen[1] and [seen[0], seen[3:]] == [now[0], now[3:]] and
                                 seen[2] in (None, now[2]))
 
 
@@ -251,8 +254,8 @@ def parked(state, name):
 
 
 def actionable(state, name):
-    """Pending messages less acknowledged owner, hold or CI waits whose ref's fresh state is unchanged since their
-    `waiting:` line. A changed state wakes the id until a later `waiting:` line; leads/waits.json keeps the record.
+    """Pending messages less acknowledged owner, hold, CI or evidence waits whose ref's fresh state is unchanged since
+    their `waiting:` line. A changed state wakes the id until a later `waiting:` line; leads/waits.json keeps the record.
     For a team lead the messages, waits book and fingerprints are this repo state's own (#1858)."""
     messages = pending(state, name)
     status = os.path.join(lead_state(state), "status", name + ".status")
@@ -263,14 +266,14 @@ def actionable(state, name):
                 words = raw.decode("utf-8", "replace").split()
                 if len(words) == 4 and words[0] == "waiting:" and words[1].startswith("#") and \
                         words[2] in WAITS and words[3].startswith("id=") and acked.get(words[3][3:], i) < i:
-                    latest[words[3][3:]] = [i, words[1]]
+                    latest[words[3][3:]] = [i, words[1], words[2]]
     book = waits(state)
     old, mine, waiting = book.get(name, {}), {}, set()
     for m in messages:
         if m["id"] not in latest:
             continue
-        line, ref = latest[m["id"]]
-        now = fingerprint(state, ref)
+        line, ref, kind = latest[m["id"]]
+        now = fingerprint(state, ref, kind)
         rec = old.get(m["id"])
         rec = rec if rec and rec["line"] == line else {"line": line, "seen": now, "woke": False}
         rec = dict(rec, seen=now, woke=rec["woke"] or frees(rec["seen"], now))  # a copy; an absorbed hold's release wakes

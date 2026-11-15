@@ -49,7 +49,6 @@ conflicts on ([#325](https://github.com/mw-ding/eng-crew/issues/325)).
 
 | Path | Class | Runtime(s) | Why |
 |---|---|---|---|
-| `.gitattributes` | Internal | n/a | Repo process and CI: rules for building mdstack itself |
 | `.github/**` | Internal | n/a | Repo process and CI: rules for building mdstack itself |
 | `.gitignore` | Internal | n/a | Repo process and CI: rules for building mdstack itself |
 | `.markdownlint-cli2.yaml` | Internal | n/a | Repo process and CI: rules for building mdstack itself |
@@ -65,6 +64,7 @@ conflicts on ([#325](https://github.com/mw-ding/eng-crew/issues/325)).
 | `connectors/README.md` | Deliverable | all | Module README: purpose, contents and how the module plugs in ([#1237](https://github.com/mw-ding/eng-crew/issues/1237)) |
 | `connectors/github/crew-repo.py` | Deliverable | all | Install CLI: shared GitHub repository checks and dry-run fixers |
 | `connectors/github/manifest.toml` | Deliverable | all | Connector: GitHub capability declaration ([#1223](https://github.com/mw-ding/eng-crew/issues/1223)) |
+| `connectors/github/status.py` | Deliverable | all | Connector: GitHub binding of the optional status concern, read-records and publish-record ([#1313](https://github.com/mw-ding/mdstack/issues/1313)) |
 | `connectors/notion/knowledge.py` | Deliverable | all | Knowledge connector: Notion binding of knowledge-read and knowledge-propose-edit ([#1229](https://github.com/mw-ding/eng-crew/issues/1229)) |
 | `connectors/notion/manifest.toml` | Deliverable | all | Connector: Notion knowledge capability declaration ([#1229](https://github.com/mw-ding/eng-crew/issues/1229)) |
 | `core/README.md` | Deliverable | all | Module README: purpose, contents and how the module plugs in ([#1237](https://github.com/mw-ding/eng-crew/issues/1237)) |
@@ -77,6 +77,7 @@ conflicts on ([#325](https://github.com/mw-ding/eng-crew/issues/325)).
 | `core/markdown-scan.py` | Deliverable | all | Shared module: markdown fence, code-span, comment and link scanning for `docs-scan.py` and the repo guard ([#281](https://github.com/mw-ding/eng-crew/issues/281)) |
 | `core/path-glob.py` | Deliverable | all | Shared module: path glob matching for `crew-config.py` and the repo guard ([#281](https://github.com/mw-ding/eng-crew/issues/281)) |
 | `core/secret-patterns.py` | Deliverable | all | Shared module: secret-scan patterns for `crew-config.py` and the repo guard ([#281](https://github.com/mw-ding/eng-crew/issues/281)) |
+| `core/status-record.py` | Deliverable | all | Shared module: shared-status record S v1 schema, slot body and content identity for `crew-config.py` and the status commands ([#1313](https://github.com/mw-ding/mdstack/issues/1313)) |
 | `dev/**` | Internal | n/a | Guards and tests: tests per module, shared test helpers and fixtures (dev/tests/), run by CI and release validation, not installed |
 | `docs/README.md` | Internal | n/a | Maintainer docs: the docs index, not loaded by roles |
 | `docs/architecture.md` | Deliverable | all | Protocol bundle (core): the text roles load and cite |
@@ -84,6 +85,7 @@ conflicts on ([#325](https://github.com/mw-ding/eng-crew/issues/325)).
 | `docs/backends/notion.md` | Deliverable | all | Protocol bundle (backend binding): Notion knowledge backend binding ([#1229](https://github.com/mw-ding/eng-crew/issues/1229)) |
 | `docs/bootstrap.md` | Deliverable | all | Install and upgrade docs: how to install, pin and upgrade |
 | `docs/campaign-harness.md` | Internal | n/a | Guards and tests: M25 integration campaign contract ([#783](https://github.com/mw-ding/eng-crew/issues/783)) |
+| `docs/campaign-scenarios/*.md` | Internal | n/a | Guards and tests: one M25 campaign scenario per file, indexed in docs/campaign-harness.md ([#1419](https://github.com/mw-ding/mdstack/issues/1419)) |
 | `docs/concepts.md` | Deliverable | all | Protocol bundle (core): the text roles load and cite |
 | `docs/configuration/resolution.md` | Deliverable | all | Profile and pack contract: profile validation reference split from the profile ([#857](https://github.com/mw-ding/eng-crew/issues/857)) |
 | `docs/configuration/runtime-options.md` | Deliverable | all | Profile and pack contract: runtime keys and shared coordinator option split from the profile ([#859](https://github.com/mw-ding/eng-crew/issues/859)) |

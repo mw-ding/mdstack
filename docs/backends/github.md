@@ -242,6 +242,8 @@ signals, the author identity for everything else.
 | release | Approve check | `.github/workflows/release.yml` `prepare`, `ci-gate`, `validate` and the publish job's approval step; read with `gh run view <run-id> --json jobs` |
 | release | Record release | The publish job's annotated tag `v<version>` and GitHub Release; read with `gh release view v<version> --json tagName,targetCommitish` |
 | release | Notify | The publish job's link on the release issue, then closing it; read with `gh issue view <n> --json state,comments` |
+| status | Read records | `connectors/github/status.py read-records` (map `[status]`): `gh api user`, `gh api repos/<o>/<r>/issues/<n>`, then `gh api "repos/<o>/<r>/issues/<n>/comments?per_page=100&page=<k>"` until an empty page; a failed page reports the listing incomplete ([status concern](../interfaces.md#status), #1313) |
+| status | Publish record | `connectors/github/status.py publish-record`: `gh api user` equal to the publisher, then one `gh api -X POST repos/<o>/<r>/issues/<n>/comments` (register) or `gh api -X PATCH repos/<o>/<r>/issues/comments/<comment_id>`, body on stdin; HTTP 4xx is `rejected`, no account or another account `not-sent`, anything else short of a success naming the comment `uncertain` |
 
 **Capability declaration.** With two identities, every operation is
 `supported`. With one account for all roles, GitHub refuses formal verdicts

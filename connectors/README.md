@@ -14,6 +14,7 @@ knowledge. Only a connector names a tool's CLI or API (dependency rule D6).
 | Path | Holds |
 |---|---|
 | `github/manifest.toml` | GitHub's capability declaration for every operation of the [backend interfaces](../docs/interfaces.md) |
+| `github/status.py` | The bundled binding of the optional status concern: `read-records` and `publish-record` ([shared status](../docs/specs/shared-status.md#7-optional-seam-s6)) |
 | `github/crew-repo.py` | Repo-side setup fixers bootstrap runs (labels, collaborators, CI checks) |
 | `notion/manifest.toml`, `notion/knowledge.py` | The knowledge-only Notion connector: `knowledge-read` and `knowledge-propose-edit` ([Notion backend](../docs/backends/notion.md)) |
 
