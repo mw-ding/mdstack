@@ -1,6 +1,7 @@
 """Reviewer lead's serialized inbox dispatch: fresh passes, replay and slot reclaim; admission is
 `mdstack schedule decide --pool reviewer` (docs/scheduling.md#model). A team lead runs it per message repo; its acks and
-dispositions go to its status at the team root (#1858).
+dispositions go to its status at the team root (#1858). A fresh review whose head lacks its builder record is a
+`waiting: #<n> evidence id=<id>` wait, not a claim (#1878).
 
 Usage: mdstack reviewer-pool --project FILE [--org-profile FILE]
 """
@@ -105,6 +106,7 @@ def run(args):
     os.makedirs(os.path.dirname(status), exist_ok=True)
     with open(os.path.join(root, "dispatch.lock"), "a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
+        evidence = False
         for message in commands()["lead"].pending(state, name):
             if not require_ownership(values):
                 return 1
@@ -160,6 +162,12 @@ def run(args):
                         continue
                 try:
                     commands()["route"].review(args, state, live, head, message["kind"], int(round_))
+                except commands()["route"].NotReady as e:
+                    print(e)
+                    with open(status, "a") as out:
+                        out.write("waiting: %s evidence id=%s\n" % (e.ref, message["id"]))
+                    evidence = True
+                    continue
                 except RuntimeError as e:
                     print(e)
                     continue
@@ -169,6 +177,9 @@ def run(args):
                 continue
             try:
                 completed = wake is None or dispatch(args, values, state, wake)
+            except commands()["route"].NotReady as e:  # retained behind its typed wait until a builder note (#1878)
+                print(e)
+                completed = evidence = "%s evidence" % e.ref
             except (RuntimeError, OSError) as e:
                 print(e)
                 continue
@@ -178,4 +189,6 @@ def run(args):
             elif completed:
                 with open(status, "a") as out:
                     out.write("done: " + message["id"] + "\n")
+        if evidence:  # baseline evidence waits as they park: a note before the watcher's next scan still wakes (#1878)
+            commands()["lead"].actionable(state, name)
     return 0

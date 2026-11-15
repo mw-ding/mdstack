@@ -151,7 +151,8 @@ def missing_checks(checks, required):
 
 def pr_snapshot(pr, required=(), values=None):
     """Head, CI rollup, the latest verdict at head, round k (protocol §5) and whether a builder fix note sits at head
-    after a changes verdict there (an evidence-only fix), and the latest builder selfgate verdict at head, from the
+    after a changes verdict there (an evidence-only fix), the latest builder selfgate verdict at head and the builder
+records at head (`notes`, an evidence wait's fingerprint, #1878), from the
     hidden crew:v1 lines only (protocol §4). An expected check absent at head keeps green CI pending (#1536). With the
     profile values, round k counts only this runtime's reviewer and coordinator records, so poll emission and reviewer
     dispatch derive the same round (#1005). Verdict identity keeps the posted round and reset source separate from
@@ -165,11 +166,13 @@ def pr_snapshot(pr, required=(), values=None):
     ci = "failed" if CI_BAD & set(results) else "infra" if "INFRA" in results else \
          "passed" if results and set(results) <= CI_OK and not missing_checks(pr["statusCheckRollup"], required) \
          else "pending"
-    verdict, fixed, changes, selfgate = None, False, 0, None
+    verdict, fixed, changes, selfgate, notes = None, False, 0, None, []
     epoch, identity, review_id, seen = "legacy", None, None, set()
     for review in pr["reviews"]:
         for line in CREW_LINE.findall(review["body"]):
             m = dict(kv.split("=", 1) for kv in line.split() if "=" in kv)
+            if m.get("role") == "builder" and m.get("sha") == head:
+                notes.append(review.get("id") or len(notes))
             if round_reset(values, review, m):
                 changes = 0
                 epoch = review.get("id") or review.get("submittedAt") or line
@@ -188,7 +191,7 @@ def pr_snapshot(pr, required=(), values=None):
             elif m.get("role") == "builder" and m.get("pass") == "selfgate" and m.get("sha") == head:
                 selfgate = m.get("verdict")
     return {"head": head, "ci": ci, "verdict": verdict, "round": 1 + changes, "fixed": fixed and verdict == "changes",
-            "selfgate": selfgate, "verdict_identity": identity, "verdict_review_id": review_id,
+            "selfgate": selfgate, "verdict_identity": identity, "verdict_review_id": review_id, "notes": notes,
             "merge_ok_identity": merge_ok_identity(pr, values)}
 
 

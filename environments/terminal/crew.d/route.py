@@ -20,6 +20,9 @@ Routing is serialized; interrupted batches survive in wake/queue.jsonl.route-* a
 are deduplicated by PR/head/pass/round against live and queued runs, section files and pass markers posted by this
 runtime's reviewer (its login and signature; #1290); the head-verdict check that gates a reviewer spawn counts only
 that reviewer's verdicts too.
+A fresh review starts only once the head's published, builder-signed record for its operation is readable (#1878):
+the PR body for the opened head, else a `fix`, `ci-fix` or `merge-up` note at head after the newest verdict or reset;
+until then the reviewer lead parks it as a `waiting: #<n> evidence` wait that a new builder note at head wakes.
 Synthesizers remain alive while land requests lack completion or other inbox messages lack acknowledgment, and through
 a merged PR's close-out while their own spawn PR lacks completion (its direct-land main CI check, #1339);
 the inbox check and reap share the queue lock with send's inbox append.
@@ -49,6 +52,7 @@ Usage: mdstack route --project FILE [--org-profile FILE] [--timeout SECS]
 """
 import argparse
 import contextlib
+import datetime
 import fcntl
 import glob
 import io
@@ -309,10 +313,97 @@ def admit(args, ref, kind, round_):
         raise RuntimeError("crew: reviewer admission deferred: %s %s" % (ref, why))
 
 
+class NotReady(RuntimeError):
+    """A fresh review whose head lacks the published builder record its operation needs (#1878): the reviewer lead
+    parks it as a typed `evidence` wait, with no claim, reservation or spawn."""
+
+    def __init__(self, n, reason):
+        super().__init__("crew: route: #%d not ready for review: %s" % (n, reason))
+        self.ref = "#%d" % n
+
+
+READY_FIELDS = "number,state,headRefOid,body,author,createdAt,commits,reviews,closingIssuesReferences,url"
+# Inline proof presence (protocol §3): a fenced block, a GitHub attachment, or N/A followed by its reason.
+PROOF = re.compile(r"^\s*(?:```|~~~)|https://github\.com/user-attachments/|\bN/A\b[^\n]*?(?:[:—–(]|\s-\s|\bbecause\b)\s*\w",
+                   re.M)
+
+
+def stamp(text):
+    return datetime.datetime.fromisoformat(text.replace("Z", "+00:00"))
+
+
+def unready(values, pr, head):
+    """Why a fresh review of the live head may not start, or None (#1878). The published builder record for the head's
+    operation is authoritative, authenticated by the builder's login and signature and naming this PR and the full
+    head; `done:`, head events and the backstop only wake this check. This runtime's verdicts and coordinator resets
+    set the epoch: a head whose newest verdict passed is left to deduplication; a changes verdict at head needs a later
+    `fix` note there; another head after a verdict needs a later `fix`, `ci-fix` or `merge-up` note at it (fix and
+    ci-fix carry the verdict's round; any round after a reset). Before any verdict the opened head is ready from the
+    builder-signed PR body whose marker names a linked item; a head committed after opening needs a round-0 `ci-fix`
+    or a `merge-up` note. Fix, ci-fix and body need inline proof or a reasoned N/A; the reviewer judges it."""
+    poll, n = commands()["poll"], pr["number"]
+    if pr["state"] != "OPEN" or pr["headRefOid"] != head:
+        return "%s is not the open PR's live head" % head
+    boundary, verdict, reviewed = -1, None, False
+    for i, review in enumerate(pr["reviews"]):
+        for m in markers(review["body"]):
+            if poll.round_reset(values, review, m):
+                boundary, verdict = i, None
+            elif m.get("role") == "reviewer-validator" and m.get("pass") == "verdict" and \
+                    poll.signed_by(values, "reviewer", review) and re.fullmatch(r"[1-9][0-9]*", m.get("round", "")):
+                boundary, verdict, reviewed = i, m, True
+    if verdict and verdict.get("sha") == head and verdict.get("verdict") == "pass":
+        return None
+    if not reviewed:
+        commit = next((c for c in pr.get("commits") or [] if c.get("oid") == head), None)
+        try:
+            opened = stamp(commit["committedDate"]) <= stamp(pr["createdAt"])
+        except (TypeError, KeyError, ValueError, AttributeError):
+            return "unknown operation: head commit or PR creation time unreadable"
+        if opened:
+            body, items = pr.get("body") or "", {str(i["number"]) for i in pr.get("closingIssuesReferences") or []}
+            if not poll.signed_by(values, "builder", {"author": pr.get("author"), "body": body}) or not any(
+                    m.get("role") == "builder" and "pass" not in m and m.get("issue") in items for m in markers(body)):
+                return "awaiting the builder-signed PR body with a builder marker naming a linked item"
+            return None if PROOF.search(body) else "PR body has no inline proof or reasoned N/A"
+        kinds, after = {"ci-fix": "0", "merge-up": "n/a"}, "the PR opened"
+    elif verdict is None:
+        kinds, after = {"fix": None, "ci-fix": None, "merge-up": "n/a"}, "the round reset"
+    else:
+        after = "the round %s %s verdict" % (verdict["round"], verdict.get("verdict"))
+        kinds = {"fix": verdict["round"]} if verdict.get("sha") == head else \
+            {"fix": verdict["round"], "ci-fix": verdict["round"], "merge-up": "n/a"}
+    reason = "awaiting a builder-signed %s note at %s after %s" % ("/".join(kinds), head, after)
+    for i, review in reversed(list(enumerate(pr["reviews"]))):
+        if i <= boundary or not poll.signed_by(values, "builder", review):
+            continue
+        for m in markers(review["body"]):
+            want, got = kinds.get(m.get("pass"), "-"), m.get("round", "n/a")  # a published merge-up may omit round
+            if m.get("role") != "builder" or m.get("pr") != str(n) or m.get("sha") != head or \
+                    not (got == want or want is None and re.fullmatch(r"[0-9]+", got)):
+                continue
+            if m["pass"] == "merge-up" or PROOF.search(review["body"]):
+                return None
+            reason = "the %s note at %s has no inline proof or reasoned N/A" % (m["pass"], head)
+    return reason
+
+
+def ready_check(values, n, head):
+    """Read the change live, in this repo, and raise NotReady unless a fresh review of head may start (#1878). An
+    unreadable read raises a plain error: retried with backoff, never admitted."""
+    pr = same_repo(values, gh("pr", "view", str(n), "-R", "%s/%s" % (values["repo.owner"], values["repo.name"]),
+                              "--json", READY_FIELDS), "change #%d" % n)
+    reason = unready(values, pr, head)
+    if reason:
+        raise NotReady(n, reason)
+
+
 def review(args, state, pr, head, pass_, round_):
     if commands()["poll"].express_lane(args, profile(args)[0], pr):  # the self-gate replaces review (express-lane.md)
         print("crew: route: #%d resolves express; the reviewer pool skips it" % pr["number"])
         return
+    if pass_ == "review" and not open_rereview(pr, head):  # every admission path spawns through here (#1878)
+        ready_check(profile(args)[0], pr["number"], head)
     steer = rereview_id(pr, head)
     for name, rec in list(runs(state)):
         if rec["role"] == "reviewer" and rec.get("args", {}).get("pr") == pr["number"] and \

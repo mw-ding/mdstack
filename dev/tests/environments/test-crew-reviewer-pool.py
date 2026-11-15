@@ -94,6 +94,7 @@ class ReviewerPool(route_tests.Route):
             marker("role=coordinator pass=steer pr=12 sha=%s round=n/a verdict=n/a cmd=resume cmd-id=chat" % ("3" * 40),
                    "acme-bot", "Ash"),
             marker("role=builder pass=fix pr=12 sha=%s round=1 verdict=n/a" % self.sha, "acme-bot", "Ben")]
+        self.live["reviews"][-1]["body"] = "~~~text\n$ make test\nok\n~~~\n" + self.live["reviews"][-1]["body"]
         self.save()
         values = self.mod.profile(self.args)[0]
         events, _ = self.mod.commands()["poll"].decide({}, [dict(self.live, labels=[{"name": "crew:in-review"}])], [],
@@ -311,7 +312,7 @@ class ReviewerPool(route_tests.Route):
 
     def test_published_merge_up_note_replays_to_one_delta_review(self):  # #1682
         previous = self.approved_push()
-        self.live["reviews"][-1] = dict(body=self.published_note(previous))
+        self.live["reviews"][-1] = dict(body=self.published_note(previous), author={"login": "acme-bot"})
         self.live["labels"] = [{"name": "crew:approved"}]
         self.save()
         poll, values = self.mod.commands()["poll"], self.mod.profile(self.args)[0]
