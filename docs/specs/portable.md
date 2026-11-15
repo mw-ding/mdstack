@@ -2831,6 +2831,117 @@ From the milestone itself:
   serialized dispatch: D2 and ST each took one merge-up of `main`, and the
   planned order (SD before ST, D1 before L6) still held.
 
+### M59: native owner entry and M57 learning closeout
+
+Opening spec slice #1927 (S0) and closing status-sync slice #1926 (S1)
+bookend [#1925](https://github.com/mw-ding/mdstack/issues/1925). Scope,
+order, sizes and the O1 choices come from
+[Riley's #1920 finding](https://github.com/mw-ding/mdstack/issues/1920#issuecomment-6899310750)
+§2, under the owner's
+[M59 approval](https://github.com/mw-ding/mdstack/issues/985#issuecomment-6899606468).
+Runtime module paths below are under `environments/terminal/crew.d/`;
+`path:line` citations refer to base `78cc763380c67e3cc2bbf552ff2f0a174be9ede5`.
+S0 is recorded as done for this opening slice (PR #TBD), effective on merge.
+Order: S0 → O1; the carry-ins L1–L4 were dispatched before M59 under the
+approved-work exception and continue independently, without waiting on S0 →
+S1 last. One issue → one PR. Sizes are non-test lines, planning ranges, not
+limits.
+
+| ID | Issue | Scope / named paths | Size | Depends on | Tier | Status |
+|---|---|---|---|---|---|---|
+| S0 | #1927 | This section (PR #TBD) | 70–110 docs | Signed M59 approval | default | done |
+| O1 | #1919 | Native `mdstack start`: new `start.py` command module, `up.py` attach operation, `_shared.py` `WRITES`, `layout.py` wrapper; help, tmux runtime doc and tests | 100–180 + 30–60 docs | #1927 | deep | open |
+| L1 | #1912 | Uncertain remote-write recovery lesson (PR #1922) | 40–70 docs | Carry-in | default | done |
+| L2 | #1913 | Malformed status-record lesson (PR #1921) | 40–70 docs | Carry-in | default | open |
+| L3 | #1914 | Help on stdout/exit 0 vs usage/exit 2 lesson (PR #1924) | 40–70 docs | Carry-in | default | open |
+| L4 | #1915 | Builder brief against the session consumer's budget lesson (PR #1923) | 40–70 docs | Carry-in | default | open |
+| MC | not filed | Delete the temporary workaround entries in `memory/roles/coordinator.md`. **Excluded:** not admitted until the owner confirms the v7.14.0 install; if confirmed before S1, the coordinator files it and this row returns to `open` | ~7 deleted lines | Owner install confirmation; #1927 | default | dropped |
+| S1 | #1926 | Status, settled choices, lesson links and tracker reconciliation | 40–70 docs | Every admitted member landed | default | open |
+
+**Target environment: N/A**: every acceptance path uses fake tmux and
+disposable profiles and state; no platform or device requirement. **Owner
+prerequisites: none.** Real terminal adoption of `mdstack start` is an
+optional later operator step, not M59 acceptance. Standard flavor, tmux lane.
+
+#### O1: native start (#1919)
+
+Settled choices, which are O1's ACs:
+
+- **O1.a Reuse.** `start` is a command module found by the existing discovery
+  (`_shared.py:890`) and calls `up`'s existing attach operation
+  (`up.py:339`). Plain `up`, `up --attach` (`up.py:223`), one session and one
+  watcher, same-server `switch-client` and both refusals (crew pane, foreign
+  server) keep their behaviour. No new session manager, shared-session
+  adoption (#279), remote-host or team start.
+- **O1.b Project resolution.** The existing deterministic precedence:
+  explicit `--project`, then the established defaults (`$CREW_PROJECT`,
+  `$MDSTACK_CONFIG`, `<user root>/config.toml`; `core/crew-config.py:1155`,
+  `_shared.py:922`). No current-directory search and no picking among team
+  projects. A missing, invalid or ambiguous (`--team` or a role argument)
+  configuration refuses before any start. `start` names its config on stderr
+  like other writing commands (`_shared.py:904`).
+- **O1.c Wrapper.** The generated `<home>/start` (`layout.py:41`) delegates
+  to native `start` and accepts the legacy `--attach` as a redundant flag.
+  Previously generated wrappers that call `up` keep working, and the
+  marker-based refusal of an unowned wrapper stays (`layout.py:65`).
+
+State matrix. Each row holds for `start`, `up --attach` and both the new and
+old wrapper unless the row says otherwise. Proof drives the public CLI with a
+fake tmux and disposable state, and names every effect checked: sessions,
+`attach-session`/`switch-client` calls, watcher starts and state writes.
+Refusal rows pair with a valid control and show zero startup effects.
+
+| Row | State | Outcome | Status |
+|---|---|---|---|
+| M1 | Crew not running, terminal outside tmux | Existing start path: one session, one watcher; attaches window 0 only after successful creation; a failed start attaches nothing | open |
+| M2 | Crew running, outside tmux | Attaches window 0; no second session or watcher; attaches even if the role-start pass fails (`up.py:358`) | open |
+| M3 | Client on the crew's server | `switch-client` to window 0, no nested attach | open |
+| M4 | Client on a foreign server | Refuses with the detach/retry instruction, exit 1, before any start | open |
+| M5 | Crew pane (`CREW_ROLE` set) | Refuses, exit 2, before session, watcher, wrapper or terminal mutation | open |
+| M6 | Missing, invalid or ambiguous profile | Refuses before any start: no session, watcher or state write | open |
+| M7 | Project paused | Unchanged from `up`: window 0 only, no role windows (`up.py:425`), then attach | open |
+| M8 | Old wrapper (`up`), new wrapper (`start`, with and without `--attach`) | Same outcome as the native entry point it reaches; plain `up` without `--attach` still never attaches | open |
+| M9 | Unowned file at `<home>/start` | `layout --write` refuses and leaves it unchanged | open |
+
+#### Learning carry-ins (L1–L4)
+
+Each keeps its own PR and lesson-only scope; no repaired code reopens. L1's
+pending-body and send-once rules are already specified
+([shared-status.md](shared-status.md)); L2 cites the existing field/type
+matrix in `dev/tests/core/test-status-record.py`; L3 the existing help/usage
+split in `connectors/github/status.py`; L4 the session-upgrade consumer in
+`dev/tests/environments/test-crew-upgrade.py` and the existing 16,384-byte
+budget, with no budget increase.
+
+#### Checks, forecast and closing
+
+Against [Versioning](../deliverables.md#versioning), M59 forecasts as
+**minor** (O1 adds a command; old wrappers and `up` unchanged); this is not a
+release cut. S0, S1 and L1–L4 are **none**. A changed `up` flag, output or
+exit, or a marker or §7 change, is **major** and is replanned before review.
+
+| Unit | Affected local tests (refine against the actual diff) | Status |
+|---|---|---|
+| S0/S1, L1–L4 | Required checks only | open |
+| O1 | New native-start test, `test-crew-up.py`, `test-crew-attach.py`, `test-crew-layout.py`, `test-crew-config.py`, `test-crew-team.py`, `test-session-adapters.py`; `_shared.py` dependents such as `test-crew-upgrade.py` | open |
+
+Every PR runs `python3 scripts/check-repo.py` and
+`python3 scripts/check-changelog-pr.py --base origin/main --pr N`, with
+selected tests via `python3 scripts/run-tests.py <names...>` under the
+[affected-tests policy](https://github.com/mw-ding/mdstack/issues/985#issuecomment-6763423100).
+**PR CI runs the full suite.** O1's crew-pane refusal is a likely sensitive
+candidate; classify each actual full diff at head.
+
+S1 sets each admitted row `done` with PR refs or `dropped` with recorded
+supersession; an `open` row blocks closing M59. It records the O1 choices as
+built, links the four lessons, states source delivery, release and
+installation separately, and confirms every landed member is closed; S1 and
+M59 close after S1 merges. M25.2 and the conditional M58 stay outside M59.
+Merge permission is the owner's M59 approval
+([c6899606468](https://github.com/mw-ding/mdstack/issues/985#issuecomment-6899606468)),
+recorded per PR at each actual head; it supplies no approval, CI waiver,
+hold clearance, sensitive reason or missing AC proof.
+
 ## 6. Decisions
 
 | Date | Decision | Source |
