@@ -1,3 +1,10 @@
+---
+title: Metrics baselines existed but no sensor turned a slow streak or rework wave into a harness fix; the rollup gate and per-repo follow-up are documented, with `metrics-decide.py` (#86)
+date: 2026-10-29
+status: applied
+source: mw-ding/eng-crew#86 and the metrics artifact in docs/metrics (#75)
+---
+
 # Lessons: metrics without decisions
 
 ## Entries

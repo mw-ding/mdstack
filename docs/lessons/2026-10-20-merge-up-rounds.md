@@ -1,3 +1,10 @@
+---
+title: Merge-ups must not burn review rounds; an ack cannot satisfy the merge gate, so a clean merge-up after an approval gets a formal re-approve (#20)
+date: 2026-10-20
+status: applied
+source: Decided by the coordinator on Oct 20, 2026 after PR #15; refined after the review of #16
+---
+
 # Lessons: merge-ups must not burn review rounds (Oct 20, 2026)
 
 One lesson from the review rounds of PR #15 and the review of the routine

@@ -1,3 +1,10 @@
+---
+title: #1838 reached CI with its fragment still `pr: TBD` and the PR-aware guard failed it; the build pass now fills the number right after opening and signs the moved head with a round-0 `ci-fix` note (#1844)
+date: 2026-11-15
+status: applied
+source: Helper change #1838 (closes #238, M54 B2), intake card #1844
+---
+
 # A new PR reached CI with its fragment still `pr: TBD`, 2026-11-15
 
 ## Fill the PR number right after opening, then sign the moved head

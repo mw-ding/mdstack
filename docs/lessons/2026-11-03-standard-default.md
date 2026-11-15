@@ -1,3 +1,10 @@
+---
+title: Unset projects ran `thorough`; validation found problems after a passing review in 2 of 217 rounds, so unset now resolves `standard`, flagged (#632)
+date: 2026-11-03
+status: applied
+source: #632; owner learning 2026-11-03
+---
+
 # Standard as the unset flavor, 2026-11-03
 
 ## Thorough by default paid for validation that rarely found anything

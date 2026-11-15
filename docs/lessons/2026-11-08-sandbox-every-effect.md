@@ -1,3 +1,10 @@
+---
+title: 5 repaired cards where the campaign sandbox checked one channel once; check the boundary at every effect, with a decoy per channel (#1342)
+date: 2026-11-08
+status: applied
+source: 5 repaired intake cards, group H02 of the #1337 clustering, retained by #1342
+---
+
 # Sandbox boundary at every effect, 2026-11-08
 
 ## Check the boundary at each effect, not once at entry

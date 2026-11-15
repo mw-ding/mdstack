@@ -1,3 +1,10 @@
+---
+title: The builder's per-PR watch B2 silently failed to attach on PR #35 and the PR stalled about 62 min; B2 attachment is now verified, recorded and swept (#36)
+date: 2026-10-23
+status: applied
+source: PR #35 timeline (Oct 23, 2026, PT)
+---
+
 # Lessons: verify the builder's per-PR watch attached (Oct 23, 2026)
 
 One lesson from the stalled docs PR #35 (issue #34). Entries follow the

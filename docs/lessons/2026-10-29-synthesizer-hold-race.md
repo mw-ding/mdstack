@@ -1,3 +1,10 @@
+---
+title: The synthesizer squashed past an open coordinator hold-until (#78) and an open rereview (#74); both are now §7 merge blockers that merge-ok does not override (#81)
+date: 2026-10-29
+status: applied
+source: mw-ding/eng-crew#78 and #74
+---
+
 # Lessons: synthesizer race past a coordinator hold
 
 ## Entries

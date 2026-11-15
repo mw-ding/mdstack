@@ -1,3 +1,10 @@
+---
+title: 7 repaired cards where a test or check bypassed the production path; test through it and fail closed, with three leftovers filed (#1342)
+date: 2026-11-08
+status: applied
+source: 7 repaired intake cards, group H03 of the #1337 clustering, retained by #1342
+---
+
 # Fixtures exercise the real entrypoint, 2026-11-08
 
 ## Test through the path production uses

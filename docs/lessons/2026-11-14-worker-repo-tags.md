@@ -1,3 +1,10 @@
+---
+title: Two valid repos differing only in punctuation shared a worker tag on #1876, so the second same-ID spawn failed; the tag is now one-to-one, held by punctuation-pair and escaped-literal regressions (#1882)
+date: 2026-11-14
+status: applied
+source: The round-1 verdict on #1876 (closes #1858, M56 T3), intake card #1882
+---
+
 # Worker repo tags that aliased two valid repos, 2026-11-14
 
 ## Keep the repo tag one-to-one, with the punctuation-pair regressions

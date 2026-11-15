@@ -1,3 +1,10 @@
+---
+title: A model switch turned 6 of 8 changes verdicts into CLI-evidence blocks; captures now come from `evidence-cli.py` (#652)
+date: 2026-11-03
+status: applied
+source: issue #652
+---
+
 # Model-switch evidence breakage, 2026-11-03
 
 ## CLI evidence must not depend on the model

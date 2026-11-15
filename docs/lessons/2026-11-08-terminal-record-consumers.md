@@ -1,3 +1,10 @@
+---
+title: 7 repaired cards where a terminal record was lost downstream; match records by stable identity and test each consumer with the runtime record (#1342)
+date: 2026-11-08
+status: applied
+source: 7 repaired intake cards, group H06 of the #1337 clustering, retained by #1342
+---
+
 # Terminal records reach their consumers, 2026-11-08
 
 ## A record must reach every consumer, matched by stable identity

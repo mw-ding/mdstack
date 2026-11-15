@@ -1,3 +1,10 @@
+---
+title: `profile()` added derived `context.*` keys to the resolved values, so `grant prune`'s equality check never matched and CI failed on #1866; compute derived values separately so the resolved values stay exactly the profile (#1883)
+date: 2026-11-14
+status: applied
+source: #1866 (closes #1856, M56 T1), the builder's round-1 fix note, intake card #1883
+---
+
 # Derived context leaking into the resolved profile, 2026-11-14
 
 ## Keep derived values out of the resolved profile

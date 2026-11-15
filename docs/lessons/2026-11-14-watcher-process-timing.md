@@ -1,3 +1,10 @@
+---
+title: Four watcher process tests failed in validation on #1374 and passed on independent reruns; keep the failure facts until a clean rerun or repair settles it, and label an unmeasured host-load cause as inference (#1444)
+date: 2026-11-14
+status: open
+source: The round-1 verdict on #1374 (closes #1092, M36), intake card #1444
+---
+
 # Watcher process tests failing during validation, 2026-11-14
 
 ## Keep a timing failure's facts until a clean rerun or a repair settles it

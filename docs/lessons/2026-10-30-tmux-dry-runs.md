@@ -1,3 +1,10 @@
+---
+title: Two local dry runs and three live runs of the tmux crew for #139: 6 manual unblocks in dry run 1, then a land lock on a placeholder path and an auto-apply merge-ok offer live, until the final run passed pass bar a–g; each finding mapped to its fix PR or backlog issue (#269, #270)
+date: 2026-10-30
+status: mixed
+source: Two local dry runs and three live runs of the tmux crew for #139 (mw-ding/eng-crew#139, mw-ding/eng-crew#234)
+---
+
 # Lessons: tmux crew dry runs and live runs
 
 Two local dry runs and three live runs of the tmux crew for #139, all on

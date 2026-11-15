@@ -1,3 +1,10 @@
+---
+title: A detached test child inherited the `capture_output` pipe, so each launch waited about 60 s for EOF and CI timed out; give such children DEVNULL stdio (#1637)
+date: 2026-11-11
+status: applied
+source: The M43 fix review on #1637 (round 2, ci-red repair), intake card #1649
+---
+
 # Detached fixture child and the capture pipe, 2026-11-11
 
 ## A detached fixture child must not inherit the capture pipe

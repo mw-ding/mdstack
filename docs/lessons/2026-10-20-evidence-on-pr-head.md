@@ -1,3 +1,10 @@
+---
+title: Evidence a verdict relies on goes on the PR head, never a side branch (PR #12 incident)
+date: 2026-10-20
+status: superseded
+source: PR #12 in this repo
+---
+
 # Evidence on the PR head, 2026-10-20
 
 Entry format: see [README.md](README.md).

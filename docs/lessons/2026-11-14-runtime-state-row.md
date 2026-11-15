@@ -1,3 +1,10 @@
+---
+title: A cleanup change shipped with its allocated runtime state-file row describing the old behaviour; reviewers read that row beside the command and retention tests (#1843)
+date: 2026-11-14
+status: applied
+source: PR #1831 (issue #369, the M54 B4 slice), intake card #1843
+---
+
 # Runtime state-file row left stale by a cleanup change, 2026-11-14
 
 ## A shutdown or scratch change must update its allocated runtime row
