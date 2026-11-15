@@ -31,11 +31,15 @@ and core memory (#1230): clean, personal data, a stray file and the current tree
 and role routines (#1247): the contract's vocabulary, an action and event outside it, and the current tree,
 and campaign scenarios (#1412): no origin/main, kept cases, an unhandled assertion and a deleted case, a deleted scenario directory, and the current tree,
 and untracked files (#1414): a non-ignored one named as a warning, an ignored one quiet, and checked after `git add`.
+and the lessons index (#1929, M60 X1): rows X1.1-X1.8 (each metadata key missing, empty, wrong or duplicate,
+no or unclosed front matter, an unknown key, `mixed` misuse, stale, hand-edited, duplicated or out-of-order rows,
+a pending file, bad markers, the migrated tree, and two same-base lesson PRs squash-landing with no conflict).
 Run in CI.
 """
 import ast
 import importlib.util
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -1040,6 +1044,186 @@ with tempfile.TemporaryDirectory() as d:
            and "| [A01](campaign-scenarios/A01.md) | #7 |" in index and "| [A02](campaign-scenarios/A02.md) | #8 |" in index
            and "Rewritten A01 notes." in sc_read(d, A01) and "Rewritten A02 notes." in sc_read(d, A02),
            out + out2 + index)
+
+# Lessons index (#1929, M60 X1): the index in docs/lessons/README.md is generated
+# from each lesson's front matter; one table of rows X1.1-X1.8, each failing row
+# naming the file and leaving the index unchanged under --fix, beside valid controls.
+LS_DOC, LS_DIR = "docs/lessons/README.md", "docs/lessons"
+LS_A, LS_B, LS_M = (LS_DIR + "/" + n for n in ("2026-01-02-alpha.md", "2026-01-03-beta.md", "2026-01-01-many.md"))
+LS_PROSE = "# Lessons\n\nProse before the index.\n\n<!-- lessons:begin -->\n<!-- lessons:end -->\n\nProse after it.\n"
+LS_ROW = "| [2026-01-02-alpha.md](2026-01-02-alpha.md) | 2026-01-02 | Alpha lesson |"
+
+
+def lesson_file(title, date, status, entries=1):
+    body = "".join("### Entry %d\n\n- **Date:** %s\n- **Status:** applied. x\n\n" % (i, date) for i in range(entries))
+    return "---\ntitle: %s\ndate: %s\nstatus: %s\nsource: PR #1\n---\n\n# %s\n\n%s" % (title, date, status, title, body)
+
+
+def lesson_tree(d):
+    write(d, LS_DOC, LS_PROSE)
+    write(d, LS_A, lesson_file("Alpha lesson", "2026-01-02", "applied"))
+    write(d, LS_B, lesson_file("Beta lesson", "2026-01-03", "open"))
+    write(d, LS_M, lesson_file("Many lessons", "2026-01-01", "mixed", entries=2))
+    return run(d, "--only", "lessons", "--fix")
+
+
+with tempfile.TemporaryDirectory() as d:
+    rc, out = lesson_tree(d)
+    index = sc_read(d, LS_DOC)
+    rc2, out2 = run(d, "--only", "lessons", "--fix")
+    expect("lessons: --fix writes rows by (date, filename) between the markers, prose kept; a second run is a no-op",
+           rc == 0 and rc2 == 0 and sc_read(d, LS_DOC) == index and index == LS_PROSE.replace(
+               "<!-- lessons:begin -->\n", "<!-- lessons:begin -->\n\n| File | Date | Summary |\n|---|---|---|\n"
+               "| [2026-01-01-many.md](2026-01-01-many.md) | 2026-01-01 | Many lessons |\n" + LS_ROW + "\n"
+               "| [2026-01-03-beta.md](2026-01-03-beta.md) | 2026-01-03 | Beta lesson |\n\n"), out + out2 + index)
+    rc, out = run(d, "--only", "lessons")
+    expect("lessons: the generated index passes, with a multi-entry `mixed` control", rc == 0, out)
+
+FM = "title: Alpha lesson\ndate: 2026-01-02\nstatus: applied\nsource: PR #1\n"
+
+
+def front(key, new):
+    """Alpha's front-matter block with its `key:` line replaced by `new` (lines; empty drops the key)."""
+    return "---\n%s---\n" % "".join(new + "\n" if l.startswith(key + ":") and new else "" if l.startswith(key + ":")
+                                     else l + "\n" for l in FM.splitlines())
+
+
+X1_ROWS = [("X1.1 %s %s" % (key, case), LS_A, front(key, new)) for key, case, new in [
+    ("title", "missing", ""), ("title", "empty", "title:"), ("title", "with a pipe", "title: Alpha | lesson"),
+    ("title", "multi-line", "title: Alpha\n  lesson"), ("title", "duplicate", "title: Alpha lesson\ntitle: Again"),
+    ("date", "missing", ""), ("date", "empty", "date: "), ("date", "bad form", "date: 2026-1-2"),
+    ("date", "not a day", "date: 2026-02-30"), ("date", "not the filename's", "date: 2026-01-05"),
+    ("date", "multi-line", "date: 2026-01-02\n  later"), ("date", "duplicate", "date: 2026-01-02\ndate: 2026-01-02"),
+    ("status", "missing", ""), ("status", "empty", "status:"), ("status", "unknown", "status: shipped"),
+    ("status", "multi-line", "status: applied\n  mostly"), ("status", "duplicate", "status: applied\nstatus: open"),
+    ("source", "missing", ""), ("source", "empty", "source:  "), ("source", "multi-line", "source: PR #1\n  and PR #2"),
+    ("source", "duplicate", "source: PR #1\nsource: PR #2"),
+]] + [
+    ("X1.2 no front matter", LS_A, ""),
+    ("X1.2 unclosed block", LS_A, "---\n" + FM),
+    ("X1.2 unknown key", LS_A, "---\n" + FM + "tags: x\n---\n"),
+    ("X1.3 `mixed` on a single-entry file", LS_A, "---\n" + FM.replace("applied", "mixed") + "---\n"),
+    ("X1.3 a multi-entry file without `mixed`", LS_M,
+     "---\ntitle: Many lessons\ndate: 2026-01-01\nstatus: applied\nsource: PR #1\n---\n"),
+]
+for label, rel, front in X1_ROWS:
+    with tempfile.TemporaryDirectory() as d:
+        lesson_tree(d)
+        before = sc_read(d, LS_DOC)
+        text = sc_read(d, rel)
+        write(d, rel, front + text[text.index("---\n\n#") + 4:])
+        rc, out = run(d, "--only", "lessons")
+        rc2, out2 = run(d, "--only", "lessons", "--fix")
+        expect("lessons: %s fails with the file path; --fix leaves the index unchanged" % label,
+               rc == 1 and rc2 == 1 and (rel + ":") in out and "[lesson-index]" in out and LS_B not in out
+               and sc_read(d, LS_DOC) == before, out + out2)
+
+LS_MANY = "| [2026-01-01-many.md](2026-01-01-many.md) | 2026-01-01 | Many lessons |"
+for label, mutate, line, reason in [
+    ("X1.4 stale row after a title change", lambda d: sc_sub(d, LS_A, "title: Alpha lesson", "title: Alpha, renamed"),
+     10, "row is not generated"),
+    ("X1.4 hand-edited row", lambda d: sc_sub(d, LS_DOC, "| Alpha lesson |", "| Alpha lesson, by hand |"),
+     10, "row is not generated"),
+    ("X1.4 duplicated row", lambda d: sc_sub(d, LS_DOC, LS_ROW, LS_ROW + "\n" + LS_ROW), 11, "duplicate row"),
+    ("X1.4 rows out of order", lambda d: sc_sub(d, LS_DOC, LS_MANY + "\n" + LS_ROW, LS_ROW + "\n" + LS_MANY),
+     10, "row is out of order"),
+]:
+    with tempfile.TemporaryDirectory() as d:
+        lesson_tree(d)
+        mutate(d)
+        rc, out = run(d, "--only", "lessons")
+        rc2, out2 = run(d, "--only", "lessons", "--fix")
+        rc3, out3 = run(d, "--only", "lessons")
+        expect("lessons: %s fails at the README line; --fix regenerates" % label,
+               rc == 1 and ("%s:%d: [lesson-index] %s" % (LS_DOC, line, reason)) in out
+               and rc2 == 0 and rc3 == 0 and sc_read(d, LS_DOC).count("2026-01-02-alpha.md](") == 1, out + out2 + out3)
+
+with tempfile.TemporaryDirectory() as d:
+    lesson_tree(d)
+    before = sc_read(d, LS_DOC)
+    write(d, LS_DIR + "/2026-01-02-gamma.md", lesson_file("Gamma lesson", "2026-01-02", "encoded"))
+    rc, out = run(d, "--only", "lessons")
+    rc2, out2 = run(d, "--only", "lessons", "--fix")
+    gamma = "| [2026-01-02-gamma.md](2026-01-02-gamma.md) | 2026-01-02 | Gamma lesson |"
+    expect("lessons: X1.5 a valid new file with no row passes (pending); --fix adds exactly its row",
+           rc == 0 and rc2 == 0 and sc_read(d, LS_DOC) == before.replace(LS_ROW + "\n", LS_ROW + "\n" + gamma + "\n"),
+           out + out2 + sc_read(d, LS_DOC))
+
+BEGIN, END = "<!-- lessons:begin -->\n", "<!-- lessons:end -->\n"
+for label, mutate in [
+    ("missing begin marker", lambda t: t.replace(BEGIN, "")),
+    ("missing end marker", lambda t: t.replace(END, "")),
+    ("duplicated begin marker", lambda t: t.replace(BEGIN, BEGIN + BEGIN)),
+    ("duplicated end marker", lambda t: t.replace(END, END + END)),
+    ("reversed markers", lambda t: t.replace(BEGIN, "@@").replace(END, BEGIN).replace("@@", END)),
+]:
+    with tempfile.TemporaryDirectory() as d:
+        lesson_tree(d)
+        write(d, LS_DIR + "/2026-01-04-pending.md", lesson_file("Pending", "2026-01-04", "open"))
+        write(d, LS_DOC, mutate(sc_read(d, LS_DOC)))
+        before = sc_read(d, LS_DOC)
+        rc, out = run(d, "--only", "lessons")
+        rc2, out2 = run(d, "--only", "lessons", "--fix")
+        expect("lessons: X1.6 %s fails; --fix writes nothing" % label,
+               rc == 1 and rc2 == 1 and "%s:1: [lesson-index] needs one" % LS_DOC in out
+               and sc_read(d, LS_DOC) == before, out + out2)
+
+REPO = os.path.dirname(SCRIPTS)
+rc, out = run(REPO, "--only", "lessons")
+expect("lessons: X1.7 the migrated tree passes", rc == 0, out)
+with tempfile.TemporaryDirectory() as d:
+    shutil.copytree(os.path.join(REPO, LS_DIR), os.path.join(d, LS_DIR))
+    before = sc_read(d, LS_DOC)
+    rc, out = run(d, "--only", "lessons", "--fix")
+    rows = [l for l in before.splitlines() if l.startswith("| [")]
+    names = sorted(n for n in os.listdir(os.path.join(d, LS_DIR)) if n != "README.md")
+    expect("lessons: X1.7 regenerating the migrated tree is a no-op with exactly one row per lesson",
+           rc == 0 and sc_read(d, LS_DOC) == before and len(rows) == len(names)
+           and all(sum(("| [%s](%s) |" % (n, n)) in r for r in rows) == 1 for n in names), out)
+
+# X1.8: two lesson PRs branched from one base each add only their file and land
+# in turn by squash on the updated default branch; an index-editing control conflicts.
+for adds_rows in (False, True):
+    with tempfile.TemporaryDirectory() as d:
+        g = lambda *a: subprocess.run(["git", "-C", d, "-c", "user.name=t", "-c", "user.email=t@t", *a],
+                                      capture_output=True, text=True)
+        g("init", "-q", "-b", "main")
+        lesson_tree(d)
+        g("add", "-A")
+        g("commit", "-qm", "base")
+        heads = []
+        for branch, title, date in [("p1", "Gamma lesson", "2026-01-04"), ("p2", "Delta lesson", "2026-01-05")]:
+            g("checkout", "-qb", branch, "main")
+            name = "%s-%s.md" % (date, title.split()[0].lower())
+            write(d, LS_DIR + "/" + name, lesson_file(title, date, "open"))
+            if adds_rows:
+                sc_sub(d, LS_DOC, "| Beta lesson |\n", "| Beta lesson |\n| [%s](%s) | %s | %s |\n" % (name, name, date, title))
+            g("add", "-A")
+            g("commit", "-qm", branch)
+            heads.append(run(d, "--only", "lessons")[0])
+        g("checkout", "-q", "main")
+        landed = []
+        for branch in ("p1", "p2"):
+            merged = g("merge", "--squash", branch)
+            unmerged = g("diff", "--name-only", "--diff-filter=U").stdout.split()
+            g("commit", "-qm", "squash " + branch)
+            landed.append((merged.returncode, unmerged, run(d, "--only", "lessons")[0]))
+        if adds_rows:
+            expect("lessons: X1.8 control: two PRs that each edit the index conflict on the second squash",
+                   landed[0][0] == 0 and landed[1][0] != 0 and landed[1][1] == [LS_DOC], repr(landed))
+            continue
+        rc, out = run(d, "--only", "lessons", "--fix")
+        index = sc_read(d, LS_DOC)
+        expect("lessons: X1.8 two same-base lesson PRs land in turn by squash with no conflict, each revision passing",
+               heads == [0, 0] and landed == [(0, [], 0), (0, [], 0)], repr((heads, landed)))
+        expect("lessons: X1.8 a later bookend --fix adds both rows",
+               rc == 0 and "| [2026-01-04-gamma.md](2026-01-04-gamma.md) | 2026-01-04 | Gamma lesson |\n"
+               "| [2026-01-05-delta.md](2026-01-05-delta.md) | 2026-01-05 | Delta lesson |\n" in index, out + index)
+
+with tempfile.TemporaryDirectory() as d:
+    write(d, LS_A, "# no front matter\n")
+    rc, out = run(d, "--only", "lessons")
+    expect("lessons: skipped when the README is absent", rc == 0, out)
 
 # Execute the CI shell with a fake python3 that runs the real denylist guard.
 workflow = open(os.path.join(SCRIPTS, "..", ".github", "workflows", "ci.yml"), encoding="utf-8").read()
