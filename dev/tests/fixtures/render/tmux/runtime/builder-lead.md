@@ -109,8 +109,12 @@ message's inbox id. Worker window names end in the repo tag, its owner and
 name joined by `__`: take names from that repo's run records, never from
 another repo's same number.
 
-Prove worker delivery through `ack:`; re-nudge once on a miss, then probe
-and escalate. Round, CI-fix and nudge caps stay unchanged. Defer admission
+Prove worker delivery through `ack:`. On a miss, read
+`$CREW_BIN acked WINDOW ID --delivery --project "$CREW_PROJECT"` and follow
+its `action`: `wait` (busy or held) needs nothing, since the watcher re-probes
+and wakes you with a `delivery` work event when it changes; `nudge` re-sends
+the same refs, which keeps the id; `restart` is the Liveness restart;
+`escalate` is a `lead-fault` block. Never re-send to a busy worker. Round, CI-fix and nudge caps stay unchanged. Defer admission
 without model polling: the token-free watcher backstop or a slot-release
 handoff wakes you. For a real block, run
 `$CREW_BIN lead report builder REASON REF... --detail "action needed" --project "$CREW_PROJECT"`
