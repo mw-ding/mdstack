@@ -8,7 +8,10 @@ iteration process.
 
 1. **Record the lesson.** Write a dated entry under
    [docs/lessons/](docs/lessons/README.md) in the documented entry format, with
-   its evidence, impact, proposed fix and status.
+   its evidence, impact, proposed fix and status. Add the lesson file with its
+   [metadata](docs/lessons/README.md#metadata); do not edit the index. The
+   milestone's opening and closing bookend PRs regenerate it with
+   `python3 scripts/check-repo.py --fix`.
 2. **Raise an issue.** The coordinator turns each actionable lesson into an
    issue with a goal, acceptance criteria and a link to the spec. Link the issue
    from the lesson entry.

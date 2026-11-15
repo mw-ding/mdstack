@@ -162,9 +162,11 @@ built and reviewed as a PR, changes them.
    [findings README](findings/README.md).
 2. **Lesson when there is analysis.** Write
    `docs/lessons/YYYY-MM-DD-<slug>.md` in the
-   [entry format](lessons/README.md#entry-format), add it to the lesson Index,
-   and use the [correction hierarchy](lessons/README.md#correction-hierarchy)
-   for the Fix field.
+   [entry format](lessons/README.md#entry-format) with its
+   [metadata](lessons/README.md#metadata), and use the
+   [correction hierarchy](lessons/README.md#correction-hierarchy) for the Fix
+   field. Add the lesson file; do not edit the index: the milestone's bookend
+   PRs regenerate it with `python3 scripts/check-repo.py --fix`.
 3. **Fix as a PR.** The accepted issue's PR encodes the fix and updates the
    lesson's Status and Linked issue/PR in the same PR.
 
