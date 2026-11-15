@@ -6,7 +6,8 @@ setup (25.03, #785) is `scripts/campaign-sandbox.py`. Design:
 the M25 integration campaign proposal on
 [#782](https://github.com/mw-ding/eng-crew/issues/782). Scenario records live
 one per file under `docs/campaign-scenarios/` with a generated, checked index
-(M57 C1, PR #1897; source only, in no release yet).
+(M57 C1, PR #1897): built in source, in no release yet, and no installed
+campaign adoption is claimed.
 
 Every M25 run touches only a recorded disposable sandbox: its own repo (a
 local repo with a bare origin at level a), state root, worktree root, live
