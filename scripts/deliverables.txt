@@ -11,7 +11,6 @@
 # check-repo.py fails on a row that sorts before the one above it. After an
 # edit, run `python3 scripts/check-repo.py --fix` to regenerate the table.
 
-.gitattributes	internal	n/a	Repo process and CI: rules for building mdstack itself
 .github/**	internal	n/a	Repo process and CI: rules for building mdstack itself
 .gitignore	internal	n/a	Repo process and CI: rules for building mdstack itself
 .markdownlint-cli2.yaml	internal	n/a	Repo process and CI: rules for building mdstack itself

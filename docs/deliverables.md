@@ -49,7 +49,6 @@ conflicts on ([#325](https://github.com/mw-ding/eng-crew/issues/325)).
 
 | Path | Class | Runtime(s) | Why |
 |---|---|---|---|
-| `.gitattributes` | Internal | n/a | Repo process and CI: rules for building mdstack itself |
 | `.github/**` | Internal | n/a | Repo process and CI: rules for building mdstack itself |
 | `.gitignore` | Internal | n/a | Repo process and CI: rules for building mdstack itself |
 | `.markdownlint-cli2.yaml` | Internal | n/a | Repo process and CI: rules for building mdstack itself |
