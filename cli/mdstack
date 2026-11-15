@@ -3,6 +3,7 @@
 
 Usage: mdstack COMMAND ...          (`mdstack --help` lists the commands)
        mdstack COMMAND --help       (one command's usage, from crew.d/<command>.py)
+       mdstack start                (the owner's shortcut: start the tmux crew or reattach to window 0)
 
 Thin entry point: each command is environments/terminal/crew.d/<cmd>.py with register(subparsers) and run(args),
 found in sorted order, so adding a command adds files only. Shared helpers are in crew.d/_shared.py. Every tmux call

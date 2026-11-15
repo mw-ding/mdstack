@@ -77,9 +77,11 @@ from 6.x or older? 7.0.0 is a fresh install
 3. **Bootstrap:** `mdstack bootstrap --dry-run`;
    review it and run it again without `--dry-run`
    ([Bootstrap](docs/runbook-new-repo.md#bootstrap-recommended)).
-4. **Start:** `mdstack up`. It
-   renders the briefs and starts the session with `ash` and the enabled
-   leads (table below).
+4. **Start:** `mdstack start`, from any directory. It runs `mdstack up`,
+   which renders the briefs and starts the session with `ash` and the
+   enabled leads (table below), then attaches this terminal to window 0;
+   run it again later to reattach
+   ([mdstack start](docs/runtimes/tmux.md#mdstack-start)).
 5. **Trust, once, per harness.** A Claude Code `ash` waits at its
    folder-trust dialog (`mdstack status` shows `ambiguous`): run
    `mdstack attach ash --rw` and accept it; never press a blind

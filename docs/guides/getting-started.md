@@ -74,15 +74,17 @@ command with the previous tag rolls back
 ## 2. First `up`
 
 ```sh
-~/.mdstack/start          # same as: mdstack up
+mdstack start             # or ~/.mdstack/start: start the crew, or reattach to window 0
 mdstack status
 ```
 
-`up` renders the briefs and starts one tmux session holding the coordinator
-`ash` (window 0) and the pool leads
-([Bringing up the team](../../README.md#bringing-up-the-team)). On the first
-start, accept each harness's trust dialog once: a Claude Code `ash` waits at
-its folder-trust dialog until you attach with `--rw` and accept it
+`mdstack start` runs `mdstack up`, which renders the briefs and starts one
+tmux session holding the coordinator `ash` (window 0) and the pool leads
+([Bringing up the team](../../README.md#bringing-up-the-team)), then attaches
+this terminal to window 0; run again, it reattaches without a second session
+([mdstack start](../runtimes/tmux.md#mdstack-start)). On the first start,
+accept each harness's trust dialog once: a Claude Code `ash` waits at its
+folder-trust dialog in window 0
 ([Quickstart step 5](../../README.md#quickstart-tmux)). Stop everything with
 `mdstack down`.
 
