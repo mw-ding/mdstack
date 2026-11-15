@@ -45,6 +45,7 @@ MAX_SEQUENCE = 2 ** 53 - 1
 MAX_REPOS = 32
 MAX_BODY = 60_000
 FUTURE = 120  # seconds a time may run ahead of the checker's clock
+MAX_DEPTH = 8  # a valid record nests 5 levels (record, sections, section, items, item); deeper is never valid
 
 
 def utc(value):
@@ -90,6 +91,17 @@ def slot_body(rec):
     return "%s\n```json\n%s\n```" % (MARKER, canonical(rec).decode("utf-8"))
 
 
+def depth(value):
+    """Nesting depth of parsed JSON, iteratively, so a hostile body cannot exhaust the stack."""
+    deepest, todo = 0, [(value, 1)]
+    while todo:
+        node, d = todo.pop()
+        if isinstance(node, (dict, list)):
+            deepest = max(deepest, d)
+            todo += [(child, d + 1) for child in (node.values() if isinstance(node, dict) else node)]
+    return deepest
+
+
 def _pairs(pairs):
     keys = [k for k, _ in pairs]
     if len(set(keys)) != len(keys):
@@ -116,8 +128,12 @@ def parse_slot(body):
         rec = json.loads("\n".join(lines[2:-1]), object_pairs_hook=_pairs, parse_constant=_constant)
     except ValueError as e:
         return None, "record is not JSON (%s)" % e
+    except RecursionError:
+        return None, "record is not JSON (nested too deeply)"
     if not isinstance(rec, dict):
         return None, "record is not a JSON object"
+    if depth(rec) > MAX_DEPTH:
+        return None, "record nested deeper than %d levels" % MAX_DEPTH
     return rec, None
 
 
@@ -197,9 +213,10 @@ def _section(problems, name, sec, repos, now):
                     ipath = "%s.items[%d]" % (path, i)
                     if _keys(problems, ipath, item, item_keys):
                         _item(problems, ipath, name, item, repos)
-                        if name == "blockers" and item["url"] in seen:
+                        url = item["url"] if isinstance(item["url"], str) else None  # a wrong type is refused above
+                        if name == "blockers" and url is not None and url in seen:
                             problems.append("%s.url: duplicate blocker URL" % ipath)
-                        seen.add(item["url"])
+                        seen.add(url)
     else:
         problems.append("%s.state: expected known or unknown" % path)
         return None

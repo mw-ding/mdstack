@@ -13,6 +13,7 @@ import copy
 import importlib.util
 import json
 import os
+import re
 import sys
 import unittest
 
@@ -140,6 +141,19 @@ ROWS = [  # (name, record, expected problem substring); controls: minimal() and 
 ]
 
 
+def leaf_paths(value, path=""):
+    """Every dotted path in a record (list indexes as numbers), containers included."""
+    items = value.items() if isinstance(value, dict) else enumerate(value) if isinstance(value, list) else []
+    for key, child in items:
+        sub = "%s.%s" % (path, key) if path else str(key)
+        yield sub
+        yield from leaf_paths(child, sub)
+
+
+WRONG = [[], {}, None, True, 1.5, -1, "x"]  # every JSON type, plus a negative number and a short string
+ITEM_KEYS = [(name, key) for name, (_, keys, _) in sr.SECTIONS.items() if keys for key in keys]
+
+
 class RecordRows(unittest.TestCase):
     def test_controls_valid(self):
         self.assertEqual(sorted(cc.RUNTIME_OPTIONS), sorted(RUNTIMES))
@@ -157,6 +171,30 @@ class RecordRows(unittest.TestCase):
             with self.subTest(name):
                 problems = sr.check_record(rec, RUNTIMES, CLOCK)
                 self.assertTrue(any(want in p for p in problems), (want, problems))
+
+    def test_every_field_with_every_wrong_type(self):
+        """The whole wrong-type class (round-1 finding 1): every path of the full record, containers included,
+        replaced by each JSON type, returns problems and never raises; the valid value at the path is the control."""
+        rows = 0
+        for path in leaf_paths(full()):
+            control = full()
+            for value in WRONG:
+                rec = at(control, path, value)
+                if rec == control or path.endswith(".deadline") and value is None:
+                    continue  # the same value, or a valid one (a null deadline)
+                if path in ("instance_id",) and value == "x" or path.endswith(".items") and value == []:
+                    continue  # valid: a one-letter instance ID, an empty list
+                with self.subTest(path=path, value=value):
+                    problems = sr.check_record(rec, RUNTIMES, CLOCK)
+                    self.assertTrue(problems, (path, value))
+                rows += 1
+        self.assertGreater(rows, 300)
+        self.assertEqual(sr.check_record(full(), RUNTIMES, CLOCK), [])
+        nested = sr.MARKER + "\n```json\n" + '{"a":' * 5000 + "1" + "}" * 5000 + "\n```"
+        self.assertEqual(sr.parse_slot(nested)[0], None)
+        self.assertRegex(sr.parse_slot(nested)[1], r"record is not JSON|nested deeper than 8")
+        self.assertIn("nested deeper than 8", sr.parse_slot(sr.slot_body(at(full(), "sections.queue.depth",
+                                                                              [[[[[[[1]]]]]]])))[1])
 
     def test_slot_envelope(self):
         body = sr.slot_body(full())
@@ -213,6 +251,38 @@ class RecordRowsThroughCli(StatusBase):
         self.assertEqual(rows["ctl-full"][4:7], ["fresh", "yes", "-"])
         self.assertEqual(rows["ctl-min"][5:7], ["unknown", ",".join(sr.SECTIONS)])
         self.assertFalse([name for name, row in rows.items() if name.startswith("row-") and row[4] != "invalid"], rows)
+        self.assertEqual((self.audit(), self.snapshot()), ([], before))
+
+    def test_wrong_typed_item_values_in_every_section(self):
+        """Round-1 finding 1 through the shipped CLI: a wrong-typed value for each item key of each list section, and a
+        too-deeply nested body, each becomes a `diagnostic:` while the valid control stays a fresh row; exit 0, no writes."""
+        comments, n = self.api["issues"]["acme/status/5"]["comments"], 0
+        wanted = {}
+        for name, key in ITEM_KEYS:
+            for value in ([], {}, None if key != "deadline" else 7, True):
+                rec = full()
+                rec["sections"][name]["items"][0][key] = value
+                rec.update(instance_id="w-%02d" % n, registration_id="r-%032x" % (n + 1))
+                comments.append({"id": 300 + n, "user": "someone", "body": sr.slot_body(rec)})
+                wanted[300 + n] = (name, key, value)
+                n += 1
+        comments.append({"id": 299, "user": "someone",
+                         "body": sr.MARKER + "\n```json\n" + '{"a":' * 5000 + "1" + "}" * 5000 + "\n```"})
+        comments.append({"id": 298, "user": "someone", "body": sr.slot_body(at(at(full(), "instance_id", "ctl"),
+                                                                              "registration_id", "r-" + "e" * 32))})
+        self.save_api()
+        before = self.snapshot()
+        r = self.crew("status", "--all")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        lines = r.stdout.splitlines()
+        for cid, row in wanted.items():
+            self.assertTrue(any(ln.startswith("diagnostic: ") and "#issuecomment-%d invalid:" % cid in ln for ln in lines),
+                            (row, lines))
+        self.assertTrue(any(re.search(r"#issuecomment-299 invalid: (record is not JSON|record nested deeper than 8)", ln)
+                            for ln in lines), lines)
+        rows = {ln.split()[0]: ln.split() for ln in lines[1:] if not ln.startswith("diagnostic:")}
+        self.assertEqual(rows["ctl"][4], "fresh")  # the valid control stays visible
+        self.assertEqual(sorted(k for k, v in rows.items() if v[4] == "invalid"), sorted("w-%02d" % i for i in range(n)))
         self.assertEqual((self.audit(), self.snapshot()), ([], before))
 
     def test_publisher_refuses_an_invalid_record_with_zero_writes(self):
