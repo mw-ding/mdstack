@@ -234,7 +234,7 @@ def fingerprint(state, ref, kind=None):
     return [None if pr is None else [pr.get(k) for k in ("state", "head", "ci")], "#" + n in poll.get("held", []),
             poll.get("answers", {}).get("#" + n), os.path.exists(os.path.join(state, "asks", n + ".json"))] + \
         ([(poll.get("prs", {}).get(n) or {}).get("notes")] if kind == "evidence" else []) + \
-        ([fixes(state, n)] if kind == "fix" else [])
+        ([fixes(state, n), [[w, r.get("head"), r.get("start")] for w, r in fix_runs(state, n)]] if kind == "fix" else [])
 
 
 def fixes(state, n):
@@ -254,14 +254,19 @@ def fixes(state, n):
     return rows
 
 
+def fix_runs(state, n):
+    """Recorded builder fix passes for #n: a spawned one settles, and so wakes, a `fix` wait like a receipt (#1871)."""
+    return [(w, r) for w, r in runs(state) if r["role"] == "builder" and r.get("args", {}).get("pass") == "fix" and
+            r["args"].get("pr") == int(n)]
+
+
 def delivered(state, n, head):
     """Whether a coordinator `fix` for #n at head reached a worker: a recorded builder's copy with its receipt, or a fix
     pass spawned at that head after the lead's copy (any other window's) arrived."""
     rows, builders = fixes(state, n), {w: rec for w, rec in runs(state) if rec["role"] == "builder"}
     sent = [r[3] for r in rows if r[0] not in builders and r[2] == [head]]
     return any(r[0] in builders and r[2] == [head] and r[4] for r in rows) or any(
-        rec.get("args", {}).get("pass") == "fix" and rec["args"].get("pr") == int(n) and rec.get("head") == head and
-        any(t and rec.get("start", "") >= t for t in sent) for rec in builders.values())
+        rec.get("head") == head and any(t and rec.get("start", "") >= t for t in sent) for _, rec in fix_runs(state, n))
 
 
 def frees(seen, now):

@@ -904,6 +904,26 @@ class ReviewerPool(route_tests.Route):
             print(first + "\nomitted handoff: 10 backstops typed 0; relay still waiting\ncoordinator fix " + fix["id"] +
                   " woke the relay (same head); worker ack settled it:\n" + out + "\nworker fix messages: 1")
 
+    def test_parked_relay_wakes_and_settles_when_its_fix_pass_is_spawned(self):  # #1871 r1: no worker inbox receipt
+        relay = self.relayed()
+        with mock.patch.dict(os.environ, self.env):
+            self.assertEqual(self.lead.handoff(self.args, "builder", "fix", ["#12", self.sha, "findings"]), 0)
+        fix = [m for m in self.lead.pending(self.state, "ben-lead") if m["kind"] == "fix"][0]
+        self.ben_status("ack: %s\n" % fix["id"])
+        self.assertEqual(self.disposition(relay)[0::2], (0, "waiting: #12 fix id=%s\n" % relay))
+        actionable = lambda: [m["id"] for m in self.lead.actionable(self.state, "ben-lead")]
+        with mock.patch.dict(os.environ, self.env):
+            self.assertNotIn(relay, actionable())  # parked while the adopted fix pass awaits spawn
+            rec = self.record("ben-7")  # the lead spawns the adopted PR's fix pass at the verdict head
+            rec.update(head=self.sha, start="2099-01-01T00:00:00Z", args=dict(rec["args"], **{"pass": "fix", "pr": 12}))
+            self.put("runs/ben-7.json", json.dumps(rec))
+            self.assertIn(relay, actionable())
+        code, out, added = self.disposition(relay)
+        self.assertEqual((code, added), (0, "done: %s\n" % relay))
+        self.assertIn("fix delivered", out)
+        if "--relay-transcript" in sys.argv:
+            print("parked relay: spawned fix pass woke it; " + out)
+
     def test_relay_disposition_table(self):  # #1871: one rule; every refusal beside its valid control
         relay = self.relayed()
         base = {p: open(os.path.join(self.state, p)).read() for p in
@@ -1028,6 +1048,7 @@ if __name__ == "__main__":
                  "test_builder_completion_wakes_deferred_review"]
     if "--relay-transcript" in sys.argv:  # #1871
         names = ["test_relayed_changes_wait_for_the_coordinator_fix_and_settle_on_its_receipt",
+                 "test_parked_relay_wakes_and_settles_when_its_fix_pass_is_spawned",
                  "test_relay_disposition_table", "test_team_root_relay_and_fix_rows_stay_in_their_repo"]
     if "--held-wait-transcript" in sys.argv:  # #1836
         names = ["test_held_ref_parks_with_a_dispatcher_wait_through_unchanged_hold",
