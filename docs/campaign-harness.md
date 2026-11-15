@@ -79,34 +79,8 @@ an expected exit, and explicit `wait` steps that poll a file for a match up
 to a deadline instead of sleeping a fixed time. `{source}` expands to the
 pinned mdstack checkout, so a step calls its CLIs.
 
-The committed specs live in `dev/tests/scripts/fixtures/campaign/`, one line per
-scenario in ID order:
-
-- A01 from #786
-- A02 from #786
-- A03 from #787
-- A04 from #787
-- A05 from #787
-- A06 from #788
-- A07 from #788
-- A08 from #789
-- A09 from #789
-- A10 from #789
-- A13 from #792
-- A14 from #793
-- A15 from #794
-- A16 from #794
-- A17 from #795
-- A18 from #795
-- A19 from #797
-- A21 from #798
-- A22 from #799
-- A23 from #802
-- A24 from #803
-- A25 from #804
-- A26 from #804
-- A27 from #800
-- A31 from #804
+The committed specs live in `dev/tests/scripts/fixtures/campaign/`, one
+`<Axx>.json` per scenario; the [scenario index](#scenario-index) lists them.
 
 Profile changes a run needs, such as precheck on, path classes or a role
 engine order standing in for a quota steer, go in an `--org-profile` file
@@ -123,31 +97,8 @@ directory `<state>/gh` as `CAMPAIGN_GH_DIR`, and the run seed as
 `CAMPAIGN_SEED`.
 
 Scenarios that change crew state each run in a fresh sandbox: one `setup`,
-`campaign-run.py --scenario Axx` and `teardown` per scenario. They are, one
-line per scenario in ID order:
-
-- A03
-- A04
-- A05
-- A06
-- A07
-- A08
-- A09
-- A10
-- A13
-- A14
-- A15
-- A16
-- A17
-- A18
-- A20
-- A21
-- A22
-- A23
-- A25
-- A26
-- A27
-- A31
+`campaign-run.py --scenario Axx` and `teardown` per scenario. The index's
+`Sandbox` column marks them `fresh`.
 
 When tmux is installed, the runner starts a decoy session on a throwaway
 socket outside the sandbox and exports it as `TMUX`. If the decoy is gone
@@ -232,357 +183,54 @@ a case together with its disposition, renaming a step or deleting a
 scenario is caught. A reason never waives CI, an approval or acceptance
 evidence.
 
-Each scenario's notes follow under its own heading, in ID order.
+### Scenario index
 
-Contributor note: `.gitattributes` marks this page `merge=union` (#1112).
-A local merge-up of two campaign PRs that each add a list line or a notes
-section at the same place keeps both sides, with no manual resolution. Union
-merge suits append-only edits only. A reorder or rewrite of existing text can
-merge into duplicated or garbled text with no conflict to flag it, so such a
-change still needs a normal review of the merged result. Two lines added at
-one place can land out of ID order; restore the order in the merge-up commit.
-GitHub's server-side mergeability check is not documented to honour the
-attribute, so a PR may still show as conflicting there and still needs the
-builder's local merge-up.
+Each scenario has its own file under
+[campaign-scenarios/](campaign-scenarios/A01.md): its source issue, its
+committed spec (or, for a driver-only scenario such as A29, the driver that
+runs it), whether it needs a fresh sandbox, and its notes. Edit the scenario
+file, never this table. A29 has no JSON spec: `a28/teams.py --handoff` runs it
+from an operator shell. Driver-only IDs are recorded in
+`dev/tests/scripts/fixtures/campaign/driver-only.txt`, so the index never
+loses one that has no JSON spec.
 
-### A06 and A07
+<!-- scenarios:begin: generated from docs/campaign-scenarios/ by `python3 scripts/check-repo.py --fix` -->
 
-The stubs take no model turns, so A06 and A07 play the worker's and the
-lead's part through public CLIs. A step writes a reviewer's section file and
-terminal status line, and runs `mdstack reviewer-pool` with
-`CREW_POOL=reviewer`, as the reviewer lead does on a nudge. A07 seeds
-`schedule/target.json` so the reviewer cap, not the ramp, is the limit it
-exercises.
+| ID | Source | Spec | Sandbox |
+|---|---|---|---|
+| [A01](campaign-scenarios/A01.md) | #786 | `A01.json` | shared |
+| [A02](campaign-scenarios/A02.md) | #786 | `A02.json` | shared |
+| [A03](campaign-scenarios/A03.md) | #787 | `A03.json` | fresh |
+| [A04](campaign-scenarios/A04.md) | #787 | `A04.json` | fresh |
+| [A05](campaign-scenarios/A05.md) | #787 | `A05.json` | fresh |
+| [A06](campaign-scenarios/A06.md) | #788 | `A06.json` | fresh |
+| [A07](campaign-scenarios/A07.md) | #788 | `A07.json` | fresh |
+| [A08](campaign-scenarios/A08.md) | #789 | `A08.json` | fresh |
+| [A09](campaign-scenarios/A09.md) | #789 | `A09.json` | fresh |
+| [A10](campaign-scenarios/A10.md) | #789 | `A10.json` | fresh |
+| [A11](campaign-scenarios/A11.md) | #790 | `A11.json` | shared |
+| [A12](campaign-scenarios/A12.md) | #791 | `A12.json` | shared |
+| [A13](campaign-scenarios/A13.md) | #792 | `A13.json` | fresh |
+| [A14](campaign-scenarios/A14.md) | #793 | `A14.json` | fresh |
+| [A15](campaign-scenarios/A15.md) | #794 | `A15.json` | fresh |
+| [A16](campaign-scenarios/A16.md) | #794 | `A16.json` | fresh |
+| [A17](campaign-scenarios/A17.md) | #795 | `A17.json` | fresh |
+| [A18](campaign-scenarios/A18.md) | #795 | `A18.json` | fresh |
+| [A19](campaign-scenarios/A19.md) | #797 | `A19.json` | shared |
+| [A20](campaign-scenarios/A20.md) | #796 | `A20.json` | fresh |
+| [A21](campaign-scenarios/A21.md) | #798 | `A21.json` | fresh |
+| [A22](campaign-scenarios/A22.md) | #799 | `A22.json` | fresh |
+| [A23](campaign-scenarios/A23.md) | #802 | `A23.json` | fresh |
+| [A24](campaign-scenarios/A24.md) | #803 | `A24.json` | shared |
+| [A25](campaign-scenarios/A25.md) | #804 | `A25.json` | fresh |
+| [A26](campaign-scenarios/A26.md) | #804 | `A26.json` | fresh |
+| [A27](campaign-scenarios/A27.md) | #800 | `A27.json` | fresh |
+| [A28](campaign-scenarios/A28.md) | #801 | `A28.json` | shared |
+| [A29](campaign-scenarios/A29.md) | #1441 | driver | n/a |
+| [A31](campaign-scenarios/A31.md) | #804 | `A31.json` | fresh |
+| [A32](campaign-scenarios/A32.md) | #790 | `A32.json` | shared |
 
-### Scheduler scenarios (A08 to A10)
-
-A08 to A10 drive `mdstack schedule decide`, `release`, `snapshot` and
-`summary`, and `mdstack watch`, the way the leads and the watcher call them.
-They read each decision back from the call's JSON and from
-`schedule/decisions-*.jsonl`, which keeps the walk order and the
-`lead-down` drops. Leads get demand through `mdstack lead handoff`, and
-busy builders come from `mdstack spawn`. Machine signals and time are
-injected as follows:
-
-- **Thresholds and caps:** a small org profile under `<state>/` sets the
-  load watermarks, `schedule_ramp`, `max_load`, `stuck_after` or the
-  present caps (`--org-profile`). The sandbox profile stays pinned.
-- **Memory pressure:** a `sysctl` stub on `PATH` answers macOS levels 1, 2
-  or garbage (unknown). So the memory steps assume a macOS host.
-- **Gateway errors:** the stub builder prints a declared Codex 429 or 503
-  line on its pane, and `mdstack watch` records it.
-- **Time:** a step backdates `schedule/target.json` (`changed`, `starts`),
-  `errors.jsonl` timestamps or a reservation's `time`, instead of waiting
-  out `schedule_interval`, the 10-minute error window or `reservation_ttl`.
-- **Zero cap:** a fake signed away record with `cap`, behind
-  `away-control.json`.
-
-| Build issue | Shipped behaviour | Scenario steps |
-| --- | --- | --- |
-| S1 caps-only admission | No load gate by default; the optional `max_load` ceiling defers | A10 `memory-load-high-unknown-holds` (high load moves only T), `floor-passes-target-ramp-signal-ceiling` |
-| S2 snapshot | Every input or `unknown` | A08 `up-tracker-milestones-and-leads`, A10 `up-three-busy-builders`, `memory-load-high-unknown-holds` |
-| S3 gateway errors | Declared pane text, one record per source and text | A10 `declared-429-503-pane-text-recorded-once` |
-| S4 ranking | Classes 1 to 8; milestone, critical path, then age | A08 `rank-finish-first-caller-only-grants`, `red-default-branch-fix-ranks-class-1` (open `main-red` issue, #1072) |
-| S5 target | Watermarks, interval, hysteresis, ramp, floor of 1 | A10 `errors-high-drop-to-floor-busy-drain`, `between-holds-clear-grows`, `memory-load-high-unknown-holds`, `ramp-bounds-other-starts` |
-| S6 builder decide | Caller-only reservations, holds, `lead-down`, release, TTL, floors | A08 every step |
-| S7 reviewer decide | Reviewer floor under builder load; a held review granted on the next reviewer call | A08 `builder-first-hold-then-reviewer-grants`, A10 `floor-passes-target-ramp-signal-ceiling` |
-| S8 overlap dispatch | Excluded: closed unbuilt (owner decision 2026-11-03, D + S9) | none |
-| S9 overlap trains | Clean overlap lands in one train | A14 (25.xx train runs), not A08 to A10 |
-| S10 summary and stuck alarm | Summary line, on watcher wakes too; one `schedule-stuck` wake for finishing work | A09 summary checks, A10 `stuck-alarm-finishing-work-once` |
-| S11 consolidation | `mdstack lead capacity` removed | A08 `up-tracker-milestones-and-leads` |
-
-A09 covers held demand (#639, #712): a held item is never granted, held or
-deferred, and never counts as demand for T.
-
-### A11 and A32
-
-A11 and A32 (from #790) take the same approach as A06 and A07 for the
-standard PR loop and engine routing. A step pushes a commit with its
-`Engine:` trailer and writes the PR view, CI and verdict markers. A11 seeds
-red CI and a bad precheck report, then repairs both.
-
-### A12
-
-A12 (from #791) pushes a sample CLI, service and API from
-`dev/tests/scripts/fixtures/campaign/A12-sample/` and captures each with
-`evidence-cli.py`. Its `repro.py` plays the validator: it refuses a capture
-whose SHA is not the head of a fresh clone, reruns the `sh` block there and
-compares exit, stdout and stderr. `mdstack train check` then reads scripted PR
-bodies and fix reviews for the evidence gate.
-
-### A13
-
-A13 (from #792) plays the tool merge-up, the builder's conflict repair and
-the reviewer's delta verdict through git and scripted PR views. It runs
-`mdstack content` on the four pinned SHAs, `mdstack train check`, `build` and
-`close` (which routes the dropped members), and stands in for each squash
-land with a direct push to the sandbox origin's `main`.
-
-### A14
-
-A14 (from #793) runs `mdstack train build`, `wait`, `land` and `land-lock` on
-the sandbox repo. `a14/gh`, first on `PATH`, plays the forge: `pr create`
-answers PR 49+N for `crew/train-N`, `pr checks N` is red while `gh/red-N`
-exists, and `pr merge` squashes onto the sandbox origin's `main` only while
-the PR head is still the `--match-head-commit` SHA. Every other call goes
-to the campaign `gh` stub.
-
-### A15 and A16
-
-A15 and A16 (from #794) play the synthesizer's §7 check through
-`mdstack train check` and `mdstack train land`, and its direct land through
-`mdstack land-lock` and the `a14/gh` forge's head-bound `pr merge`.
-`a15/view.py` writes a PR view that passes every scripted gate at its
-head; each argument injects one miss. Profile changes (`lone_pr_land`,
-`merge_grant` and its scope, a control item) go in `--org-profile` files.
-Each §7 row is exercised, or names why the run does not:
-
-| §7 row | Where |
-| --- | --- |
-| Ownership record | A15: unreadable record refuses check and land |
-| Approval at head | A15: stale verdict, failed validate, changes verdict |
-| Later changes request | A15: changes verdict; rework steer and formal review in `test-crew-train.py` (#1118) |
-| Merge permission | A15: none or stale merge-ok; A16: grant, head-scoped merge-ok |
-| Sensitive, spec | A15: no merge-ok; A16: grant never covers sensitive, spec needs scope |
-| Hold, escalation, coordinator hold | A15: labels, hold-until; A16: hold posted after approval |
-| Project landing stop | A16: close, restart, moved head, stop-id resume |
-| Rereview | A15: open rereview blocks; engine comparison is the synthesizer's (A32) |
-| Pre-review check | Not in `train check`; the synthesizer runs `crew-precheck.py` (A11) |
-| Evidence | A15: missing proof; capture and reproduction in A12 |
-| Runtime gates | A15: `crew:needs-mirror`; builder watch is Grok Bot only (M15.1) |
-| Tested with default branch | A15: lone direct waiver, two ready train; train state in A14 |
-| CI, draft, mergeable, base | A15 |
-| Linkage | Manual in `train check`; the synthesizer's read |
-| Post-land main CI | Synthesizer brief step 4, checked as rendered; red-main rank in A08 |
-
-Express self-gates are A17's (#795). The asynchronous land alternative
-needs an async change backend, which the sandbox profile does not declare.
-The lone-or-train choice, inbox holds and the post-land CI read are model
-steps with no CLI, so A15 checks the rendered synthesizer brief for them.
-
-### A17 and A18
-
-A17 and A18 (from #795) play the express and solo lanes through the CLIs
-that read them: `item-flavor.py`, `crew-config.py class-flavor --express`,
-`crew-precheck.py --pass selfgate`, `mdstack poll`, `mdstack route` with
-`mdstack reviewer-pool`, `mdstack train check` and `land`, and `mdstack spawn`,
-`mdstack lead handoff` and `mdstack send` for solo. The stubs take no model
-turns, so the builder's self-gate sub-session and the owner's solo session
-are played by the selfgate record and commits they would post.
-`a17/view.py` writes a PR that passes the express gate at its head: the
-coordinator's express item record on the linked issue, a signed selfgate
-pass, the changed files and owner merge-ok. Each argument injects one
-change. A solo PR drops `crew:express` and adds `crew:solo`.
-
-The pinned sandbox profile keeps the default `selfgate_engine`
-(`different`). Same mode runs only with an `--org-profile` file under the
-sandbox state, so it never reaches the default. A tightening class for the
-rename case comes from another such file. After a reviewer is killed, a step
-runs `mdstack schedule release` for its PR, because the reaped grant would hold
-a reviewer slot until `reservation_ttl`
-([#1070](https://github.com/mw-ding/eng-crew/issues/1070)). The attended
-owner session for A18 at level b needs a forge sandbox and stays with
-level b.
-
-### A19
-
-A19 (from #797) replays every declared operation without a live session.
-`a19/replay.py` discovers the shipped harness and session backend adapters
-and reads the declared rows from the
-[adapter modules](runtimes/harness-adapters.md#adapter-modules) table and the
-session backend [Operations](runtimes/session-backends.md#operations) and
-capability tables. `a19/ledger.json` must name exactly those adapters and
-rows. Each entry is one of:
-
-- `oracle`: the adapter declares the row, and the named tests replay it on
-  fake binaries;
-- `default`: the row is absent, and the spec's default is what the tests
-  prove;
-- `gap`: a quote from the adapter's spec section, or an undocumented
-  `finding`;
-- `unsupported`: the row is absent, with a quote saying why.
-
-Refusal and ambiguous cases, and the Grok Bot runtime gaps (C1, C2, C3 and
-C5 accepted under #150), carry the same spec link. Every anchor, quote and
-test is checked, and each test file runs once. A gap is never counted as
-conformant.
-
-Installed CLIs and live Grok mirror or watch proof need their own
-environment, so A19's scripted steps do not run them (#1439).
-`a19/smoke.py` runs once per installed harness and session backend
-binding, from an operator shell, never from CI. It drives one disposable
-run through the runtime's own code: launch, a `ready` line, the `mdstack
-send` doorbell, the inbox `ack:`, the C5 probe and the pane stop. tmux uses
-a dedicated server named for the run. herdr uses its local server and
-closes only the run's own workspace. Each run's worktree is a detached
-linked worktree of the source checkout at its HEAD, as `mdstack spawn` makes,
-so Claude Code keys its folder trust on that checkout's repository root; the
-smoke removes only that worktree after the run stops (#1470). Each JSON line
-pins the source SHA, both adapter files' sha256 and the harness and backend
-versions. A binding that is not installed, has no interactive launch, is
-skipped by policy (`--skip`) or whose adapter's role trust check is unmet
-for the source's repository root is reported as blocked, with doctor's fix;
-the smoke never accepts trust itself. Run it from an ordinary terminal
-opened outside any agent session; on herdr, the shared server must also be
-started from one (`mdstack doctor`'s `session server` row).
-
-The ledger's `live` section names every harness and backend binding, plus
-each runtime's mirror and watch. Each entry is one of:
-
-- `evidence`: the source SHA, the versions and a link to the smoke capture;
-- `fail`: the same for a run that did not finish, plus the finding filed for
-  it, so a failure is never recorded as a gap or a block;
-- `block`: the installation, version, account and sandbox facts, with a
-  link to the capture that shows them;
-- `unsupported`: a quote from the adapter's spec section.
-
-A documented gap stays a gap even when its binding passes the smoke. Docker
-cannot supply live Grok mirror or watch proof.
-
-### A20
-
-A20 (from #796) installs from a local bundle. It builds two releases with
-`release-bundle.py` into a `mirror` source under the sandbox state root, and
-its org pack profile and `manifest.toml` pin carry `paths.mdstack`, the
-source, the identities and the control item. `a20/forge.sh` answers a ready
-repo for `mdstack doctor`. Steps set `HOME` to the sandbox, so doctor reads no
-host config.
-
-### A21
-
-A21 plays Riley with `state/riley.py`, typed into a researcher window: it
-answers only the newest signed coordinator request with question, scope,
-deliverable and source issue, else writes `blocked: #<n> request unclear`.
-Its finding goes through the fake forge and is copied to
-`state/gh/posted-<n>.md` for the oracles.
-
-### A22
-
-A22 enables triage through an `--org-profile` file and plays Riley's sweep
-with `state/triage.py` in the `riley-sweep` window, in shadow mode only.
-`state/forge.py` plays the forge's issue store and the owner's `triage:`
-replies in `state/gh/issue-list-open.json` and `issue-list-closed.json`,
-which keep each post. After each sweep is reaped, a step runs `mdstack drain`
-as the coordinator would, so the next sweep is not reaped by the previous
-`done:` wake.
-
-### A23
-
-A23 (from #802) runs `mdstack runner` from the sandbox checkout against
-forge-less hosts in an `--org-profile` file. `a23/ssh`, installed as
-`<state>/bin/ssh`, loops each call back to the real `crew-remote.py`
-entrypoint on a host root under the sandbox state, with the caller's whole
-environment, so only the entrypoint's scrub keeps tokens out of a job. A
-`<state>/a23/faults` line `HOST VERB down|lost` drops one call before or
-after the host acts. A host running an older entrypoint copy gives the
-refusal, and a host without the entrypoint gives the failure.
-
-### A24
-
-A24 (from #803) cuts a release in a bare clone of the source under
-`state/a24`: a fragment, the cut PR head and its merge commit on the
-clone's `main`. It runs `release-trigger.py`, `release-check.py` and
-`release-bundle.py` as `release.yml` does, with the `GITHUB_*` variables
-set. `a24/forge.py` writes the merged cut PR, its merge-ok markers and the
-`ci.yml` runs into `api.json`. The publish job's tag and Release writes are
-never run, and a step checks `gh.log` holds reads only.
-
-### A25
-
-A25 (from #804) plays the coordinator's away and away-return records into
-the fake forge (`state/rec.py`) and the Slack webhook with a loopback server
-(`state/hook/hook.py`, mode `ok`, `reject` or `hang`). It backdates a pending
-message's `next` instead of waiting out the retry, and writes an owner ask's
-`asks/<n>.json` a few seconds ahead in a PT offset.
-
-### A26
-
-A26 (from #804) pauses by not running the watcher or `mdstack poll` while it
-moves the forge, backdates the triage slot, and plays a sweep's end with
-`state/played-sweep.py` and a `done:` line.
-
-### A27
-
-A27 runs `mdstack feedback` against the fake forge and reads each posted card
-from `state/gh/bodies.log`. It caps the researchers with two deep dives so
-the milestone-close sweep queues, then plays that sweep with
-`state/sweep.py`. The sweep reads the closed milestone's issues from
-`issue-list-all.json`, and a number in `state/refuse` stands in for a
-provider safety refusal. Each played model call is logged in
-`state/model.log`.
-
-### A28
-
-A28 (from #801) runs two sandbox teams on the one repo: the second team's
-checkout, profile and roots sit inside the sandbox, and each team's
-`runtime.instance` and control item come from its `--org-profile` file. A
-step types the outgoing team's `mdstack handoff stopped` into that team's
-window 0 as a short `sh <script>` line (a terminal line over about 1 KiB is
-never read), so the detached actor must outlive the session it tears down.
-Teardown kills only the pinned session, so A28's last step takes the second
-team down.
-
-`a28/teams.py` (#1440) is the two-full-team preflight and lifecycle.
-`teams.py SOURCE ROOT` is the one command for a repeated run. It first runs
-`campaign-sandbox.py teardown` on every earlier run under `ROOT`, which
-stops that run's teams and keeps their work. It refuses to go on when an
-earlier run has no valid manifest. A sandbox cleanup never calls tmux bare:
-an inherited `TMUX` beats `TMUX_TMPDIR`, so a bare `tmux kill-server` from a
-crew pane kills the crew's own server (#817, #1474). Each run then sets up
-a fresh sandbox in `ROOT/<run>`. `setup --teams 2` builds team b in the
-sandbox: its own `repo-b` clone of
-the one origin, session `crew-campaign-<run>-b` and `team-b/` roots. Each
-team gets `state/team-<a|b>.toml` as its `--org-profile`, with its
-`runtime.instance` and control item 1. The preflight fails on a shared
-session, instance or nested root, and on a different repo, control item,
-source, release or skills (the source's `templates` and `roles` trees).
-It then runs `mdstack up` for each team and waits until the coordinator and
-each enabled lead probe alive. Last, it leaves one unlanded commit in each
-checkout and tears down. Both teams must stop, both commits must be
-retained and the sentinel must be unchanged. Without `--engine` every role
-is an engine stub. `--engine ENGINE/MODEL` leaves that engine unstubbed and
-runs it in both teams' tiers, from an operator shell only.
-
-### A29
-
-A29 (#1441, for #213 and #157) is the handoff round trip between the two
-full teams: `teams.py SOURCE ROOT --production FILE --sentinel FILE
---handoff`. Before `mdstack up` it seeds the fake forge from
-`a29/handoff.py`. The control item holds team a's `claimed` post. The live
-items are a dependency set (#3, its PR #4 and #5, which depends on #3), a
-change in review round 1 (#7 and PR #8 with one verdict), a pending owner
-ask (#9, `crew:needs-md`) and a backlog item (#10). Team b does not own the
-repo, so its `mdstack up` starts only its coordinator and refuses the rest
-(`ownership: read-only; refusing start`).
-
-Once both teams are ready, team a spawns a builder on #3. Then the driver
-runs the real commands a → b in drain mode and b → a in stop mode:
-`handoff to`, `handoff manifest --post`, `reconcile`, `ack` twice,
-`mdstack up` and `lead ensure` for the new owner, `handoff stopped
---foreground` and `lift`. The `handoff` phase passes only when:
-
-- the control item reads `claimed`, then `draining`, `offered`, `acked`
-  and `stopped` once for each handoff id, with exactly one ack each;
-- `mdstack ownership --action write` permits exactly one team, or none
-  while the handoff is in transit, after every step;
-- each `stopped` post's probe shows the outgoing session gone;
-- both manifests hold the same sets, stages and heads, and the first one
-  names #3's kept run;
-- PR #8 still has one review, and nothing but the control item was posted
-  on or written to the forge.
-
-The phase prints each side's manifest `eng_crew_version`. The preflight
-already proves both teams run the same source, release and skills, which
-is the owner's precondition ([handoff](handoff.md#owner-assumption)).
-
-### A31
-
-A31 (from #804) puts a scenario `gh` (`state/m31/bin/gh`) first on `PATH`
-for `metrics-refresh.py` only, answering from a two-repo history in
-`state/m31/history.json`. The metrics-gate hold, waiver and intake
-acceptance are the coordinator's judgement, so steps play them as labels
-and records. The report from actual campaign records is
-`scripts/campaign-report.py` ([metrics README](metrics/README.md#campaign-history-report)).
+<!-- scenarios:end -->
 
 ## Cleanup checks
 

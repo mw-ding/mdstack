@@ -899,47 +899,147 @@ with tempfile.TemporaryDirectory() as d:
     rc, out = run(d)
     expect("evidence: enabled by default", rc == 1 and "[inline-evidence]" in out, out)
 
-# Union merge (#1112): docs/campaign-harness.md needs `merge=union` in
-# .gitattributes so two appends at the same place merge with both kept.
-CAMPAIGN = "docs/campaign-harness.md"
-for label, attrs, want in [
-    ("present", "docs/campaign-harness.md merge=union\n", 0),
-    ("missing file", None, 1),
-    ("other attribute only", "docs/campaign-harness.md text\n", 1),
-    ("commented out", "# docs/campaign-harness.md merge=union\n", 1),
+# Scenario index (#1419): one docs/campaign-scenarios/<Axx>.md per committed
+# spec or driver-only scenario; the index in docs/campaign-harness.md is
+# generated from them (`--fix`) and fails closed on a missing, duplicate,
+# stale or dangling entry. Replaces the #1112 union-merge guard.
+SC_DOC, SC_CAMP, SC_DIR = "docs/campaign-harness.md", "dev/tests/scripts/fixtures/campaign", "docs/campaign-scenarios"
+SC_DRIVER = "- Driver: [`a29/run.py`](../../dev/tests/scripts/fixtures/campaign/a29/run.py)"
+
+
+def scenario_file(sid, source="#1", box="shared", spec=None, notes=None):
+    spec = spec or "- Spec: [`%s.json`](../../dev/tests/scripts/fixtures/campaign/%s.json)" % (sid, sid)
+    return "# %s\n\n- Source: %s\n%s\n- Sandbox: %s\n\n%s\n" % (sid, source, spec, box, notes or "Notes for %s." % sid)
+
+
+def scenario_tree(d):
+    for sid in ("A01", "A02"):
+        write(d, "%s/%s.json" % (SC_CAMP, sid), '{"id": "%s"}\n' % sid)
+        write(d, "%s/%s.md" % (SC_DIR, sid), scenario_file(sid))
+    write(d, SC_CAMP + "/a29/run.py", "")
+    write(d, SC_DIR + "/A29.md", scenario_file("A29", box="n/a", spec=SC_DRIVER))
+    write(d, SC_CAMP + "/driver-only.txt", "# driver-only scenarios\nA29\n")
+    write(d, SC_DOC, "# Campaign\n\n<!-- scenarios:begin -->\n<!-- scenarios:end -->\n")
+    return run(d, "--only", "scenarios", "--fix")
+
+
+def sc_read(d, rel):
+    with open(os.path.join(d, rel), encoding="utf-8") as f:
+        return f.read()
+
+
+def sc_sub(d, rel, old, new):
+    text = sc_read(d, rel)
+    assert old in text, (rel, old)
+    write(d, rel, text.replace(old, new))
+
+
+with tempfile.TemporaryDirectory() as d:
+    rc, out = scenario_tree(d)
+    index = sc_read(d, SC_DOC)
+    expect("scenarios: --fix writes the sorted index, the driver-only A29 included",
+           rc == 0 and "| [A01](campaign-scenarios/A01.md) | #1 | `A01.json` | shared |\n"
+           "| [A02](campaign-scenarios/A02.md) | #1 | `A02.json` | shared |\n"
+           "| [A29](campaign-scenarios/A29.md) | #1 | driver | n/a |\n\n<!-- scenarios:end -->" in index, out + index)
+    rc, out = run(d, "--only", "scenarios")
+    expect("scenarios: a generated index passes", rc == 0, out)
+
+A01, A02, A29 = (SC_DIR + "/%s.md" % s for s in ("A01", "A02", "A29"))
+for label, mutate, want in [
+    ("missing scenario file for a committed spec",
+     lambda d: write(d, SC_CAMP + "/A03.json", '{"id": "A03"}\n'), "missing: no docs/campaign-scenarios/A03.md"),
+    ("stale row after a field rewrite", lambda d: sc_sub(d, A01, "Source: #1", "Source: #9"), "stale row for A01"),
+    ("duplicate row", lambda d: sc_sub(d, SC_DOC, "| [A02]", "| [A02](campaign-scenarios/A02.md) | #1 | `A02.json` | shared |\n| [A02]"),
+     "duplicate row for A02"),
+    ("row dropped from the index", lambda d: sc_sub(d, SC_DOC, "| [A01](campaign-scenarios/A01.md) | #1 | `A01.json` | shared |\n", ""),
+     "missing row for A01"),
+    ("dangling spec", lambda d: os.remove(os.path.join(d, SC_CAMP, "A02.json")), "dangling: no readable committed spec"),
+    ("spec id mismatch", lambda d: write(d, SC_CAMP + "/A02.json", '{"id": "A09"}\n'), "has id 'A09'"),
+    ("spec naming another scenario's JSON", lambda d: sc_sub(d, A02, "A02.json", "A01.json"), "Spec must be exactly"),
+    ("dangling driver", lambda d: os.remove(os.path.join(d, SC_CAMP, "a29", "run.py")), "dangling: Driver"),
+    ("driver-only scenario with a committed spec",
+     lambda d: write(d, SC_CAMP + "/A29.json", '{"id": "A29"}\n'), "is committed; use `- Spec:`"),
+    ("file not named <Axx>.md", lambda d: write(d, SC_DIR + "/notes.md", "# Notes\n"), "not a scenario file"),
+    ("heading names another ID", lambda d: sc_sub(d, A01, "# A01", "# A02"), "start with `# A01`"),
+    ("Sandbox field missing", lambda d: sc_sub(d, A01, "- Sandbox: shared\n", ""), "needs `- Source:`"),
+    ("Spec and Driver both set", lambda d: sc_sub(d, A01, "- Sandbox:", SC_DRIVER + "\n- Sandbox:"), "exactly one of"),
+    ("second Source field", lambda d: sc_sub(d, A01, "- Source: #1\n", "- Source: #1\n- Source: #2\n"),
+     "second `Source:` field"),
+    ("bad sandbox for a spec", lambda d: sc_sub(d, A01, "Sandbox: shared", "Sandbox: n/a"), "fresh or shared"),
+    ("bad sandbox for a driver", lambda d: sc_sub(d, A29, "Sandbox: n/a", "Sandbox: shared"), "is n/a"),
+    ("a recorded driver-only scenario's file deleted", lambda d: os.remove(os.path.join(d, A29)),
+     "missing: no docs/campaign-scenarios/A29.md for this driver-only scenario"),
+    ("a Driver scenario not recorded", lambda d: write(d, SC_CAMP + "/driver-only.txt", ""), "exactly one listed"),
+    ("a recorded driver-only ID with a Spec", lambda d: write(d, SC_CAMP + "/driver-only.txt", "A01\nA29\n"),
+     "exactly one listed"),
+    ("a bad driver-only record line", lambda d: write(d, SC_CAMP + "/driver-only.txt", "A29\nA29\n"),
+     "one new driver-only scenario ID"),
+    ("index markers missing", lambda d: write(d, SC_DOC, "# Campaign\n"), "no '<!-- scenarios:begin ...'"),
 ]:
     with tempfile.TemporaryDirectory() as d:
-        write(d, CAMPAIGN, "# Campaign\n")
-        if attrs is not None:
-            write(d, ".gitattributes", attrs)
-        rc, out = run(d, "--only", "attributes")
-        expect("attributes: " + label, rc == want and (want == 0) == ("[union-merge]" not in out), out)
+        scenario_tree(d)
+        mutate(d)
+        rc, out = run(d, "--only", "scenarios")
+        expect("scenarios: refuses " + label, rc == 1 and want in out and "[scenario-index]" in out, out)
 
 with tempfile.TemporaryDirectory() as d:
-    rc, out = run(d, "--only", "attributes")
-    expect("attributes: skipped when the doc is absent", rc == 0, out)
-
-rc, out = run(os.path.dirname(SCRIPTS), "--only", "attributes")
-expect("attributes: current tree passes", rc == 0, out)
+    scenario_tree(d)
+    sc_sub(d, A01, "Source: #1", "Source: #9")
+    rc, out = run(d, "--only", "scenarios", "--fix")
+    rc2, out2 = run(d, "--only", "scenarios")
+    expect("scenarios: --fix regenerates a stale index",
+           rc == 0 and rc2 == 0 and "| [A01](campaign-scenarios/A01.md) | #9 |" in sc_read(d, SC_DOC), out + out2)
 
 with tempfile.TemporaryDirectory() as d:
-    git = lambda *a: subprocess.run(["git", "-C", d, "-c", "user.name=t", "-c", "user.email=t@t", *a],
-                                    capture_output=True, text=True)
-    git("init", "-q", "-b", "main")
-    write(d, ".gitattributes", "docs/campaign-harness.md merge=union\n")
-    write(d, CAMPAIGN, "- A01\n- A13\n\nNotes.\n")
-    git("add", "-A")
-    git("commit", "-qm", "base")
-    for branch, line in [("a23", "- A23\n"), ("a24", "- A24\n")]:
-        git("checkout", "-qb", branch, "main")
-        write(d, CAMPAIGN, "- A01\n- A13\n" + line + "\nNotes.\n")
-        git("commit", "-qam", branch)
-    git("checkout", "-q", "a23")
-    merged = git("merge", "-q", "--no-edit", "a24")
-    text = open(os.path.join(d, CAMPAIGN)).read()
-    expect("attributes: two appends at one place merge with both lines kept",
-           merged.returncode == 0 and "- A23\n" in text and "- A24\n" in text and "<<<<<<<" not in text,
-           "rc=%s %s%s" % (merged.returncode, merged.stdout, text))
+    scenario_tree(d)
+    os.remove(os.path.join(d, A29))
+    rc, out = run(d, "--only", "scenarios", "--fix")
+    rc2, out2 = run(d, "--only", "scenarios")
+    expect("scenarios: --fix refuses and keeps the row when a driver-only scenario's file is gone (review r1)",
+           rc == 1 and rc2 == 1 and "| [A29](campaign-scenarios/A29.md)" in sc_read(d, SC_DOC)
+           and "for this driver-only scenario" in out2, out + out2)
+
+with tempfile.TemporaryDirectory() as d:
+    write(d, SC_CAMP + "/A01.json", '{"id": "A01"}\n')
+    rc, out = run(d, "--only", "scenarios")
+    expect("scenarios: skipped when the harness doc is absent", rc == 0, out)
+
+rc, out = run(os.path.dirname(SCRIPTS), "--only", "scenarios")
+expect("scenarios: current tree passes", rc == 0, out)
+attrs = os.path.join(os.path.dirname(SCRIPTS), ".gitattributes")
+expect("scenarios: the campaign page has no union merge attribute",
+       not os.path.exists(attrs) or "campaign-harness.md" not in sc_read(os.path.dirname(SCRIPTS), ".gitattributes"))
+
+# Two branches rewrite different scenarios (notes and an index field) and each
+# regenerates the index: the scenario files merge cleanly, only the generated
+# block conflicts, and `--fix` after the merge keeps both edits.
+with tempfile.TemporaryDirectory() as d:
+    sg = lambda *a: subprocess.run(["git", "-C", d, "-c", "user.name=t", "-c", "user.email=t@t", *a],
+                                   capture_output=True, text=True)
+    sg("init", "-q", "-b", "main")
+    scenario_tree(d)
+    sg("add", "-A")
+    sg("commit", "-qm", "base")
+    for branch, sid, source in [("r1", "A01", "#7"), ("r2", "A02", "#8")]:
+        sg("checkout", "-qb", branch, "main")
+        write(d, "%s/%s.md" % (SC_DIR, sid), scenario_file(sid, source=source, notes="Rewritten %s notes." % sid))
+        run(d, "--only", "scenarios", "--fix")
+        sg("commit", "-qam", branch)
+    sg("checkout", "-q", "r1")
+    merged = sg("merge", "-q", "--no-edit", "r2")
+    unmerged = sg("diff", "--name-only", "--diff-filter=U").stdout.split()
+    rc, out = run(d, "--only", "scenarios", "--fix")
+    rc2, out2 = run(d, "--only", "scenarios")
+    index = sc_read(d, SC_DOC)
+    sg("add", "-A")
+    done = sg("commit", "-qm", "merge r2")
+    expect("scenarios: two rewrites conflict only in the generated index",
+           merged.returncode != 0 and unmerged == [SC_DOC], "rc=%s unmerged=%s" % (merged.returncode, unmerged))
+    expect("scenarios: --fix after the merge keeps both rewrites",
+           rc == 0 and rc2 == 0 and done.returncode == 0 and "<<<<<<<" not in index
+           and "| [A01](campaign-scenarios/A01.md) | #7 |" in index and "| [A02](campaign-scenarios/A02.md) | #8 |" in index
+           and "Rewritten A01 notes." in sc_read(d, A01) and "Rewritten A02 notes." in sc_read(d, A02),
+           out + out2 + index)
 
 # Execute the CI shell with a fake python3 that runs the real denylist guard.
 workflow = open(os.path.join(SCRIPTS, "..", ".github", "workflows", "ci.yml"), encoding="utf-8").read()

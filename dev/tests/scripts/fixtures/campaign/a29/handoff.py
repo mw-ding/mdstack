@@ -1,4 +1,4 @@
-"""A29 bidirectional handoff between two full teams (docs/campaign-harness.md#a29, #1441), run by `a28/teams.py
+"""A29 bidirectional handoff between two full teams (docs/campaign-scenarios/A29.md, #1441), run by `a28/teams.py
 --handoff` while both teams are up and ready. `seed` writes the fake forge's live records before `mdstack up`: team a's
 `claimed` post on control item 1, a dependency set (#3, its PR #4, #5 depending on #3), a change in review round 1 (#7,
 PR #8), a pending owner ask (#9, crew:needs-md) and a backlog item (#10). `roundtrip` runs the real `mdstack handoff`

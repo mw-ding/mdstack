@@ -70,7 +70,7 @@ precondition, not part of the handoff. The
 replaced the example (the owner's Slack team) with a crew-controlled
 second team. The dry run therefore uses two tmux teams on one Mac, each
 with its own session, state and runtime instance, on one sandbox repo
-([campaign A29](campaign-harness.md#a29)). Each manifest records its
+([campaign A29](campaign-scenarios/A29.md)). Each manifest records its
 sender's `eng_crew_version`, so the round trip records both sides'
 versions.
 
@@ -693,7 +693,7 @@ for the coordinator to file. Rows F1–F4 build the
 | 21.2 | [#210](https://github.com/mw-ding/eng-crew/issues/210) | [Ownership record](#ownership-record): `pass=handoff` and its states in §4; the owner function; the guard at §6 step 1 and before each push, post and land; the owning-runtime gate under the gate contract (owner merge-ok); profile keys `repo.control_item` and `runtime.instance`; item-level marker operations; guard lines in the Grok Bot templates and in tmux `mdstack poll`, `spawn`, `restart`, `guard` and the synthesizer brief; tests for the owner function (claim race, one open handoff, ignored markers, unreadable record). Likely two PRs: protocol and templates (mirror), then tmux code | #157 |
 | 21.3 | [#211](https://github.com/mw-ding/eng-crew/issues/211) | [Manifest](#manifest): the template from [Manifest template](#manifest-template) and a generator `mdstack handoff manifest` (`scripts/crew.d/handoff.py`; its tests in `dev/tests/environments/test-crew-handoff.py` run under CI's `test-crew-*` glob, with no workflow edit); sets; secret scan; size rule; tests for retry (same id, same post), partial (one set held, the rest adopted) and duplicate (a second ack ignored) | #210 |
 | 21.4 | [#212](https://github.com/mw-ding/eng-crew/issues/212) | [Prompt stop](#prompt-stop) per runtime; [resume](#resume-and-reconcile) steps 1–8 and the reconcile table; lifting `holds_added`; the Grok Bot [return](#return-path) checklist; tests | #211, A |
-| 21.5 | [#213](https://github.com/mw-ding/eng-crew/issues/213) | Dry run between two full teams, tmux team a → tmux team b → team a, on a sandbox repo ([Owner assumption](#owner-assumption), [campaign A29](campaign-harness.md#a29)), recorded and linked from #157 (#157 AC3). The Grok Bot example is replaced; #140 does not block it | #212 |
+| 21.5 | [#213](https://github.com/mw-ding/eng-crew/issues/213) | Dry run between two full teams, tmux team a → tmux team b → team a, on a sandbox repo ([Owner assumption](#owner-assumption), [campaign A29](campaign-scenarios/A29.md)), recorded and linked from #157 (#157 AC3). The Grok Bot example is replaced; #140 does not block it | #212 |
 | A | [#637](https://github.com/mw-ding/eng-crew/issues/637) | Owner commands and drain: `/crew handoff to`, `drain`, `stop`, `deadline`, `abort` and `/crew takeover from` in §9 as chat commands; the `draining` state per runtime | #210 |
 | B | [#638](https://github.com/mw-ding/eng-crew/issues/638) | Session runtime guard: the coordinator-session brief carries the guard and the outgoing and incoming steps until the session binding that [bootstrap](bootstrap.md#build-issues) proposes exists | #210 |
 | C | [#639](https://github.com/mw-ding/eng-crew/issues/639) | `mdstack doctor` rows: control item set and readable, `runtime.instance` set, current owning runtime (a scope note for #190) | #210, #190 |
@@ -706,7 +706,7 @@ for the coordinator to file. Rows F1–F4 build the
 
 ## Out of scope
 
-- The dry run (#157 AC3) is #213, run as [campaign A29](campaign-harness.md#a29)
+- The dry run (#157 AC3) is #213, run as [campaign A29](campaign-scenarios/A29.md)
   between two tmux teams ([Owner assumption](#owner-assumption)).
 - Switching without the owner; the quota trigger only suggests.
 - Building any of this before the build issues land.
