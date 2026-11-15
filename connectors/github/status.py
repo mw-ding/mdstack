@@ -4,6 +4,7 @@ concern's read-records and publish-record operations, run through templates/back
 
 Usage: status.py read-records < request.json
        status.py publish-record < request.json
+       status.py --help
 
 Each operation reads one JSON request on stdin and prints one JSON object on stdout, exit 0; exit 2 on a malformed
 request. The destination is an issue URL https://github.com/<owner>/<repo>/issues/<n>.
@@ -130,6 +131,9 @@ def request(op):
 
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
+    if argv in (["--help"], ["-h"]):
+        print(__doc__)
+        return 0
     if len(argv) != 1 or argv[0] not in ("read-records", "publish-record"):
         print(__doc__.split("\n\n")[1], file=sys.stderr)
         return 2
