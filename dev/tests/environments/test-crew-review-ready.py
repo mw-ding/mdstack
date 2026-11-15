@@ -1,7 +1,8 @@
 """Review readiness (#1878, M57 D1): a fresh review starts only from the head's published, builder-signed record for its
 operation, on both reviewer admission paths (route's durable work event and an explicit review handoff, each dispatched
 by `mdstack reviewer-pool`). Table-driven D1.1 binding and D1.5 operation matrices, D1.2 publication orders, D1.3
-persistence and D1.4 token-free recovery, with fake tmux/GitHub. --transcript prints the lifecycle. Run in CI.
+persistence and D1.4 token-free recovery, with fake tmux/GitHub. --transcript prints the lifecycle; test names run
+only those. Run in CI.
 """
 import importlib.machinery
 import importlib.util
@@ -287,6 +288,7 @@ class ReviewReadiness(pool_tests.ReviewerPool):
 
 
 if __name__ == "__main__":
-    names = [n for n in ReviewReadiness.__dict__ if n.startswith("test_")]
+    names = [a for a in sys.argv[1:] if a.startswith("test_")] or \
+        [n for n in ReviewReadiness.__dict__ if n.startswith("test_")]  # named tests, else all
     result = unittest.TextTestRunner().run(unittest.TestSuite(ReviewReadiness(n) for n in names))
     sys.exit(not result.wasSuccessful())
