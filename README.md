@@ -231,6 +231,14 @@ member issues are closed; M57 closes after status sync #1890 lands
 is in a release: v7.13.0 predates every unit. Installation is a separate
 step; no live shared-status registration or terminal adoption is claimed.
 
+M59 native owner entry is built in source: `mdstack start`, one
+start-or-reattach command from any directory, with `<home>/start` delegating
+to it (PR #1930), on the opening spec (PR #1928), plus four lessons carried
+in from M57. All member issues are closed; M59 closes after status sync #1926
+lands ([M59 outcome](docs/specs/portable.md#m59-outcome-and-lessons)). None
+of it is in a release: v7.14.0 predates every unit. Installation is a
+separate step; no terminal adoption is claimed.
+
 Content is built by the crew itself through the normal PR pipeline; every
 change is recorded in `CHANGELOG.md`.
 

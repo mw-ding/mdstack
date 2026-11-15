@@ -23,6 +23,11 @@ publishing and `status --all` (PR #1905) are built in source.
 evidence. They landed after the 7.13.0 cut and are in no release; this
 binding claims no installed crew or live terminal adoption.
 
+M59's native `mdstack start` (PR #1930) is built in source.
+[M59 status](../specs/portable.md#m59-outcome-and-lessons) records the
+evidence. It landed after the 7.14.0 cut and is in no release; this binding
+claims no installed crew or live terminal adoption.
+
 ## Decisions
 
 | #110 question | Decision | Section |

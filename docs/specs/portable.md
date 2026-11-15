@@ -2847,16 +2847,21 @@ approved-work exception and continue independently, without waiting on S0 →
 S1 last. One issue → one PR. Sizes are non-test lines, planning ranges, not
 limits.
 
+Statuses below are synced by #1926: every admitted member landed with the
+PR shown and its issue is closed; MC stayed excluded. M59 is built in source
+only; outcome, proof boundary, release status and lessons are in
+[M59 outcome and lessons](#m59-outcome-and-lessons).
+
 | ID | Issue | Scope / named paths | Size | Depends on | Tier | Status |
 |---|---|---|---|---|---|---|
 | S0 | #1927 | This section (PR #1928) | 70–110 docs | Signed M59 approval | default | done |
-| O1 | #1919 | Native `mdstack start`: new `start.py` command module, `up.py` attach operation, `_shared.py` `WRITES`, `layout.py` wrapper; help, tmux runtime doc and tests | 100–180 + 30–60 docs | #1927 | deep | open |
+| O1 | #1919 | Native `mdstack start`: new `start.py` command module, `up.py` attach operation, `_shared.py` `WRITES`, `layout.py` wrapper; help, tmux runtime doc and tests (PR #1930) | 100–180 + 30–60 docs | #1927 | deep | done |
 | L1 | #1912 | Uncertain remote-write recovery lesson (PR #1922) | 40–70 docs | Carry-in | default | done |
-| L2 | #1913 | Malformed status-record lesson (PR #1921) | 40–70 docs | Carry-in | default | open |
-| L3 | #1914 | Help on stdout/exit 0 vs usage/exit 2 lesson (PR #1924) | 40–70 docs | Carry-in | default | open |
-| L4 | #1915 | Builder brief against the session consumer's budget lesson (PR #1923) | 40–70 docs | Carry-in | default | open |
+| L2 | #1913 | Malformed status-record lesson (PR #1921) | 40–70 docs | Carry-in | default | done |
+| L3 | #1914 | Help on stdout/exit 0 vs usage/exit 2 lesson (PR #1924) | 40–70 docs | Carry-in | default | done |
+| L4 | #1915 | Builder brief against the session consumer's budget lesson (PR #1923) | 40–70 docs | Carry-in | default | done |
 | MC | not filed | Delete the temporary workaround entries in `memory/roles/coordinator.md`. **Excluded:** not admitted until the owner confirms the v7.14.0 install; if confirmed before S1, the coordinator files it and this row returns to `open` | ~7 deleted lines | Owner install confirmation; #1927 | default | dropped |
-| S1 | #1926 | Status, settled choices, lesson links and tracker reconciliation | 40–70 docs | Every admitted member landed | default | open |
+| S1 | #1926 | Status, settled choices, lesson links and tracker reconciliation (this change) | 40–70 docs | Every admitted member landed | default | done |
 
 **Target environment: N/A**: every acceptance path uses fake tmux and
 disposable profiles and state; no platform or device requirement. **Owner
@@ -2893,15 +2898,15 @@ Refusal rows pair with a valid control and show zero startup effects.
 
 | Row | State | Outcome | Status |
 |---|---|---|---|
-| M1 | Crew not running, terminal outside tmux | Existing start path: one session, one watcher; attaches window 0 only after successful creation; a failed start attaches nothing | open |
-| M2 | Crew running, outside tmux | Attaches window 0; no second session or watcher; attaches even if the role-start pass fails (`up.py:358`) | open |
-| M3 | Client on the crew's server | `switch-client` to window 0, no nested attach | open |
-| M4 | Client on a foreign server | Refuses with the detach/retry instruction, exit 1, before any start | open |
-| M5 | Crew pane (`CREW_ROLE` set) | Refuses, exit 2, before session, watcher, wrapper or terminal mutation | open |
-| M6 | Missing, invalid or ambiguous profile | Refuses before any start: no session, watcher or state write | open |
-| M7 | Project paused | Unchanged from `up`: window 0 only, no role windows (`up.py:425`), then attach | open |
-| M8 | Old wrapper (`up`), new wrapper (`start`, with and without `--attach`) | Same outcome as the native entry point it reaches; plain `up` without `--attach` still never attaches | open |
-| M9 | Unowned file at `<home>/start` | `layout --write` refuses and leaves it unchanged | open |
+| M1 | Crew not running, terminal outside tmux | Existing start path: one session, one watcher; attaches window 0 only after successful creation; a failed start attaches nothing | done |
+| M2 | Crew running, outside tmux | Attaches window 0; no second session or watcher; attaches even if the role-start pass fails (`up.py:358`) | done |
+| M3 | Client on the crew's server | `switch-client` to window 0, no nested attach | done |
+| M4 | Client on a foreign server | Refuses with the detach/retry instruction, exit 1, before any start | done |
+| M5 | Crew pane (`CREW_ROLE` set) | Refuses, exit 2, before session, watcher, wrapper or terminal mutation | done |
+| M6 | Missing, invalid or ambiguous profile | Refuses before any start: no session, watcher or state write | done |
+| M7 | Project paused | Unchanged from `up`: window 0 only, no role windows (`up.py:425`), then attach | done |
+| M8 | Old wrapper (`up`), new wrapper (`start`, with and without `--attach`) | Same outcome as the native entry point it reaches; plain `up` without `--attach` still never attaches | done |
+| M9 | Unowned file at `<home>/start` | `layout --write` refuses and leaves it unchanged | done |
 
 #### Learning carry-ins (L1–L4)
 
@@ -2922,8 +2927,8 @@ exit, or a marker or §7 change, is **major** and is replanned before review.
 
 | Unit | Affected local tests (refine against the actual diff) | Status |
 |---|---|---|
-| S0/S1, L1–L4 | Required checks only | open |
-| O1 | New native-start test, `test-crew-up.py`, `test-crew-attach.py`, `test-crew-layout.py`, `test-crew-config.py`, `test-crew-team.py`, `test-session-adapters.py`; `_shared.py` dependents such as `test-crew-upgrade.py` | open |
+| S0/S1, L1–L4 | Required checks only | done |
+| O1 | New native-start test, `test-crew-up.py`, `test-crew-attach.py`, `test-crew-layout.py`, `test-crew-config.py`, `test-crew-team.py`, `test-session-adapters.py`; `_shared.py` dependents such as `test-crew-upgrade.py` | done |
 
 Every PR runs `python3 scripts/check-repo.py` and
 `python3 scripts/check-changelog-pr.py --base origin/main --pr N`, with
@@ -2941,6 +2946,46 @@ Merge permission is the owner's M59 approval
 ([c6899606468](https://github.com/mw-ding/mdstack/issues/985#issuecomment-6899606468)),
 recorded per PR at each actual head; it supplies no approval, CI waiver,
 hold clearance, sensitive reason or missing AC proof.
+
+#### M59 outcome and lessons
+
+**Tracker.** S0 (#1927, PR #1928) and all five admitted members landed and
+are closed: O1 #1919 (PR #1930), L1 #1912 (PR #1922), L2 #1913 (PR #1921),
+L3 #1914 (PR #1924) and L4 #1915 (PR #1923). MC was never filed: the owner
+did not confirm the v7.14.0 install before S1, so it stays `dropped` as
+excluded, not deferred. No item was added after S0. #1926 closes on this
+change's merge, then #1925 and M59 close. M25.2 and the conditional M58 stay
+outside this closeout.
+
+**Applied decisions.** O1 was built on the settled choices: O1.a reuse
+(`start.py` is a discovered command module calling `up`'s attach operation;
+plain `up` and `up --attach` unchanged), O1.b project resolution (the existing
+precedence, refusing a missing, invalid or ambiguous profile before any
+start) and O1.c wrapper (`<home>/start` delegates to `start`, old `up`
+wrappers keep working, unowned-wrapper refusal kept). All nine matrix rows
+M1–M9 are `done`. O1 passed review in round 1, with no round-cap extension;
+markers, `docs/protocol.md` and the stage 7 registry are unchanged.
+
+**Proof boundary.** Acceptance evidence is isolated: fake tmux and
+disposable profiles and state (`dev/tests/environments/test-crew-start.py`,
+one test per matrix row, plus `test-crew-layout.py`). Lesson units are docs
+only. **Source delivery:** every unit is on `main`. **Release:** none is in
+a release; v7.14.0 predates all of them, and their fragments wait in
+`changes/unreleased/`. **Installation:** nothing here claims an installed
+crew or a real terminal adoption of `mdstack start`; that stays an optional
+operator step.
+
+**Lessons.** The four learning captures:
+[uncertain remote write](../lessons/2026-11-15-uncertain-remote-write.md) (L1),
+[malformed status record](../lessons/2026-11-15-status-malformed-record.md) (L2),
+[status connector help exit](../lessons/2026-11-15-status-connector-help-exit.md) (L3)
+and [session builder budget](../lessons/2026-11-15-session-builder-budget.md) (L4).
+From the milestone itself:
+
+- O1 entered build with its choices and full state matrix settled in the
+  opening spec; it passed in one review round with one test per row.
+- Carry-ins dispatched before the opening spec still fit the bookends: S0
+  recorded them as rows, and none waited on S0.
 
 ## 6. Decisions
 
