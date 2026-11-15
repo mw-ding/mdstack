@@ -30,13 +30,14 @@ class ReviewReadiness(pool_tests.ReviewerPool):
         super().setUp()
         self.n = 0
 
-    def note(self, kind="fix", round_="1", sha=None, pr="12", login="acme-bot", name="Ben", proof=PROOF):
+    def note(self, kind="fix", round_="1", sha=None, pr="12", login="acme-bot", name="Ben", proof=PROOF, issue=None):
         self.n += 1
         sha = self.sha if sha is None else sha
         return dict(id="N%d" % self.n, author={"login": login}, body=(
-            "[%s/%s] round %s @ %s\n\n%s\n\n<!-- crew:v1 role=builder pass=%s pr=%s sha=%s round=%s verdict=n/a "
+            "[%s/%s] round %s @ %s\n\n%s\n\n<!-- crew:v1 role=builder pass=%s pr=%s%s sha=%s round=%s verdict=n/a "
             "engine=codex model=gpt-6.1-sol effort=medium -->\n— 🛠️ %s (Builder) · codex · gpt-6.1-sol") % (
-                name, kind, round_, sha[:7], proof, kind, pr, sha, round_, name))
+                name, kind, round_, sha[:7], proof, kind, pr, "" if issue is None else " issue=" + issue, sha, round_,
+                name))
 
     def verdict(self, sha, round_, result):
         return dict(self.signed("<!-- crew:v1 role=reviewer-validator pass=verdict pr=12 sha=%s round=%s verdict=%s -->"
@@ -92,26 +93,62 @@ class ReviewReadiness(pool_tests.ReviewerPool):
         state["observed"] = {"12": poll.ready_sample(self.live)}
         self.put("poll-state.json", json.dumps(state))
 
-    def test_binding_varies_each_field_once_then_the_valid_record_dispatches_once(self):  # D1.1
-        changes = self.verdict(OLD, 1, "changes")
-        cases = [("no record", [changes]), ("foreign PR", [changes, self.note(pr="13")]),
-                 ("short SHA", [changes, self.note(sha=self.sha[:7])]), ("other head", [changes, self.note(sha="c" * 40)]),
-                 ("copied signature, other login", [changes, self.note(login="acme-other")]),
-                 ("builder login, other signature", [changes, self.note(name="Sam")]),
-                 ("previous epoch", [self.note(), changes]), ("wrong round", [changes, self.note(round_="2")]),
-                 ("truncated round", [changes, self.note(round_="")]), ("wrong kind", [changes, self.note(kind="selfgate")]),
-                 ("no inline proof", [changes, self.note(proof="Fixed it.")])]
-        for why, reviews in cases:
+    def test_binding_varies_each_field_once_then_the_valid_record_dispatches_once(self):  # D1.1, PR #1904 review r2
+        """One table over every bound field of R: each row leaves one field missing or binds it otherwise; the rest of
+        the record is the valid fix note. Every row refuses with reviewer state unchanged; the valid record then
+        dispatches once."""
+        changes, body, url = self.verdict(OLD, 1, "changes"), self.live["body"], self.live["url"]
+        marker = body[body.index("<!--"):body.index("-->") + 3]
+        cases = lambda: [  # noqa: E731 (field, variant, reviews after the changes verdict, live fields, round)
+            ("record", "missing", [], {}, 2),
+            ("repo", "missing", [self.note()], dict(url=""), 2),
+            ("repo", "conflicting (repo B, same ids/SHA)", [self.note()], dict(url=url.replace("widgets", "gadgets")), 2),
+            ("item", "missing from the body marker", [self.note()], dict(body=body.replace(" issue=7", "")), 2),
+            ("item", "no linked item", [self.note()], dict(closingIssuesReferences=[]), 2),
+            ("item", "conflicting body marker", [self.note()], dict(body=body.replace("issue=7", "issue=8")), 2),
+            ("item", "conflicting body markers", [self.note()], dict(body=marker.replace("issue=7", "issue=8") + body), 2),
+            ("item", "conflicting note", [self.note(issue="8")], {}, 2),
+            ("item", "unsigned body", [self.note()], dict(author={"login": "acme-other"}), 2),
+            ("pr", "missing", [self.note(pr="")], {}, 2),
+            ("pr", "conflicting", [self.note(pr="13")], {}, 2),
+            ("head", "missing", [self.note(sha="")], {}, 2),
+            ("head", "short SHA", [self.note(sha=self.sha[:7])], {}, 2),
+            ("head", "conflicting", [self.note(sha="c" * 40)], {}, 2),
+            ("actor", "missing login", [self.note(login=None)], {}, 2),
+            ("actor", "copied signature, other login", [self.note(login="acme-other")], {}, 2),
+            ("actor", "builder login, other signature", [self.note(name="Sam")], {}, 2),
+            ("epoch", "previous", ["note-first"], {}, 2),
+            ("kind", "missing", [self.note(kind="")], {}, 2),
+            ("kind", "conflicting", [self.note(kind="selfgate")], {}, 2),
+            ("record round", "missing", [self.note(round_="")], {}, 2),
+            ("record round", "conflicting", [self.note(round_="2")], {}, 2),
+            ("requested round", "conflicting", [self.note()], {}, 3),
+            ("proof", "missing", [self.note(proof="Fixed it.")], {}, 2)]
+        for k in range(len(cases())):
+            alone = cases()[k][0] == "requested round"  # its own fixture: earlier rows' round-2 demand stays pending
+            if alone:
+                self.fresh()
+            field, variant, notes, live, round_ = cases()[k]  # built per fixture: a fresh one has a new head
+            why = "%s: %s" % (field, variant)
             with self.subTest(why):
-                self.scene(reviews)
-                self.offer()
-                self.assert_parked(why)
-                say("D1.1 %-31s -> parked: evidence wait, no claim/reservation/spawn" % why)
-        self.scene([changes, self.note()])
+                reviews = [self.note(), changes] if notes == ["note-first"] else [changes] + notes
+                self.scene(reviews, **dict(dict(body=body, url=url, author={"login": "acme-bot"},
+                                                closingIssuesReferences=[{"number": 7}]), **live))
+                self.offer(round_, paths=("review",) if field == "requested round" else ("work", "review"))
+                self.assertEqual(self.reviewers(), [], why)
+                self.assertFalse(os.path.exists(os.path.join(self.state, "schedule", "reservations.json")), why)
+                self.assertTrue(self.messages(), why)  # the demand is retained
+                if field != "repo":  # a foreign or unreadable repo is a plain error, retried; never a typed wait
+                    self.assert_parked(why)
+                say("D1.1 %-46s -> refused: no claim/reservation/spawn" % why)
+            if alone:
+                self.fresh()
+        self.scene([changes, self.note()], body=body, url=url, author={"login": "acme-bot"},
+                   closingIssuesReferences=[{"number": 7}])
         self.offer()
         self.offer()  # replay
         self.assertEqual((self.reviewers(), self.messages()), (["vera-12-r2-review"], []))
-        say("D1.1 %-31s -> one review r2; replay starts none" % "valid fix note")
+        say("D1.1 %-46s -> one review r2; replay starts none" % "valid: every field bound")
 
     def test_unreadable_or_foreign_live_read_admits_nothing(self):  # D1.1
         route = self.mod.commands()["route"]

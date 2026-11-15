@@ -332,16 +332,33 @@ def stamp(text):
     return datetime.datetime.fromisoformat(text.replace("Z", "+00:00"))
 
 
+def mismatch(want, got):
+    """The first field of R (#1878 D1.1) that got leaves missing or binds otherwise than want, else None. A want is a
+    value, a set of values or a pattern got must fullmatch."""
+    for field, expect in want.items():
+        have = got.get(field)
+        if have in (None, ""):
+            return "%s missing" % field
+        if not (re.fullmatch(expect, have) if isinstance(expect, re.Pattern) else
+                have in expect if isinstance(expect, set) else have == expect):
+            return "%s %s conflicts with %s" % (field, have, "/".join(sorted(expect)) if isinstance(expect, set) else
+                                                getattr(expect, "pattern", expect))
+    return None
+
+
 def unready(values, pr, head, round_):
     """Why a fresh review of the live head at round_ may not start, or None (#1878). The published builder record for
-    the head's operation is authoritative, authenticated by the builder's login and signature and naming this PR and
-    the full head; `done:`, head events and the backstop only wake this check. This runtime's verdicts and coordinator
-    resets set the epoch: a head whose newest verdict passed is left to deduplication; otherwise the requested round
-    must be the live round (poll's, #1005); a changes verdict at head needs a later `fix` note there; another head
-    after a verdict needs a later `fix`, `ci-fix` or `merge-up` note at it (fix and ci-fix carry the verdict's round);
-    after a reset, verdict or not, a later note of any round. With neither, the opened head is ready from the
-    builder-signed PR body whose marker names a linked item; a head committed after opening needs a round-0 `ci-fix`
-    or a `merge-up` note. Fix, ci-fix and body need inline proof or a reasoned N/A; the reviewer judges it."""
+    the head's operation is authoritative; `done:`, head events and the backstop only wake this check. One table R
+    binds every field (D1.1): this repo, the PR's one linked item as the builder-signed body's marker names it (and a
+    note's issue=, if any), this PR, the full head, the builder's login and signature, the epoch, the operation kind
+    with its record round, the requested round and inline proof; a record that leaves any field missing or binds it
+    otherwise refuses. This runtime's verdicts and coordinator resets set the epoch: a head whose newest verdict passed
+    is left to deduplication; otherwise the requested round must be the live round (poll's, #1005); a changes verdict
+    at head needs a later `fix` note there; another head after a verdict needs a later `fix`, `ci-fix` or `merge-up`
+    note at it (fix and ci-fix carry the verdict's round); after a reset, verdict or not, a later note of any round.
+    With neither, the opened head is ready from the builder-signed PR body; a head committed after opening needs a
+    round-0 `ci-fix` or a `merge-up` note. Fix, ci-fix and body need inline proof or a reasoned N/A; the reviewer
+    judges it."""
     poll, n = commands()["poll"], pr["number"]
     if pr["state"] != "OPEN" or pr["headRefOid"] != head:
         return "%s is not the open PR's live head" % head
@@ -355,41 +372,48 @@ def unready(values, pr, head, round_):
                 boundary, verdict = i, m
     if verdict and verdict.get("sha") == head and verdict.get("verdict") == "pass":
         return None
-    live = poll.pr_snapshot(dict(pr, statusCheckRollup=[]), values=values)["round"]  # round needs no CI
-    if str(round_) != str(live):
-        return "requested round %s is not the live round %d" % (round_, live)
     if boundary < 0:  # no verdict and no reset: the PR body's epoch
         commit = next((c for c in pr.get("commits") or [] if c.get("oid") == head), None)
         try:
             opened = stamp(commit["committedDate"]) <= stamp(pr["createdAt"])
         except (TypeError, KeyError, ValueError, AttributeError):
             return "unknown operation: head commit or PR creation time unreadable"
-        if opened:
-            body, items = pr.get("body") or "", {str(i["number"]) for i in pr.get("closingIssuesReferences") or []}
-            if not poll.signed_by(values, "builder", {"author": pr.get("author"), "body": body}) or not any(
-                    m.get("role") == "builder" and "pass" not in m and m.get("issue") in items for m in markers(body)):
-                return "awaiting the builder-signed PR body with a builder marker naming a linked item"
-            return None if PROOF.search(body) else "PR body has no inline proof or reasoned N/A"
-        kinds, after = {"ci-fix": "0", "merge-up": "n/a"}, "the PR opened"
+        kinds, after = ({"body": "n/a"}, "opening") if opened else ({"ci-fix": "0", "merge-up": "n/a"}, "the PR opened")
     elif verdict is None:  # a reset, before or after any verdict, opens a new epoch
         kinds, after = {"fix": None, "ci-fix": None, "merge-up": "n/a"}, "the round reset"
     else:
         after = "the round %s %s verdict" % (verdict["round"], verdict.get("verdict"))
         kinds = {"fix": verdict["round"]} if verdict.get("sha") == head else \
             {"fix": verdict["round"], "ci-fix": verdict["round"], "merge-up": "n/a"}
-    reason = "awaiting a builder-signed %s note at %s after %s" % ("/".join(kinds), head, after)
-    for i, review in reversed(list(enumerate(pr["reviews"]))):
-        if i <= boundary or not poll.signed_by(values, "builder", review):
-            continue
-        for m in markers(review["body"]):
-            want, got = kinds.get(m.get("pass"), "-"), m.get("round", "n/a")  # a published merge-up may omit round
-            if m.get("role") != "builder" or m.get("pr") != str(n) or m.get("sha") != head or \
-                    not (got == want or want is None and re.fullmatch(r"[0-9]+", got)):
-                continue
-            if m["pass"] == "merge-up" or PROOF.search(review["body"]):
-                return None
-            reason = "the %s note at %s has no inline proof or reasoned N/A" % (m["pass"], head)
-    return reason
+    body = {"author": pr.get("author"), "body": pr.get("body") or ""}
+    claims = {m.get("issue") for m in markers(body["body"]) if m.get("role") == "builder" and "pass" not in m} \
+        if poll.signed_by(values, "builder", body) else set()
+    want = {"repo": ("%s/%s" % (values["repo.owner"], values["repo.name"])).lower(),
+            "item": {str(i["number"]) for i in pr.get("closingIssuesReferences") or []}, "pr": str(n), "head": head,
+            "actor": "builder", "epoch": "current",
+            "kind": re.compile("|".join("%s@%s" % (k, "[0-9]+" if r is None else r) for k, r in kinds.items())),
+            "round": str(poll.pr_snapshot(dict(pr, statusCheckRollup=[]), values=values)["round"]),  # needs no CI
+            "proof": "inline"}
+    records = [("current" if i > boundary else "previous", review, m)
+               for i, review in reversed(list(enumerate(pr["reviews"])))
+               for m in markers(review["body"]) if m.get("role") == "builder" and "pass" in m] + \
+        [("current" if boundary < 0 else "previous", body, {"pass": "body", "pr": str(n), "sha": head})]
+    first = None
+    for epoch, review, m in records:  # newest first; the body binds the opened head only, by its kind
+        items = claims | ({m["issue"]} if "issue" in m else set())
+        why = mismatch(want, {
+            "repo": repo_of(pr.get("url")), "item": "/".join(sorted(items)) if all(items) else None,
+            "pr": m.get("pr"), "head": m.get("sha"),
+            "actor": "builder" if poll.signed_by(values, "builder", review) else
+                     (review.get("author") or {}).get("login"),
+            "epoch": epoch,
+            "kind": "%s@%s" % (m["pass"], m.get("round", "n/a")),  # a published merge-up may omit round
+            "round": str(round_),
+            "proof": "inline" if m["pass"] == "merge-up" or PROOF.search(review["body"]) else None})
+        if why is None:
+            return None
+        first = first or why
+    return "awaiting a builder-signed %s record at %s after %s; newest: %s" % ("/".join(kinds), head, after, first)
 
 
 def ready_check(values, n, head, round_):
