@@ -1945,13 +1945,18 @@ or the builder's `done:` line.
 head's published builder record for its operation is readable, because
 `route.review()` checks it live before any claim, reservation or spawn, on
 every path: poll events, the builder's `done:`, explicit `mdstack review`
-handoffs and lead retries. The record must be authored by the builder's
-login, carry its signature and name this PR and the full head. This
-runtime's verdicts and coordinator resets set the epoch:
+handoffs and lead retries. One comparison binds every field of the
+readiness record to the live request, and any missing, foreign or
+conflicting field refuses with reviewer state unchanged: this repo, the PR's
+one linked item as the builder-signed body's marker (and a note's `issue=`,
+if any) names it, this PR, the full head, the builder's login and signature,
+the current epoch, the operation kind with its record round, the requested
+round and inline proof. This runtime's verdicts and coordinator resets set
+the epoch:
 
 | Head | Ready from |
 |---|---|
-| Opened head, before any verdict (head commit dated at or before the PR) | The builder-signed PR body whose marker names a linked item |
+| Opened head, before any verdict (head commit dated at or before the PR) | The builder-signed PR body |
 | Pushed after opening, before any verdict | A round-0 `ci-fix` or a `merge-up` note at head |
 | Same head after a `changes` verdict (evidence-only fix) | A later `fix` note at head with that verdict's round |
 | New head after a verdict | A later `fix` or `ci-fix` note at head with the verdict's round, or a `merge-up` note |
