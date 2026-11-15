@@ -8,8 +8,10 @@ move of the whole layout changes one value. Rows: root, home (the profile's dire
 start there), checkout (paths.checkout, else home), state (the project's state directory), worktree_root, live_dir,
 mdstack (the install link) and the CLI the wrappers run.
 
---write writes two POSIX sh wrappers and prints each path: `<home>/start` runs `mdstack up` for this profile from any
-cwd (`<home>/start --attach` then attaches to window 0, #1845), and `<home>/start-owner` starts the owner's session (`--owner-cmd`, default `claude`) in the checkout (#1316).
+--write writes two POSIX sh wrappers and prints each path: `<home>/start` runs `mdstack start` for this profile from
+any cwd, starting or reattaching to window 0 (#1919; a redundant --attach is accepted, and a wrapper written before it,
+which runs `mdstack up`, keeps working), and `<home>/start-owner` starts the owner's session (`--owner-cmd`, default
+`claude`) in the checkout (#1316).
 Paths are absolute and shell-quoted, so rerun --write after the layout moves. A wrapper file that exists without the
 generated marker line is refused (exit 1) and left as it is. Nothing is written under ~/.claude or any other
 user-level config.
@@ -39,7 +41,7 @@ def rows(values, project, state):
 
 
 def wrappers(layout, project, owner_cmd):
-    start = "#!/bin/sh\n%s\nexec %s up --project %s \"$@\"\n" % (
+    start = "#!/bin/sh\n%s\nexec %s start --project %s \"$@\"\n" % (
         MARKER, shlex.quote(layout["cli"]), shlex.quote(os.path.abspath(project)))
     owner = "#!/bin/sh\n%s\ncd %s || exit 1\nexec %s \"$@\"\n" % (
         MARKER, shlex.quote(layout["checkout"]), shlex.join(shlex.split(owner_cmd)))

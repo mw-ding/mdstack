@@ -754,6 +754,26 @@ it uses: every command checks `paths.state_dir`; `spawn`, `kill`, `down`,
 worktree, would put the land lock and state under the worktree. In a window,
 use `--project "$CREW_PROJECT"`.
 
+### mdstack start
+
+```sh
+cli/mdstack start [--project <config.toml>[#<repo>]] [--org-profile <path>] [--inputs <inputs-dir>] [--coordinator-only] [--resume <id>]
+```
+
+`mdstack start` is the owner's shortcut: one command that starts the crew
+or reattaches to it (#1919). It runs exactly `mdstack up --attach`
+([below](#mdstack-up)), which stays as its alias, so it has the same one
+session and watcher, the same `switch-client` from a client of the crew's
+server and the same refusals: a client of another tmux server, exit 1, and
+a crew pane, exit 2, both before anything starts. Without `--project` it
+uses the default config, like other owner commands: `$CREW_PROJECT`, else
+`$MDSTACK_CONFIG`, else `<user root>/config.toml`. It names that file on
+stderr and never searches the current directory, so it works from any
+directory. A missing or invalid config, or a team file with several repos
+and no `#<repo>`, refuses before anything starts; it takes no `--team` or
+role. The generated `<home>/start` ([mdstack layout](#mdstack-layout)) runs
+it.
+
 ### mdstack up
 
 ```sh
@@ -772,7 +792,7 @@ instances back down to `min` ([role lifecycle](../roles-registry.md#lifecycle), 
 ([session binding](session.md#starting-the-coordinator), #1548).
 
 `--attach` is the owner's start-or-reattach shortcut (#1845), also reachable
-as `<home>/start --attach` ([mdstack layout](#mdstack-layout)). It runs
+as [mdstack start](#mdstack-start) and `<home>/start`. It runs
 `mdstack up` as below, so a running crew gets no second session or watcher,
 then attaches the terminal interactively to window 0 of the session on the
 server step 2 resolves. A crew `mdstack up` could not start is not attached.
@@ -782,8 +802,8 @@ another tmux server is refused, exit 1, before anything starts: detach and
 retry. Run from a crew pane (`CREW_ROLE` set) it refuses, exit 2, before
 anything starts, so an agent never takes the owner's terminal. It takes
 `--project` only (not `--team` or a role) and only a `tmux` profile. A
-flag on `up`, not a no-target `mdstack attach`, keeps `attach` free of start
-side effects, and reuses the existing `start` wrapper instead of adding one.
+start verb, not a no-target `mdstack attach`, keeps `attach` free of start
+side effects.
 
 `--team` starts one instance for every repo of a
 [team file](../profile.md#team-files) (#634): one session and coordinator,
@@ -1097,9 +1117,11 @@ cli/mdstack layout [--project <config.toml>] [--org-profile <path>] [--write] [-
 `mdstack layout` prints the resolved `root`, `home` (the profile's directory),
 `checkout`, `state`, `worktree_root`, `live_dir`, `mdstack` and the CLI the
 wrappers run. `--write` writes two one-command starts: `<home>/start` runs
-`mdstack up --project <project>` from any cwd (extra arguments pass through,
-for example `--coordinator-only`, or `--attach` to start or reattach to
-window 0), and `<home>/start-owner` starts
+[mdstack start](#mdstack-start) `--project <project>` from any cwd, starting
+or reattaching to window 0 (extra arguments pass through, for example
+`--coordinator-only`; a redundant `--attach` is accepted). A `<home>/start`
+written before #1919 runs `mdstack up --project <project>` and keeps working,
+`--attach` included; rerun `--write` to update it. `<home>/start-owner` starts
 the owner's session (`--owner-cmd`, default `claude`) in the checkout. Both
 hold absolute, shell-quoted paths and a generated marker line; rerun
 `--write` after the layout moves. A wrapper file without the marker is

@@ -18,8 +18,8 @@ docs/routines.md#terminal).
 `mdstack up --team` also records each repo in `<team-root>/team.json` and ensures one `(team, pool)` lead per enabled
 pool through the first repo whose render, pause and ownership allow it; a repeat run starts none (#1858).
 
-`mdstack up --attach` (also `<home>/start --attach`) is the owner's start-or-reattach shortcut on a tmux profile (#1845):
-it runs `mdstack up`, then attaches this terminal interactively to window 0 of the crew session on its configured
+`mdstack up --attach` (also `mdstack start` and `<home>/start`, #1919) is the owner's start-or-reattach shortcut on a tmux
+profile (#1845): it runs `mdstack up`, then attaches this terminal interactively to window 0 of the crew session on its configured
 server. From a client of that server it switches the client there (`switch-client`) instead of nesting; a client of
 another tmux server, or a crew pane (`CREW_ROLE` set), is refused before anything starts.
 
@@ -336,22 +336,22 @@ def start(values, session, state, project_dir, env):
     return 0
 
 
-def up_attach(args):
-    """mdstack up --attach (#1845): refuse a crew pane or a foreign tmux client before any start, run mdstack up, then
-    attach or switch the owner's terminal to window 0. A crew already running is attached even when up's role pass
-    fails; a crew up could not start is not."""
+def up_attach(args, verb="up --attach"):
+    """mdstack up --attach (#1845), also mdstack start (#1919, verb names it in a refusal): refuse a crew pane or a
+    foreign tmux client before any start, run mdstack up, then attach or switch the owner's terminal to window 0. A
+    crew already running is attached even when up's role pass fails; a crew up could not start is not."""
     if os.environ.get("CREW_ROLE"):
-        print("crew: refusing up --attach: run from a crew pane (CREW_ROLE=%s); it is the owner's terminal shortcut" %
-              os.environ["CREW_ROLE"])
+        print("crew: refusing %s: run from a crew pane (CREW_ROLE=%s); it is the owner's terminal shortcut" % (
+            verb, os.environ["CREW_ROLE"]))
         return 2
     if args.role or args.team:
-        print("crew: refusing up --attach: it takes --project, not %s" % ("a ROLE" if args.role else "--team"))
+        print("crew: refusing %s: it takes --project, not %s" % (verb, "a ROLE" if args.role else "--team"))
         return 2
     _, session, _ = profile(args)
     client = tmux.client_socket()
     if client and os.path.realpath(client) != os.path.realpath(tmux.socket_path()):
-        print("crew: refusing up --attach: this tmux client is on another server (%s), not the crew's (%s); detach "
-              "and retry" % (client, tmux.socket_path()))
+        print("crew: refusing %s: this tmux client is on another server (%s), not the crew's (%s); detach and "
+              "retry" % (verb, client, tmux.socket_path()))
         return 1
     running = tmux.has_session(session)
     code = up(args)
