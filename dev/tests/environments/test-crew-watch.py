@@ -30,8 +30,12 @@ silent past 900 s waking stale with liveness `claim` despite a fresh supervisor 
 while mid-turn, held, after `done:` or without an ack (#1633); the reflection timer (#1521): disabled
 never reads or spawns, a weekly window queued or started never counts as complete until its posted report, a missed
 week caught up once and coalesced with a milestone close, a failed start retried under the same run ID with no second
-queue entry, and a run that ended without a report rerun, never over an unreadable log. Run in CI.
+queue entry, and a run that ended without a report rerun, never over an unreadable log; a worker's pending delivery
+re-probed token-free (#1850, D2.4): no wake on first sight, busy or a repeat, one `delivery` wake per changed
+actionable state (idle -> nudge, dead -> restart), none for another project's record, the book pruned once acked
+or superseded, and the wake handed to the pool lead. Run in CI.
 """
+import argparse
 import json
 import os
 import re
@@ -44,7 +48,7 @@ import time
 import unittest
 from unittest import mock
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # dev/tests/: crew_testlib
-from crew_testlib import CREW, HEAD, LivenessBase, NOW, screen, STUCK, WORKING
+from crew_testlib import CREW, DeliveryBase, HEAD, LivenessBase, NOW, screen, STUCK, WORKING
 
 
 class Watch(LivenessBase):
@@ -1208,6 +1212,52 @@ class Watch(LivenessBase):
         p.communicate(timeout=10)
         self.assertEqual(p.returncode, 128 + signal.SIGHUP)
         self.assertFalse(os.path.exists(os.path.join(self.state, "wake", "watcher.pid")))
+
+
+class DeliveryProgress(DeliveryBase):  # #1850 D2.4
+    def deliveries(self, now, seen):
+        with mock.patch.dict(os.environ, self.env):
+            send = self.mod.commands()["send"]
+            values, _, _ = self.mod.profile(argparse.Namespace(project=self.project, org_profile=None))
+            wakes = self.mod.scan(self.state, "crew-acme-widgets", now, 900, seen, mine=send.ours(self.project, None, values))
+        return [(w["window"], w["id"], w["delivery"], w["worker"], w["action"]) for w in wakes if w["reason"] == "delivery"]
+
+    def test_pending_delivery_wakes_once_per_changed_actionable_state(self):
+        self.show(self.BUSY)
+        self.assertEqual(self.send("fix", "#12", "a" * 40).returncode, 0)
+        msg = self.inbox()[0]
+        foreign = dict(msg, id="20331118T031000Z-f0e1d2", context=dict(msg["context"], repo="other/repo"))
+        with open(os.path.join(self.state, "inbox", "ben-7.jsonl"), "a") as f:
+            f.write(json.dumps(foreign) + "\n")
+        with open(os.path.join(self.state, "runs", "ben-7.delivery.jsonl"), "a") as f:
+            f.write(json.dumps(dict(id=foreign["id"], event="recorded", run=None, status=0)) + "\n")
+        seen = {"offsets": {}, "keys": {}}
+        typed = self.typed()
+        self.assertEqual(self.deliveries(NOW, seen), [])  # first sight: busy, nothing to do
+        self.assertEqual(list(seen["deliveries"]), ["ben-7 " + msg["id"]])  # the foreign record is never tracked
+        self.assertEqual(self.deliveries(NOW + 600, seen), [])  # still busy past any wait: no wake, no fault
+        self.show(self.IDLE)
+        self.assertEqual(self.deliveries(NOW + 660, seen), [("ben-7", msg["id"], "submitted", "idle", "nudge")])
+        self.assertEqual(self.deliveries(NOW + 720, seen), [])  # a duplicate wake: none
+        self.show(self.IDLE, dead="1")
+        self.assertEqual(self.deliveries(NOW + 780, seen), [("ben-7", msg["id"], "submitted", "dead", "restart")])
+        self.assertEqual(self.typed(), typed)  # the watcher types nothing
+        self.show(self.IDLE)
+        self.put("status/ben-7.status", "ack: %s\n" % msg["id"])
+        self.assertEqual(self.deliveries(NOW + 840, seen), [])
+        self.assertEqual(seen["deliveries"], {})  # acked: the book keeps no settled id
+
+    def test_delivery_wake_is_handed_to_the_pool_lead(self):
+        self.put("render/runtime/builder-lead.md", "Manage the builder pool; never build.\n")
+        wake = dict(reason="delivery", window="ben-7", id="20331118T031000Z-abc123", delivery="submitted",
+                    worker="dead", disposition="pending", action="restart", event="ben-7 x: worker dead, restart")
+        args = argparse.Namespace(project=self.project, org_profile=None, timeout=1)
+        with mock.patch.dict(os.environ, self.env):
+            route, lead = self.mod.commands()["route"], self.mod.commands()["lead"]
+            values, _, state = self.mod.profile(args)
+            with mock.patch.object(lead, "event", return_value=0) as event:
+                self.assertTrue(route.route_record(args, values, state, dict(wake)))
+        event.assert_called_once_with(args, "builder", wake)
 
 
 if __name__ == "__main__":

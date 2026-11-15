@@ -189,7 +189,7 @@ How tmux meets each capability, with gaps in the
 |---|---|---|
 | C1 Wake on event | Watcher blocks on status files, stale timers and `mdstack poll`; it applies mechanical routes before its exit re-invokes the coordinator for judgement, which routes retained wakes by `mdstack send` or `mdstack spawn`; turn-end guard blocks an idle coordinator with no armed watcher ([Q1](#q1-wake)); waiting is token-free: the watcher and `mdstack poll` are plain scripts, and the backstop doubles per idle wake while no run is recorded, capped at 16 × `--backstop` ([mdstack watch](#mdstack-watch)) | C1 wake on event: partial, compensated by `mdstack poll` diffing against `poll-state.json` and the §6 step 3 sweep on the first wake after the machine resumes; residual risk: no work moves while the machine sleeps or the tmux server is down<br>C1 wake on event (waiting cost): partial, compensated by `--no-nudge` for a coordinator whose exit wake works ([mdstack watch](#mdstack-watch)); residual risk: with the default nudge, kept so that no single harness feature is the only wake path ([#160](https://github.com/mw-ding/eng-crew/issues/160) row 4), a Claude Code coordinator may take a second, empty turn per wake<br>C1 wake on event (Codex turn-end guard): partial, compensated by the watcher's typed wake and the documented [notify recipe](#mdstack-guard); residual risk: `mdstack up` does not install that recipe (verified on codex-cli 0.164.0, #170), so a Codex coordinator without it that ends a turn without re-arming the watcher can idle blind<br>C1 wake on event (Pi): partial, compensated by the watcher's typed wake ([Pi adapter](harness-adapters.md#pi-pi)); residual risk: live wake timing is unverified and no turn-end guard extension is installed, so ending without re-arming the watcher can idle blind<br>C1 wake on event (Cursor): partial, compensated by the watcher's typed wake ([Cursor adapter](harness-adapters.md#cursor-cursor)); residual risk: live timing is unverified and no turn-end hook is installed, so ending without re-arming the watcher can idle blind |
 | C2 One consumer per event | `mdstack poll`'s decision function maps each GitHub change to one consumer ([protocol §8](../protocol.md#8-safety)); each wake record names one window; terminal `pr-merged` is handled by `mdstack route`; `pr-closed` goes to the coordinator, which runs `mdstack kill`, so the Grok Bot two-watch exception is not needed | None |
-| C3 Messages by reference, proof of delivery | `mdstack send` appends refs only (issue, PR, full SHA, link, path) to `inbox/<window>.jsonl`, then types a fixed nudge `inbox: <msg-id>` and confirms it left the composer (exit 4 if not, or if a dialog is on screen, when nothing is typed; that id is then recorded in `inbox/<window>.undelivered`, and `mdstack upgrade` waits until the window acks it or the operator clears it); delivery is proven only by `ack: <msg-id>` in the window's status file; no ack in the profile timeout → one re-nudge, then a liveness check; lifecycle goes through `mdstack kill` and spawn, never message text | None |
+| C3 Messages by reference, proof of delivery | `mdstack send` appends refs only (issue, PR, full SHA, link, path) to `inbox/<window>.jsonl`, then types a fixed nudge `inbox: <msg-id>` and confirms it left the composer (exit 4 if not, or if a dialog is on screen, when nothing is typed; that id is then recorded in `inbox/<window>.undelivered`, and `mdstack upgrade` waits until the window acks it or the operator clears it); delivery is proven only by `ack: <msg-id>` in the window's status file; no ack in the profile timeout → one re-nudge, then a liveness check, while a busy worker keeps its pending id untyped and the watcher re-probes it (#1850); lifecycle goes through `mdstack kill` and spawn, never message text | None |
 | C4 Status protocol | One line per event in `status/<window>.status`: `ack:`, `done:`, `blocked:`, `paused:`, `failed:`, each with refs; the matching GitHub marker stays the record; a window that exits with no `done:` / `failed:` is `missing` or `dead` under C5 | None |
 | C5 Liveness | Probe from tmux and `ps`, not the agent: window present, run identity (`#{pane_id}`, `#{pane_pid}` and that process's start time) vs the run record, `#{pane_dead}`, then `#{pane_current_command}` and the pane's foreground process names vs the run record's expected harness ([Q7](#q7-failure)); a different pane id, pid or start time is `missing`, never `alive`, and a failed probe or adapter dialog is `ambiguous` | C5 liveness (Pi extension dialogs): partial, compensated by `--approve` avoiding built-in project trust and disabling extensions that prompt before unattended dispatch; residual risk: custom extension dialogs are not recognized and may probe alive<br>C5 liveness (Cursor dialogs): partial, compensated by authenticating and accepting workspace trust once with the owner attached before unattended dispatch; residual risk: Cursor-specific login/trust dialogs are not recognized and may probe alive |
 | C6 Isolation | `mdstack spawn` creates a unique worktree from a fresh base and refuses the main checkout, a branch-named path or an existing path; `mdstack kill` removes that run's worktree, build output and state files only ([Spawn and kill](#spawn-and-kill)), and only when its unlanded-work check (uncommitted or untracked paths; commits not on a fresh fetch of the default branch, the run's branch or `refs/pull/<n>/head`; a failed check counts as unlanded) finds nothing, or after `--discard --reason` posts the owner's reason and that list on the run's PR or issue; otherwise it keeps them and exits 1 ([mdstack kill](#mdstack-kill), #172). `mdstack down` and `mdstack restart` keep unlanded worktrees the same way | None |
@@ -1586,6 +1586,35 @@ same wake turn or the next, which the guard then lets end.
   later: exit 0 when acked, 3 with `crew: no ack: ...` when not. The
   re-nudge and liveness check after a missed ack are the coordinator's;
   what follows an exit 4 or a second miss is under [Q7](#q7-failure).
+- Busy delivery (#1850). For a worker run, `runs/<window>.delivery.jsonl`
+  records each message (`recorded`, with the run identity and the status
+  file's size, written before the inbox line) and each nudge (`submitted` or
+  `failed`); `mdstack kill` removes it with the run. A restart keeps every
+  unacked inbox message under its id: in place the files stay, and a clean
+  worktree's fresh spawn gets them back, each `recorded` again for the
+  successor run, whose nudge count starts at zero. Delivery, worker and disposition are separate
+  axes: delivery `recorded`/`submitted`/`acked`/`failed`, worker
+  `busy`/`idle`/`dead`/`missing`/`ambiguous`/`quota`/`unreachable`,
+  disposition `pending`/`dispatched`/`superseded`/`blocked`. Busy and idle
+  come only from the harness adapter's `BUSY` and composer screens; a screen
+  showing neither is `ambiguous`, never idle. One receipt rule decides
+  every consumer: `acked` (with or without `--delivery`), `send --wait-ack`,
+  restart's carry and quota pending list, the reclaim and upgrade idle
+  checks, the synthesizer queue, the watcher's acked-work check and the
+  leads' waits and deferrals. A receipt is the target's own `ack: <id>`
+  written after the message's latest `recorded` send; an ack already there,
+  or a previous run's, never counts, and a message with no record keeps the
+  plain matching-line rule. A queued, submitted, echoed or busy message is
+  never `acked`. A later message of the same
+  kind and first ref for this project supersedes it.
+- A send whose kind, refs and envelope match a worker's pending message adds
+  no second message and keeps its id. While the worker is busy, or its item
+  held, nothing is typed: `crew: pending <id> to <window>: ...; not sent
+  again, nothing typed`, exit 0 (or the `--wait-ack` result). An idle worker
+  gets one re-nudge of that id per run (`crew: sent <id> to <window>
+  (pending id kept)`); after it, and for a dead, missing, quota, ambiguous or
+  unreachable worker, nothing is typed and the exit-4 line names the reason
+  and the next action (`restart` once, then `escalate`).
 - Lifecycle (interrupt, exit, relaunch) never goes through a message; use
   `mdstack kill` and `mdstack spawn`.
 
@@ -1741,6 +1770,24 @@ cli/mdstack acked <window> <msg-id> [--wait <secs>] [--project <config.toml>]
 
 `mdstack acked` (#133) checks delivery of an `mdstack send` message: its exit codes
 and the `ack: <msg-id>` rule are under [mdstack send](#mdstack-send).
+
+`mdstack acked <window> <msg-id> --delivery` (#1850) reads, once and
+writing nothing, the message's delivery record and prints it as one JSON
+line: `id`, `window`, `context`, `kind`, `refs`, `run` (the recorded run
+identity), `inbox`, `submit`, `ack`, the three axes `delivery`, `worker`
+and `disposition`, the next `action` with its `reason`, the `nudges` to this
+run, the run's `restarts` and `observed`. `action` is `none` (acked or
+superseded), `wait` (busy or held: no key, no fault), `nudge` (idle: the
+first nudge to this run or its one re-nudge), `restart` (dead, missing or
+quota with no restart spent) or `escalate`. It exits 0 when acked and 3 when
+not; a message missing from the local inbox, or whose envelope is not this
+project's, refuses with exit 2 and nothing written. A run on a role host has
+no local inbox and refuses the same way. The watcher re-probes each worker's
+pending ledger messages on every scan with no model turn and queues one
+`delivery` wake, routed to the run's pool lead, when a message's delivery,
+worker or action changes to `nudge`, `restart` or `escalate`; a first sight,
+a busy or held wait and an unchanged state never wake. A pool lead's own
+handoff re-nudge and backstop retry type nothing while the lead is busy.
 
 ### mdstack action
 

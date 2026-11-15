@@ -1,14 +1,21 @@
 """Tests for mdstack acked (and send --wait-ack), moved from test-crew.py; fixtures in crew_testlib.py (stdlib only).
 
-Covers: the ack is read from the status file only, and `send --wait-ack` sees a late ack. Run in CI.
+Covers: the ack is read from the status file only, and `send --wait-ack` sees a late ack. `acked --delivery` (#1850,
+D2.1): only the target's own ack written after the message was recorded is acked; inbox, submitted composer, transcript
+echo, busy worker, another id, an earlier run's ack, another project's message or an unknown id never are, and a refused
+read writes nothing. One receipt rule (#1850 round 3): ack before record, a previous run's ack, a wrong id and the valid
+ack decide alike through `acked --delivery`, legacy `acked`, the watcher's acked-work gate, the reclaim gate and the
+`mdstack restart` carry. Run in CI.
 """
+import json
 import os
 import subprocess
 import sys
 import textwrap
 import unittest
+from unittest import mock
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # dev/tests/: crew_testlib
-from crew_testlib import SendBase
+from crew_testlib import DeliveryBase, SendBase
 
 
 class Acked(SendBase):
@@ -42,6 +49,114 @@ class Acked(SendBase):
         r = self.crew("send", "ben-7", "review", "#9", "--wait-ack", "10", "--project", self.project)
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("acked " + self.inbox()[0]["id"], r.stdout)
+
+
+class TruthfulReceipt(DeliveryBase):  # #1850 D2.1
+    def test_only_the_actual_matching_ack_discharges(self):
+        self.show(self.BUSY)
+        self.assertEqual(self.send("fix", "#12", "a" * 40).returncode, 0)
+        msg_id = self.inbox()[0]["id"]
+        status = os.path.join(self.state, "status", "ben-7.status")
+        for name, screen, lines in [
+                ("inbox and busy", self.BUSY, ""),
+                ("submitted composer", "› inbox: %s\n" % msg_id, ""),
+                ("transcript echo", "› inbox: %s\n\n• Reading the inbox.\n\n› Ask Codex to do anything\n" % msg_id,
+                 "heartbeat: x\n"),
+                ("another id", self.IDLE, "ack: 20331118T031000Z-abc123\n"),
+                ("done names it", self.IDLE, "done: #7 inbox: %s\n" % msg_id)]:
+            with self.subTest(name):
+                self.show(screen)
+                with open(status, "w") as f:
+                    f.write(lines)
+                r, d = self.delivery(msg_id)
+                self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
+                self.assertEqual([d["ack"], d["delivery"]], [False, "submitted"])
+                self.assertNotEqual(d["disposition"], "dispatched")
+        with open(status, "a") as f:
+            f.write("ack: %s\n" % msg_id)
+        r, d = self.delivery(msg_id)  # the valid counterpart
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertEqual([d["ack"], d["delivery"], d["disposition"], d["action"]], [True, "acked", "dispatched", "none"])
+        self.assertEqual([d["id"], d["window"], d["kind"], d["refs"], d["context"]["change"]],
+                         [msg_id, "ben-7", "fix", ["#12", "a" * 40], 12])
+
+    def test_an_earlier_runs_ack_never_settles_a_later_record(self):
+        self.assertEqual(self.send("fix", "#12", "a" * 40).returncode, 0)
+        msg = self.inbox()[0]
+        ledger = os.path.join(self.state, "runs", "ben-7.delivery.jsonl")
+        with open(ledger) as f:
+            events = [json.loads(line) for line in f]
+        old = "ack: %s\n" % msg["id"]  # written before this message was recorded (an earlier run's file)
+        self.put("status/ben-7.status", old)
+        events[0]["status"] = len(old)
+        self.put("runs/ben-7.delivery.jsonl", "".join(json.dumps(e) + "\n" for e in events))
+        self.assertEqual(self.crew("acked", "ben-7", msg["id"], "--project", self.project).returncode, 3)  # one rule
+        r, d = self.delivery(msg["id"])
+        self.assertEqual([r.returncode, d["ack"]], [3, False], r.stdout)
+        with open(os.path.join(self.state, "status", "ben-7.status"), "a") as f:
+            f.write(old)
+        self.assertEqual(self.delivery(msg["id"])[0].returncode, 0)
+
+    def test_foreign_or_unknown_message_refused_with_nothing_written(self):
+        self.assertEqual(self.send("fix", "#12", "a" * 40).returncode, 0)
+        msg = self.inbox()[0]
+        foreign = dict(msg, id="20331118T031000Z-f0e1d2", context=dict(msg["context"], repo="other/repo"))
+        bare = dict(msg, id="20331118T031000Z-a0b1c2")
+        bare.pop("context")
+        with open(os.path.join(self.state, "inbox", "ben-7.jsonl"), "a") as f:
+            f.write(json.dumps(foreign) + "\n" + json.dumps(bare) + "\n")
+        for msg_id in (foreign["id"], bare["id"], "20331118T031000Z-ffffff"):
+            with self.subTest(msg_id):
+                before = self.tree()
+                r, _ = self.delivery(msg_id)
+                self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+                self.assertIn("refusing delivery read: no message %s for this project" % msg_id, r.stdout)
+                self.assertEqual(self.tree(), before)
+        before = self.tree()
+        self.assertEqual(self.delivery(msg["id"])[0].returncode, 3)  # the valid counterpart, also read only
+        self.assertEqual(self.tree(), before)
+
+
+class OneReceiptRule(DeliveryBase):  # #1850 round 3: every consumer reads receipts through one rule
+    def test_each_consumer_applies_the_same_receipt_rule(self):
+        self.show(self.BUSY)
+        self.assertEqual(self.send("fix", "#12", "a" * 40).returncode, 0)
+        msg = self.inbox()[0]
+        with open(os.path.join(self.state, "runs", "ben-7.delivery.jsonl")) as f:
+            recorded = json.loads(f.readline())
+        ack, other = "ack: %s\n" % msg["id"], "ack: 20331118T031000Z-abc123\n"
+        cases = [  # (name, status, ledger events, receipt?)
+            ("ack before record", ack, [dict(recorded, status=len(ack))], False),
+            ("previous run's ack", ack, [recorded, dict(recorded, run=["successor"], status=len(ack))], False),
+            ("wrong id", other, [recorded], False),
+            ("valid ack", ack, [recorded], True)]
+        rec_path = os.path.join(self.state, "runs", "ben-7.json")
+        for name, status, events, receipt in cases:
+            with self.subTest(name):
+                with open(rec_path) as f:
+                    rec = json.load(f)
+                with open(rec_path, "w") as f:
+                    json.dump(dict(rec, restarts=0), f)
+                self.put("inbox/ben-7.jsonl", json.dumps(msg) + "\n")
+                self.put("runs/ben-7.delivery.jsonl", "".join(json.dumps(e) + "\n" for e in events))
+                self.put("status/ben-7.status", status)
+                self.show(self.BUSY)
+                code = 0 if receipt else 3
+                r, d = self.delivery(msg["id"])
+                self.assertEqual([r.returncode, d["ack"]], [code, receipt], r.stdout)  # delivery inspection
+                self.assertEqual(self.crew("acked", "ben-7", msg["id"], "--project", self.project).returncode, code)
+                with mock.patch.dict(os.environ, self.env):
+                    watch = self.mod.commands()["watch"]
+                    # silent-claim gate: any valid receipt is acknowledged work, another id's included
+                    self.assertEqual(watch.acked_work(self.state, "ben-7"), receipt or name == "wrong id")
+                    self.put("status/ben-7.status", status + "done: #7 #12 %s\n" % ("a" * 40))
+                    idle = self.mod.idle_builder(self.state, "ben-7")  # the reclaim (and upgrade) gate
+                self.assertEqual(idle is not None, receipt)
+                self.show(self.BUSY, dead="1")
+                self.put("status/ben-7.status", status)
+                r = self.crew("restart", "ben-7", "--project", self.project, "--timeout", "1")  # restart carry
+                self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+                self.assertEqual([m["id"] for m in self.inbox()], [] if receipt else [msg["id"]])
 
 
 if __name__ == "__main__":

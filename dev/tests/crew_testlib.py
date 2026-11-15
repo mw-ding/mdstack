@@ -534,3 +534,42 @@ class LivenessBase(SpawnBase):
             return True
         except ProcessLookupError:
             return False
+
+
+class DeliveryBase(LivenessBase):
+    """Busy delivery (#1850): ben-7 is a spawned builder on fake panes in its recorded harness (codex); screens come
+    from that adapter's own BUSY and composer patterns, and each crew call is a fresh process (a restarted lead or
+    watcher)."""
+    BUSY = "• Running tests (2m 03s • esc to interrupt)\n\n› Ask Codex to do anything\n"
+    IDLE = "• Done.\n\n› Ask Codex to do anything\n"
+
+    def setUp(self):
+        super().setUp()
+        self.show(self.IDLE)
+
+    def show(self, text, **kv):
+        self.set_pane(10, **dict(dict(command=self.record("ben-7")["harness"], screen=text), **kv))
+
+    def send(self, *args):
+        return self.crew("send", "ben-7", *args, "--project", self.project)
+
+    def inbox(self):
+        path = os.path.join(self.state, "inbox", "ben-7.jsonl")
+        with open(path) if os.path.exists(path) else open(os.devnull) as f:
+            return [json.loads(line) for line in f]
+
+    def typed(self):
+        return [c for c in self.calls() if c[0] == "send-keys"]
+
+    def delivery(self, msg_id):
+        r = self.crew("acked", "ben-7", msg_id, "--delivery", "--project", self.project)
+        return r, json.loads(r.stdout) if r.returncode in (0, 3) else None
+
+    def tree(self):
+        """Every file under the state dir with its bytes: a read must leave it unchanged."""
+        found = {}
+        for root, _, files in os.walk(self.state):
+            for name in files:
+                with open(os.path.join(root, name), "rb") as f:
+                    found[os.path.join(root, name)] = f.read()
+        return found

@@ -774,7 +774,7 @@ def route_record(args, values, state, w):
                 return True
             w["consumer"] = "coordinator"
             return False
-    if lead.enabled(state, pool) and (event in ("issue-assigned", "builder-message", "builder-queued") or w.get("reason") in ("stale", "dialog", "quota")):
+    if lead.enabled(state, pool) and (event in ("issue-assigned", "builder-message", "builder-queued") or w.get("reason") in ("stale", "dialog", "quota", "delivery")):
         return lead.event(args, pool, w) == 0
     if event == "pr-closed" and lead.enabled(state, "reviewer"):
         read_change(values, int(w["refs"][0].lstrip("#")))

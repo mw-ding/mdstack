@@ -24,7 +24,7 @@ import subprocess
 import time
 from crew_shared import (
     BANDS, brief_src, commands, coordinator_harness, coordinator_window, CREW_BIN, crew_render, ENGINE_CMD, fetch, finished,
-    harness, harnesses, heartbeat, identity, kill_run, LAUNCH, load, main, own_pane, POINTER, probe, profile, remote_run, repo_id, ROLES, runs,
+    harness, harnesses, heartbeat, identity, kill_run, LAUNCH, load, main, own_pane, POINTER, probe, profile, receipts, remote_run, repo_id, ROLES, runs,
     sandbox_env, refuse_paused, show_icon, stop_pane, team_module, tmux, unlanded, wait_harness, window_alias, window_env)
 
 confine = load("crew_confine", "environments/terminal/crew.d/_confine.py")
@@ -110,11 +110,7 @@ def quota_relaunch(values, session, state, args, rec, exhausted):
     if stop_pane(session, rec["index"]):  # kill-window alone leaves Codex running (#139 F2)
         print("crew: refusing restart: %s's process group survived the stop" % name)
         return 1
-    status = os.path.join(state, "status", name + ".status")
-    acks = set()
-    if os.path.exists(status):
-        with open(status) as f:
-            acks = {line[5:].strip() for line in f if line.startswith("ack: ")}
+    acks = receipts(state, name)
     inbox = os.path.join(state, "inbox", name + ".jsonl")
     pending = []
     if os.path.exists(inbox):
@@ -295,6 +291,7 @@ def run(args):
         if host:
             return relaunch_remote(values, state, args.window, rec, items, budget)
         return relaunch(values, session, state, args.window, rec, items, args.timeout, args.project, budget)
+    carried = commands()["send"].carry(state, args.window)  # kill_run removes the inbox: pending ids survive (#1850)
     if kill_run(values, session, state, args.window):
         return 1
     mode = ["--train", str(a["train"])] if a.get("train") else ["--pass", a["pass"]]  # a train worker has no pass flag (#1391)
@@ -313,4 +310,5 @@ def run(args):
             new["restarts"] = budget
             with open(os.path.join(state, "runs", name + ".json"), "w") as f:
                 json.dump(new, f, indent=2)
+            commands()["send"].restore(state, name, carried, new)
     return code

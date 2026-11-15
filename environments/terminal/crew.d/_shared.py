@@ -11,6 +11,7 @@ import contextlib
 import fcntl
 import glob
 import importlib.util
+import io
 import json
 import os
 import re
@@ -313,14 +314,10 @@ def stop_pid(pid, grace=2.0):
 
 def synthesizer_work(state, name, extra=""):
     inbox = os.path.join(state, "inbox", name + ".jsonl")
-    status = os.path.join(state, "status", name + ".status")
-    lines = []
-    if os.path.exists(status):
-        with open(status) as f:
-            lines = f.read().splitlines()
+    lines = status_lines(state, name)
     if extra:
         lines.append(extra)
-    acks = {line[5:]: i for i, line in enumerate(lines) if line.startswith("ack: ")}
+    acks = receipts(state, name)
     messages = []
     if os.path.exists(inbox):
         with open(inbox) as f:
@@ -542,13 +539,48 @@ def wait_harness(session, index, name, expected, timeout):
         time.sleep(0.2)
 
 
-def acked(state, window, msg_id):
-    """Delivery proof: an `ack: <msg-id>` line in the window's status file, nothing else."""
+def receipts(state, window):
+    """The one receipt rule (#1850, D2.1); every ack consumer reads receipts here, never `ack:` lines itself.
+    {message id: status line index} of the first `ack: <id>` line written after that message's latest `recorded` send
+    in runs/<window>.delivery.jsonl: an ack before it (an earlier run's, or one already there) never counts, and a
+    status file shorter than the record was rewritten and counts whole. A message with no record keeps the plain rule:
+    its first matching line."""
+    sent = {}
+    with contextlib.suppress(OSError):
+        with open(os.path.join(state, "runs", window + ".delivery.jsonl"), encoding="utf-8") as f:
+            for line in f:
+                with contextlib.suppress(ValueError, AttributeError, TypeError, KeyError):
+                    e = json.loads(line)
+                    if e.get("event") == "recorded":
+                        sent[e["id"]] = int(e.get("status", 0))
     try:
-        with open(os.path.join(state, "status", window + ".status"), encoding="utf-8") as f:
-            return any(line.split()[:2] == ["ack:", msg_id] for line in f)
+        with open(os.path.join(state, "status", window + ".status"), "rb") as f:
+            data = f.read()
     except FileNotFoundError:
-        return False
+        return {}
+    found, pos = {}, 0
+    for i, raw in enumerate(io.BytesIO(data)):  # lines as status_lines splits them, so the indices agree
+        words = raw.decode("utf-8", "replace").split()
+        if words[:1] == ["ack:"] and len(words) > 1 and words[1] not in found:
+            floor = sent.get(words[1], 0)
+            if pos >= (floor if floor <= len(data) else 0):
+                found[words[1]] = i
+        pos += len(raw)
+    return found
+
+
+def status_lines(state, window):
+    """The window's status lines, split on newlines only, as receipts indexes them."""
+    try:
+        with open(os.path.join(state, "status", window + ".status"), "rb") as f:
+            return [raw.decode("utf-8", "replace").rstrip("\r\n") for raw in f]
+    except FileNotFoundError:
+        return []
+
+
+def acked(state, window, msg_id):
+    """Delivery proof: the window's own receipt of msg_id (receipts), nothing else."""
+    return msg_id in receipts(state, window)
 
 
 def wait_ack(state, window, msg_id, secs, refresh=None):
@@ -613,7 +645,7 @@ def pause_guarded(args):
 def unacked(state, name, lines, ignored_kinds=()):
     """Whether the inbox holds an unacked message outside the caller's ignored kinds."""
     inbox = os.path.join(state, "inbox", name + ".jsonl")
-    acknowledgments = {line[5:] for line in lines if line.startswith("ack: ")}
+    acknowledgments = set(receipts(state, name))
     # A build nudge typed into a trust dialog is never acked; a done: naming its issue settles it (#1302).
     built = {line.split()[1] for line in lines if line.startswith("done: ") and len(line.split()) > 1}
     if os.path.exists(inbox):
@@ -628,8 +660,8 @@ def idle_builder(state, name):
     status = os.path.join(state, "status", name + ".status")
     if not os.path.exists(status):
         return None
-    with open(status) as f:
-        lines = [line for line in f.read().splitlines() if not line.startswith("heartbeat:")]
+    raw = status_lines(state, name)
+    lines = [line for line in raw if not line.startswith("heartbeat:")]
     inbox = os.path.join(state, "inbox", name + ".jsonl")
     policy_ids = set()
     if os.path.exists(inbox):
@@ -637,7 +669,9 @@ def idle_builder(state, name):
             messages = [json.loads(line) for line in f if line.strip()]
         policy_ids = {m["id"] for m in messages if m["kind"] == "owner-policy"}
         policy_ids -= {m["id"] for m in messages if m["kind"] != "owner-policy"}
-    work_lines = [line for line in lines if not (line.startswith("ack: ") and line[5:] in policy_ids)]
+    acks = receipts(state, name)
+    policy = {acks[i] for i in policy_ids if i in acks}  # owner-policy receipts are not work progress
+    work_lines = [line for j, line in enumerate(raw) if j not in policy and not line.startswith("heartbeat:")]
     if not work_lines or not work_lines[-1].startswith("done:") or unacked(state, name, lines, ("owner-policy",)):
         return None
     rec = dict(runs(state)).get(name, {})

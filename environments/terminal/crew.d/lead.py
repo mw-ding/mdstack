@@ -17,7 +17,7 @@ import shlex
 import time
 from crew_shared import (
     commands, coordinator_window, ENGINE_CMD, harness, identity, LAUNCH, lead_state, probe, proc, profile,
-    queue_lock, remember_pr, refuse_paused, repo_id, require_ownership, runs, show_icon, stop_pane, team_module, tmux,
+    queue_lock, receipts, remember_pr, refuse_paused, repo_id, require_ownership, runs, show_icon, stop_pane, team_module, tmux,
     wait_harness, window_env, work_context)
 
 
@@ -66,6 +66,13 @@ def records(state):
 
 def enabled(state, role):
     return role in POOLS and os.path.exists(os.path.join(state, "render", "runtime", role + "-lead.md"))
+
+
+def busy(session, name, state):
+    """Whether the lead's live, identity-matching harness is mid-turn on its adapter's screen (#1850)."""
+    rec = dict(records(state)).get(name)
+    windows = dict((n, i) for i, n in tmux.list_windows(session)) if tmux.has_session(session) else {}
+    return commands()["send"].worker(session, name, rec, windows) == "busy"
 
 
 def recovery(liveness, restarts):
@@ -164,7 +171,9 @@ def handoff(args, role, kind, refs):
     if prior:  # a done (completed or withdrawn) message is never reused: a re-send starts a new handoff
         if commands()["send"].wait_ack(lead_state(state), name, prior["id"], 0) == 0:
             return 0
-        if commands()["send"].nudge(session, POOLS[role], "inbox: " + prior["id"]):
+        if busy(session, name, state):  # a mid-turn lead reads its whole inbox next turn: no Enter (#1850, D2.2)
+            print("crew: pending %s to %s: lead busy; nothing typed" % (prior["id"], name))
+        elif commands()["send"].nudge(session, POOLS[role], "inbox: " + prior["id"]):
             return 4
         return commands()["send"].wait_ack(lead_state(state), name, prior["id"], args.wait_ack) \
             if getattr(args, "wait_ack", None) is not None else 0
@@ -194,15 +203,13 @@ def pending(state, name):
 def deferred_ids(state, name):
     """Handoff ids the lead acknowledged and then reported as an admission deferral (`deferred: ... id=<id>`)."""
     status = os.path.join(lead_state(state), "status", name + ".status")
-    acked, found = set(), set()
+    acked, found = receipts(lead_state(state), name), set()  # the one receipt rule, with its line order
     if os.path.exists(status):
-        with open(status) as f:
-            for line in f:
-                words = line.split()
-                if line.startswith("ack: ") and len(words) > 1:
-                    acked.add(words[1])
-                elif line.startswith("deferred: ") and words[-1].startswith("id="):
-                    found |= {words[-1][3:]} & acked
+        with open(status, "rb") as f:
+            for i, raw in enumerate(f):
+                line, words = raw.decode("utf-8", "replace"), raw.decode("utf-8", "replace").split()
+                if line.startswith("deferred: ") and words[-1].startswith("id=") and acked.get(words[-1][3:], i) < i:
+                    found.add(words[-1][3:])
     return found
 
 
@@ -252,15 +259,13 @@ def actionable(state, name):
     For a team lead the messages, waits book and fingerprints are this repo state's own (#1858)."""
     messages = pending(state, name)
     status = os.path.join(lead_state(state), "status", name + ".status")
-    acked, latest = set(), {}
+    acked, latest = receipts(lead_state(state), name), {}  # the one receipt rule, with its line order
     if os.path.exists(status):
-        with open(status) as f:
-            for i, line in enumerate(f):
-                words = line.split()
-                if line.startswith("ack: ") and len(words) > 1:
-                    acked.add(words[1])
-                elif len(words) == 4 and words[0] == "waiting:" and words[1].startswith("#") and \
-                        words[2] in WAITS and words[3].startswith("id=") and words[3][3:] in acked:
+        with open(status, "rb") as f:
+            for i, raw in enumerate(f):
+                words = raw.decode("utf-8", "replace").split()
+                if len(words) == 4 and words[0] == "waiting:" and words[1].startswith("#") and \
+                        words[2] in WAITS and words[3].startswith("id=") and acked.get(words[3][3:], i) < i:
                     latest[words[3][3:]] = [i, words[1], words[2]]
     book = waits(state)
     old, mine, waiting = book.get(name, {}), {}, set()
@@ -303,6 +308,8 @@ def retry_pending(args, name=None, recheck=False, admission=False):
         if messages:
             if ensure(args, rec["role"].removesuffix("-lead")):
                 raise RuntimeError("crew: cannot retry lead " + worker)
+            if busy(session, worker, state):  # its next turn reads every pending id; the backstop retries later
+                continue
             if commands()["send"].nudge(session, rec["index"], "inbox: " + messages[0]["id"]):
                 raise RuntimeError("crew: cannot nudge lead " + worker)
 
