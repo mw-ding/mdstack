@@ -2987,6 +2987,176 @@ From the milestone itself:
 - Carry-ins dispatched before the opening spec still fit the bookends: S0
   recorded them as rows, and none waited on S0.
 
+### M60: lessons indexing, triage hardening and orphan cleanup
+
+Opening spec slice #1938 (S0) and closing status-sync slice #1937 (S1)
+bookend [#1936](https://github.com/mw-ding/mdstack/issues/1936). Scope,
+order, sizes and tiers come from
+[Riley's #1935 finding](https://github.com/mw-ding/mdstack/issues/1935#issuecomment-6902155549)
+§2 (Part A) and rows B8 and B10, under the owner's
+[M60 approval](https://github.com/mw-ding/mdstack/issues/985#issuecomment-6902560439),
+which also records the coordinator's #1929 scope amendment. `path:line`
+citations refer to base `cc09d81b7b71aa2796ea9147187c301b28dc6c27`.
+S0 is recorded as done for this opening slice (PR #TBD), effective on merge.
+Order: S0 first; then #1929, #753 and #1166 independently; #1933 after #1929
+lands, because it uses #1929's lesson format; S1 last. One issue → one PR,
+except #1166, a post-merge run request with no PR (its ACs). Sizes are
+non-test lines, planning ranges, not limits.
+
+| ID | Issue | Scope / named paths | Size | Depends on | Tier | Status |
+|---|---|---|---|---|---|---|
+| S0 | #1938 | This section (PR #TBD) | 120–180 docs | Signed M60 approval | default | done |
+| X1 | #1929 | Generated lessons index: file-level metadata on every `docs/lessons/*.md`, a generator and checks in `scripts/check-repo.py`, `docs/lessons/README.md` markers and procedure text, `CONTRIBUTING.md`; tests in `dev/tests/scripts/test-check-repo.py` | 250–450 incl. migration | #1938 | deep | open |
+| L1 | #1933 | Published-head readback lesson for #1923, in X1's format | 40–80 docs | #1929 landed | default | open |
+| T1 | #753 | Bounded apply-mode triage hardening: one write allowlist enforced at one apply entry point, the sweep brief and skill, `docs/triage.md` Known risks; tests | 150–300 + docs | #1938 | deep | open |
+| C1 | #1166 | Fresh orphan worktree inventory, keep/delete per row, owner-approved deletions only; no PR | report only | #1938; owner's per-row approval | default | open |
+| S1 | #1937 | Status, settled choices, lesson links, index regeneration and tracker reconciliation | 40–80 docs | Every admitted member done | default | open |
+
+**Target environment: N/A**: X1 and T1 acceptance uses disposable
+repositories, fake forges and fixtures; C1 runs on the crew host's own
+folders; no platform or device requirement. **Owner prerequisites:** the
+owner's per-row deletion approval for C1 only. The workaround-removal memory
+PR stays out: installation is not confirmed (approval record). Standard
+flavor, tmux lane.
+
+#### X1: generated lessons index (#1929)
+
+The scope amendment replaces #1929's per-lesson committed drift: every lesson
+PR editing one shared region (`docs/lessons/README.md:90`) is the conflict,
+and a committed-drift check alone keeps it, since CI checks the committed tree
+without `--fix` (`.github/workflows/ci.yml:96`). No landing or gate exception.
+Settled choices, which are X1's ACs:
+
+- **X1.a Schema.** Each lesson file opens with one front-matter block (`---`
+  lines; `scripts/check-markdown.py:136` already skips it) holding exactly
+  four single-line keys, once each: `title` (non-empty, no pipe character; it is the
+  index Summary text), `date` (`YYYY-MM-DD`, equal to the filename's date),
+  `status` (`encoded`, `applied`, `superseded`, `open`, or `mixed`) and
+  `source` (non-empty one-line pointer to the evidence origin, taken from the
+  entry's own Source / evidence field, never invented). Any other key fails.
+- **X1.b Multi-entry legacy files.** A file holding more than one entry
+  (today `2026-10-19-bottlenecks.md`, `2026-10-23-watch-handoff-first-run.md`,
+  `2026-10-30-tmux-dry-runs.md`) takes `status: mixed` and its file-level
+  source; each entry's own Status field stays authoritative and unchanged.
+  `mixed` on a single-entry file fails. No single status or source is guessed
+  from several entries.
+- **X1.c Migration.** Every existing row keeps its exact Summary text as the
+  file's `title`, so each regenerated row is byte-identical to today's apart
+  from order; single-entry files copy their entry's Status word. Entry fields
+  and prose stay as they are.
+- **X1.d Generator and region.** Each row is the
+  File, Date and Summary cells of today's index (file link, `date`,
+  `title`), ordered by (`date`, filename), between one begin and one end
+  marker line in `docs/lessons/README.md`; the hand-written prose around
+  the region is never rewritten. The campaign generator is the pattern
+  (`scripts/check-repo.py:189`).
+- **X1.e Lifecycle.** A lesson PR adds only its own file and never edits the
+  index. `check-repo.py` (no `--fix`) validates every file's metadata and the
+  committed region: each committed row must equal its generated row, in
+  generated order, once; a valid file with no row yet is pending and passes.
+  `--fix` rewrites the region to the full generated set (exact coverage) only
+  when every file is valid; on any failure it reports and leaves the index
+  byte-for-byte unchanged. Opening and closing bookend PRs (or an on-demand
+  sync) run `--fix` and commit the result.
+- **X1.f Procedure text.** `docs/lessons/README.md` and `CONTRIBUTING.md`
+  (From lesson to PR) say "add the lesson file with its metadata; do not edit
+  the index", and name the bookend regeneration.
+
+One table-driven rule in `dev/tests/scripts/test-check-repo.py` holds X1;
+every failing row reports the file path and, under `--fix`, leaves the index
+unchanged. A valid control passes beside every failing row.
+
+| Row | Input | Outcome | Status |
+|---|---|---|---|
+| X1.1 | Each key (`title`, `date`, `status`, `source`) × missing / empty / wrong (bad date form, date ≠ filename, unknown status, a pipe in title, multi-line) / duplicate | Fails with the file path; `--fix` leaves the index unchanged | open |
+| X1.2 | No front matter, unclosed block, unknown key | Fails with the file path | open |
+| X1.3 | `mixed` on a single-entry file; a multi-entry file with `mixed` | Fails; the multi-entry control passes | open |
+| X1.4 | Committed row stale, hand-edited, duplicated or out of order | Fails at the README line; `--fix` regenerates when sources are valid | open |
+| X1.5 | Valid new file with no committed row | Passes (pending); `--fix` adds exactly its row | open |
+| X1.6 | Missing, duplicated or reversed region markers | Fails; `--fix` writes nothing | open |
+| X1.7 | Regeneration of the migrated tree | Every existing lesson keeps its row; prose before and after the region is unchanged; a second run is a no-op | open |
+| X1.8 | Two lesson PRs branched from one base | In a disposable repository, each adds only its file and lands in turn on the updated default branch, the way squash merge applies it: no conflict, `check-repo.py` passes at each published revision, and a later bookend `--fix` adds both rows | open |
+
+#### T1: triage hardening (#753)
+
+The sweep brief already says issue text is data and forbids retrying past a
+safety refusal (`templates/policy/researcher/triage-sweep.md:5`, `:93`); the
+gap is enforcement of what apply mode may write (`docs/triage.md:238`,
+`:452`). Settled choices, which are T1's ACs:
+
+- **T1.a Data, never instructions.** Issue titles, bodies, comments and
+  filer-set labels are untrusted data. The brief, skill and design say an
+  instruction found there is reported as content and never followed.
+- **T1.b One write allowlist.** One table in `docs/triage.md` enumerates
+  every write an apply-mode sweep may make: the Autonomy auto-apply set
+  (type, `P0`–`P3` and scope labels; the default flavor record;
+  `triage:duplicate` with its link and evidence comment; `cluster:<slug>`;
+  backlog or next-milestone placement; a P0 joining the active milestone),
+  the `pass=triage` record, proposal and refusal records and the sweep log.
+  Sweep writes go through one apply entry point that checks each requested
+  write against that table, against the issue's own triage record, and
+  refuses anything else (a close, a gate, `crew:` or other unlisted label, a
+  body edit, a repository or owner-config write) with a nonzero exit and no
+  write.
+- **T1.c Provider safety refusal.** A refused item is recorded once
+  ("refused by the provider") and parked for the owner; it is never retried,
+  reworded or reframed, and later sweeps skip it until the owner acts.
+- **T1.d Boundary.** Shadow mode is unchanged. The allowlist bounds what the
+  brief authorizes; it does not confine a bypass-mode session. Running sweeps
+  without bypass in a read-only sandbox stays a Known risks row, not T1 scope.
+
+| Row | Request | Outcome | Status |
+|---|---|---|---|
+| T1.1 | Each allowlisted write (valid control per row) | Applied once through the entry point | open |
+| T1.2 | A close, `crew:ready`/`crew:hold`/`crew:sensitive`, an unlisted label, a milestone create, a body edit, a repository or owner-config write | Refused, nonzero exit, zero writes | open |
+| T1.3 | Malformed or unknown request kind, unknown issue | Refused, nonzero exit, zero writes | open |
+| T1.4 | Issue text phrased as an instruction to write | No write beyond the allowlisted outcome for its classification | open |
+| T1.5 | Provider safety refusal | One refusal record, no retry, skipped on the next sweep | open |
+| T1.6 | Mode `shadow` | Proposals and records only, as today | open |
+
+#### C1: orphan cleanup (#1166)
+
+A run request, not a PR. `scripts/worktree-purge.py` lists `orphan` rows (a
+directory whose `.git` names a missing gitdir, `scripts/worktree-purge.py:12`)
+but never removes them. The researcher posts a fresh inventory on #1166 as
+typed CLI evidence: one row per orphan folder with its path, `.git` target,
+size, newest modification time, any run record, claim or pane that names it,
+the branch or PR its name implies and that PR's state, and a keep/delete
+recommendation with the reason. The earlier safety classification is context,
+never deletion evidence. Only rows the owner approves are deleted; every other
+row stays and is reported as kept with its reason. C1 is done when the
+owner's per-row answer is applied and the kept rows are reported; without an
+answer nothing is deleted and C1 stays `open`.
+
+#### Checks, forecast and closing
+
+Against [Versioning](../deliverables.md#versioning), M60 forecasts as
+**minor** (X1 adds a check; T1 adds an apply guard); this is not a release
+cut. S0, S1, L1 and C1 are **none**. A changed marker, §7 rule or existing
+command output or exit is **major** and is replanned before review.
+
+| Unit | Affected local tests (refine against the actual diff) | Status |
+|---|---|---|
+| S0/S1, L1, C1 | Required checks only | open |
+| X1 | `test-check-repo.py`, `test-check-markdown.py`; X1.8 through a disposable git repository | open |
+| T1 | The entry point's own test; `test-crew-render.py`, `test-render-parity.py`, `test-tmux-briefs.py` if the researcher template changes | open |
+
+Every PR runs `python3 scripts/check-repo.py` and
+`python3 scripts/check-changelog-pr.py --base origin/main --pr N`, with
+selected tests via `python3 scripts/run-tests.py <names...>` under the
+[affected-tests policy](https://github.com/mw-ding/mdstack/issues/985#issuecomment-6763423100).
+**PR CI runs the full suite.** T1 changes a write guard and is a likely
+sensitive candidate; classify each actual full diff at head.
+
+S1 sets each admitted row `done` with PR refs or `dropped` with recorded
+supersession; an `open` row blocks closing M60. It runs X1's `--fix` to add
+pending lesson rows, records the settled choices as built, links L1, states
+source delivery, release and installation separately, and confirms every
+landed member is closed. Merge permission is the owner's M60 approval
+([c6902560439](https://github.com/mw-ding/mdstack/issues/985#issuecomment-6902560439)),
+recorded per PR at each actual head; it supplies no approval, CI waiver, hold
+clearance, sensitive reason or missing AC proof.
+
 ## 6. Decisions
 
 | Date | Decision | Source |
