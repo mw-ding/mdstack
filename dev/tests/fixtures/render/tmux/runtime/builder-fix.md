@@ -14,7 +14,10 @@ Kind `fix`: address each finding and any linked CI failure in the same fix,
 capture the note's inline proof at the committed head, then push and at once post the
 `[Ben/fix] round <k> @ <sha7>` COMMENT review (`gh pr review <n> --comment --body-file <file>`) with its `pass=fix`
 marker (§3). Kind `ci-red`: fix CI and post `[Ben/ci-fix]` the same way (round 0 before any
-verdict); at the effective caps[1] limit write `blocked:` to escalate (§5). Review of the new
+verdict); at the effective caps[1] limit write `blocked:` to escalate (§5).
+For a new or changed guard, either note pastes the copyable fail-then-pass
+control of protocol §3 Guard negative control as captured, not a sentence
+saying the guard failed (#1884). Review of the new
 head waits for that signed note with its proof or reasoned N/A; a push or `done:` alone starts
 none (#1878). Then `done:` with the new head.
 
