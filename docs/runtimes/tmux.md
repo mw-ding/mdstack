@@ -2600,6 +2600,10 @@ nor the watch state (#591, #399). Under that lock it writes its PID to
   head, scan date and banner ages, matches the one the last `started` or
   `queued` slot recorded. The timer passes only the project's own checkout,
   so a `[docs] repos` entry naming another repo fails the scan (#1026);
+- with `[status] enabled` ([profile](../profile.md#status)), no wake: once
+  `publish_interval` passed since its last attempt, a scan runs
+  `mdstack status publish` as a subprocess with stderr discarded; not while
+  paused or with ownership lost ([shared status](#shared-status), #1313);
 - with `[reflection] enabled` ([profile](../profile.md#reflection)), no
   wake: each scan runs the reflection timer, kept in
   `reflection/ledger.json` and independent of `[triage]` and its milestone
@@ -2718,6 +2722,49 @@ liveness and the last status line. Liveness is the C5 probe
   - a fatal API error line, after which the harness idles at its prompt
     (#289): Codex `■ {"type":"error","status":4xx|5xx,…}`, Claude Code
     `⎿  API Error: 4xx|5xx {"type":"error",…}`.
+
+#### Shared status
+
+```sh
+cli/mdstack status register [--project <config.toml>]
+cli/mdstack status publish [--check] [--project <config.toml>]
+cli/mdstack status --all [--project <config.toml>]
+```
+
+With a [`[status]` table](../profile.md#status), several independent
+installs share one status issue
+([shared status](../specs/shared-status.md), #1313). `register` creates this install's one slot comment on the
+destination, once, and records the binding in
+`<state-dir>/<owner>__<repo>/status/receipt.json` (a team file's team root);
+a second run prints `registered <instance_id>` and writes nothing.
+`publish` writes the next record into that slot; with `enabled = true` the
+watcher's timer runs it every `publish_interval`. `--check` runs only the
+read phase and prints the record it would publish, or the refusal. Both
+refuse with zero writes (no request, no file under the state dir), exit 1
+and the reason on stderr: off or unconfigured, invalid config, a caller
+whose `CREW_ROLE` is not `coordinator`, ownership that does not permit
+`write`, a pause barrier, an authenticated account other than
+`identities.coordinator.gh_user`, a missing, copied or invalid receipt, a
+destination that is not open or did not read fully, a slot not bound to
+this instance, a duplicate instance or registration, or an invalid record.
+A send whose outcome is unknown is never repeated: later runs only read
+back, confirm once the slot shows the pending record, and otherwise refuse
+`uncertain` until the owner waits or registers a new `instance_id`.
+
+`--all` is read-only and needs no running session. It reads every page of
+the destination and prints one row per instance, sorted:
+
+```text
+INSTANCE  REPOS  RUNTIME  AGE  STATE  BLOCKED  UNKNOWN  PRS  ASKS  QUEUE
+```
+
+`AGE` runs from the record's `observed_at`, so a republished old
+observation never looks fresh; `STATE` is `fresh`, `stale` (age >=
+`stale_after`), `invalid` or `conflict` (a duplicate instance or
+registration), the last two with `-` in every later column. `diagnostic:`
+lines name each invalid or conflicting comment. Exit 0 on a complete read,
+1 on an incomplete one (`partial:` after the rows read), 2 on a usage or
+config error, 3 when `destination` is unset (`status --all: unconfigured`).
 
 ### mdstack restart
 
