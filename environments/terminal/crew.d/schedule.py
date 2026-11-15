@@ -20,7 +20,7 @@ import platform
 import re
 import subprocess
 from crew_shared import (BANDS, CAPS, ENGINE_CMD, commands, crew_render, heartbeat, idle_builder, open_trains,
-                         ownership_module, paused, pool_cap, probe, proc, profile, runs, tmux, tracker_labels)
+                         ownership_module, paused, pool_cap, probe, proc, profile, receipts, runs, status_lines, tmux, tracker_labels)
 
 UNKNOWN = "unknown"
 MAC_PRESSURE = {1: "normal", 2: "warn", 4: "critical"}
@@ -120,12 +120,11 @@ def workers(session, state, repo=None):
 def lands(state, values):
     """Outstanding land messages in the synthesizer inbox and its saved queue, read without synthesizer_work's write."""
     name = values["identities.synthesizer.name"].lower()
-    status = os.path.join(state, "status", name + ".status")
-    lines = open(status).read().splitlines() if os.path.exists(status) else []
+    lines = status_lines(state, name)
     saved = jsonl(os.path.join(state, "inbox", "synthesizer-pending.jsonl"))
     found = []
     for m in {m["id"]: m for m in saved + jsonl(os.path.join(state, "inbox", name + ".jsonl"))}.values():
-        ack = next((i for i, line in enumerate(lines) if line == "ack: " + m["id"]), len(lines))
+        ack = receipts(state, name).get(m["id"], len(lines))
         if m["kind"] == "land" and not any(
                 line.split()[1:len(m["refs"][:2]) + 1] == m["refs"][:2] if line.startswith("done: ") else
                 line.startswith("blocked: ") and line.split()[1:2] == m["refs"][:1] for line in lines[ack + 1:]):

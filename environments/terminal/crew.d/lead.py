@@ -17,7 +17,7 @@ import shlex
 import time
 from crew_shared import (
     commands, coordinator_window, ENGINE_CMD, harness, identity, LAUNCH, lead_state, probe, proc, profile,
-    queue_lock, remember_pr, refuse_paused, repo_id, require_ownership, runs, show_icon, stop_pane, team_module, tmux,
+    queue_lock, receipts, remember_pr, refuse_paused, repo_id, require_ownership, runs, show_icon, stop_pane, team_module, tmux,
     wait_harness, window_env, work_context)
 
 
@@ -203,15 +203,13 @@ def pending(state, name):
 def deferred_ids(state, name):
     """Handoff ids the lead acknowledged and then reported as an admission deferral (`deferred: ... id=<id>`)."""
     status = os.path.join(lead_state(state), "status", name + ".status")
-    acked, found = set(), set()
+    acked, found = receipts(lead_state(state), name), set()  # the one receipt rule, with its line order
     if os.path.exists(status):
-        with open(status) as f:
-            for line in f:
-                words = line.split()
-                if line.startswith("ack: ") and len(words) > 1:
-                    acked.add(words[1])
-                elif line.startswith("deferred: ") and words[-1].startswith("id="):
-                    found |= {words[-1][3:]} & acked
+        with open(status, "rb") as f:
+            for i, raw in enumerate(f):
+                line, words = raw.decode("utf-8", "replace"), raw.decode("utf-8", "replace").split()
+                if line.startswith("deferred: ") and words[-1].startswith("id=") and acked.get(words[-1][3:], i) < i:
+                    found.add(words[-1][3:])
     return found
 
 
@@ -258,15 +256,13 @@ def actionable(state, name):
     For a team lead the messages, waits book and fingerprints are this repo state's own (#1858)."""
     messages = pending(state, name)
     status = os.path.join(lead_state(state), "status", name + ".status")
-    acked, latest = set(), {}
+    acked, latest = receipts(lead_state(state), name), {}  # the one receipt rule, with its line order
     if os.path.exists(status):
-        with open(status) as f:
-            for i, line in enumerate(f):
-                words = line.split()
-                if line.startswith("ack: ") and len(words) > 1:
-                    acked.add(words[1])
-                elif len(words) == 4 and words[0] == "waiting:" and words[1].startswith("#") and \
-                        words[2] in WAITS and words[3].startswith("id=") and words[3][3:] in acked:
+        with open(status, "rb") as f:
+            for i, raw in enumerate(f):
+                words = raw.decode("utf-8", "replace").split()
+                if len(words) == 4 and words[0] == "waiting:" and words[1].startswith("#") and \
+                        words[2] in WAITS and words[3].startswith("id=") and acked.get(words[3][3:], i) < i:
                     latest[words[3][3:]] = [i, words[1]]
     book = waits(state)
     old, mine, waiting = book.get(name, {}), {}, set()

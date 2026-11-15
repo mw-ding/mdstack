@@ -70,7 +70,7 @@ import signal
 import subprocess
 import sys
 import time
-from crew_shared import BUSY, checkout, commands, CREW_BIN, dialog, ownership_module, ENGINE_CMD, foreground_matches, finished, GLYPHS, PROMPTS, gateway_error, HERE, heartbeat, idle_builder, paused, probe, proc, profile, queue_lock, remember_pr, remote_run, ROOT, runs, TRANSIENT, tmux, transient_lines
+from crew_shared import BUSY, checkout, commands, CREW_BIN, dialog, ownership_module, ENGINE_CMD, foreground_matches, finished, GLYPHS, PROMPTS, gateway_error, HERE, heartbeat, idle_builder, paused, probe, proc, profile, queue_lock, receipts, remember_pr, remote_run, ROOT, runs, TRANSIENT, tmux, transient_lines
 
 # Fields route adds to a record it leaves queued; a kept record still matches its candidate and wakes window 0 (#814).
 ROUTE_NOTES = ("at", "route_error", "consumer", "dependents")
@@ -195,14 +195,15 @@ def pull_hosts(values, state, seen, now, stale):
 def acked_work(state, name):
     """Whether a run's status acknowledges an inbox message with no done:, blocked: or failed: after it (#1633)."""
     try:
-        with open(os.path.join(state, "status", name + ".status")) as f:
-            lines = [line for line in f.read().splitlines() if line.strip() and not line.startswith("heartbeat:")]
+        with open(os.path.join(state, "status", name + ".status"), "rb") as f:
+            lines = [raw.decode("utf-8", "replace") for raw in f]
     except FileNotFoundError:
         return False
-    for line in reversed(lines):
-        if line.startswith(("done:", "blocked:", "failed:")):
+    receipt = set(receipts(state, name).values())  # the one receipt rule: an ack before its message's record is none
+    for i in range(len(lines) - 1, -1, -1):
+        if lines[i].startswith(("done:", "blocked:", "failed:")):
             return False
-        if line.startswith("ack:"):
+        if i in receipt:
             return True
     return False
 

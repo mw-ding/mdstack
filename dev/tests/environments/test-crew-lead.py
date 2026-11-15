@@ -562,6 +562,24 @@ class BuilderLead(LivenessBase):
         if TRANSCRIPT:
             print("busy lead: replayed handoff and backstop typed 0; idle lead nudged %s" % first)
 
+    def test_backstop_waits_and_deferrals_use_the_one_receipt_rule(self):  # #1850 round 3
+        self.assertEqual(self.ensure(), 0)
+        self.set_pane(2, command=self.lead_record()["harness"], screen="• Done.\n\n› Ask\n")
+        self.put("inbox/ben-lead.jsonl", json.dumps(dict(id="w", kind="fix", refs=["#19"])) + "\n")
+        early = "ack: w\n"
+        for name, status, record, silenced in [
+                ("ack before record", early + "waiting: #19 hold id=w\n", len(early), False),
+                ("wrong id", "ack: v\nwaiting: #19 hold id=w\n", 0, False),
+                ("valid ack", early + "waiting: #19 hold id=w\n", 0, True)]:
+            with self.subTest(name):
+                self.put("leads/waits.json", "{}")
+                self.put("runs/ben-lead.delivery.jsonl", json.dumps(dict(id="w", event="recorded", status=record)) + "\n")
+                self.assertEqual(self.backstop(status), ([] if silenced else ["w"], []))
+                deferred = status.replace("waiting: #19 hold id=w", "deferred: #19 capacity /s/a.md id=w")
+                self.put("status/ben-lead.status", deferred)
+                with mock.patch.dict(os.environ, self.env):
+                    self.assertEqual(self.lead.deferred_ids(self.state, "ben-lead"), {"w"} if silenced else set())
+
     def test_acknowledged_deferral_backstop_waits_for_admission(self):  # #1502
         self.assertEqual(self.ensure(), 0)
         self.put("inbox/ben-lead.jsonl", json.dumps(dict(id="d1", kind="build", refs=["#8"])) + "\n")

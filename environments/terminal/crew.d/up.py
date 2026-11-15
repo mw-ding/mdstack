@@ -37,7 +37,7 @@ import subprocess
 import sys
 from crew_shared import (
     brief_src, commands, coordinator_harness, coordinator_window, CREW_BIN, crew_render, HERE, harnesses, kill_run,
-    LAUNCH, load, NAMES, paused, POINTER, profile, ownership_module, proc, refuse_paused, repo_id, require_ownership,
+    LAUNCH, load, NAMES, paused, POINTER, profile, ownership_module, proc, receipts, refuse_paused, repo_id, require_ownership,
     role_notes, ROLES, ROOT, runs, sandbox_env, show_icon, stop_pid, team_module, tmux, work_context)
 
 
@@ -154,9 +154,7 @@ def scale_down(values, session, state, now):
                 continue
             since, inbox = int(p["activity"]), os.path.join(state, "inbox", name + ".jsonl")
             if os.path.exists(inbox):
-                status = os.path.join(state, "status", name + ".status")
-                with open(status) if os.path.exists(status) else io.StringIO() as f:
-                    acks = {line[5:].strip() for line in f if line.startswith("ack: ")}
+                acks = receipts(state, name)
                 with open(inbox) as f:
                     if any(json.loads(line)["id"] not in acks for line in f if line.strip()):
                         continue

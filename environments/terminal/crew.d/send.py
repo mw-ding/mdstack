@@ -19,7 +19,7 @@ import os
 import re
 import time
 from crew_shared import (BUSY, commands, COMPOSER, coordinator_window, crew_render, dialog, lead_state, NAMES, probe,
-                         profile, queue_lock, remote_run, tmux, wait_ack, runs, synthesizer_work, window_alias,
+                         profile, queue_lock, receipts, remote_run, tmux, wait_ack, runs, synthesizer_work, window_alias,
                          work_context)
 
 
@@ -97,7 +97,7 @@ def nudge(session, index, text):
 
 # Delivery (#1850): delivery, worker and disposition are separate axes. runs/<window>.delivery.jsonl is the durable
 # ledger (removed with the run): one `recorded` event per message, with the run identity and the status file's size at
-# send, then one `submitted` or `failed` per nudge. Only an `ack: <id>` past that size discharges a message.
+# send, then one `submitted` or `failed` per nudge. Only receipts (crew_shared) discharge a message.
 def ledger(state, window):
     return os.path.join(state, "runs", window + ".delivery.jsonl")
 
@@ -136,17 +136,6 @@ def submitted(state, window, msg_id, rec, failed):
     note(state, window, msg_id, "failed" if failed else "submitted", run=run_id(rec), **{"reason": failed} if failed else {})
 
 
-def ack_after(state, window, msg_id, offset):
-    """The target's own `ack: <id>` line written after offset (a shorter, rewritten file is read whole)."""
-    try:
-        with open(os.path.join(state, "status", window + ".status"), "rb") as f:
-            data = f.read()
-    except FileNotFoundError:
-        return False
-    text = data[offset if offset <= len(data) else 0:].decode("utf-8", "replace")
-    return any(line.split()[:2] == ["ack:", msg_id] for line in text.splitlines())
-
-
 def worker(session, name, rec, windows):
     """The worker axis: busy|idle|dead|missing|ambiguous|quota|unreachable. Busy and idle come only from the adapters'
     declared screens (a BUSY line, else a composer row); a screen showing neither is ambiguous, never idle."""
@@ -181,7 +170,7 @@ def delivery(state, session, window, msg_id, rec, windows, mine):
     found = [e for e in lines(ledger(state, window)) if e.get("id") == msg_id]
     first = next((e for e in reversed(found) if e.get("event") == "recorded"), {})  # the latest run it was recorded for
     tries = [e for e in found if e.get("event") in ("submitted", "failed") and e.get("run") == run_id(rec)]
-    ack, who = ack_after(state, window, msg_id, first.get("status", 0)), worker(session, window, rec, windows)
+    ack, who = msg_id in receipts(state, window), worker(session, window, rec, windows)
     later = [m for m in msgs[msgs.index(msg) + 1:] if m.get("kind") == msg["kind"] and
              m.get("refs", [])[:1] == msg["refs"][:1] and mine(m.get("context"))]  # another project's never supersedes
     refs = set(re.findall(r"#\d+", " ".join([msg["refs"][0], str((rec or {}).get("item", ""))])))
@@ -219,16 +208,8 @@ def pending(state, session, name, rec, windows, mine):
 
 def carry(state, name):
     """name's unacked inbox messages, for a restart that removes the run's files (#1850, D2.3)."""
-    status = os.path.join(state, "status", name + ".status")
-    acks = {line.split()[1] for line in lines_text(status) if line.split()[:1] == ["ack:"] and len(line.split()) > 1}
+    acks = receipts(state, name)  # the one receipt rule: an ack before the message's record is no receipt
     return [m for m in lines(os.path.join(state, "inbox", name + ".jsonl")) if m.get("id") not in acks]
-
-
-def lines_text(path):
-    with contextlib.suppress(FileNotFoundError):
-        with open(path, encoding="utf-8") as f:
-            return f.read().splitlines()
-    return []
 
 
 def restore(state, name, messages, rec):

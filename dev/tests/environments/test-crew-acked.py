@@ -3,7 +3,9 @@
 Covers: the ack is read from the status file only, and `send --wait-ack` sees a late ack. `acked --delivery` (#1850,
 D2.1): only the target's own ack written after the message was recorded is acked; inbox, submitted composer, transcript
 echo, busy worker, another id, an earlier run's ack, another project's message or an unknown id never are, and a refused
-read writes nothing. Run in CI.
+read writes nothing. One receipt rule (#1850 round 3): ack before record, a previous run's ack, a wrong id and the valid
+ack decide alike through `acked --delivery`, legacy `acked`, the watcher's acked-work gate, the reclaim gate and the
+`mdstack restart` carry. Run in CI.
 """
 import json
 import os
@@ -11,6 +13,7 @@ import subprocess
 import sys
 import textwrap
 import unittest
+from unittest import mock
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # dev/tests/: crew_testlib
 from crew_testlib import DeliveryBase, SendBase
 
@@ -87,7 +90,7 @@ class TruthfulReceipt(DeliveryBase):  # #1850 D2.1
         self.put("status/ben-7.status", old)
         events[0]["status"] = len(old)
         self.put("runs/ben-7.delivery.jsonl", "".join(json.dumps(e) + "\n" for e in events))
-        self.assertEqual(self.crew("acked", "ben-7", msg["id"], "--project", self.project).returncode, 0)  # legacy
+        self.assertEqual(self.crew("acked", "ben-7", msg["id"], "--project", self.project).returncode, 3)  # one rule
         r, d = self.delivery(msg["id"])
         self.assertEqual([r.returncode, d["ack"]], [3, False], r.stdout)
         with open(os.path.join(self.state, "status", "ben-7.status"), "a") as f:
@@ -112,6 +115,48 @@ class TruthfulReceipt(DeliveryBase):  # #1850 D2.1
         before = self.tree()
         self.assertEqual(self.delivery(msg["id"])[0].returncode, 3)  # the valid counterpart, also read only
         self.assertEqual(self.tree(), before)
+
+
+class OneReceiptRule(DeliveryBase):  # #1850 round 3: every consumer reads receipts through one rule
+    def test_each_consumer_applies_the_same_receipt_rule(self):
+        self.show(self.BUSY)
+        self.assertEqual(self.send("fix", "#12", "a" * 40).returncode, 0)
+        msg = self.inbox()[0]
+        with open(os.path.join(self.state, "runs", "ben-7.delivery.jsonl")) as f:
+            recorded = json.loads(f.readline())
+        ack, other = "ack: %s\n" % msg["id"], "ack: 20331118T031000Z-abc123\n"
+        cases = [  # (name, status, ledger events, receipt?)
+            ("ack before record", ack, [dict(recorded, status=len(ack))], False),
+            ("previous run's ack", ack, [recorded, dict(recorded, run=["successor"], status=len(ack))], False),
+            ("wrong id", other, [recorded], False),
+            ("valid ack", ack, [recorded], True)]
+        rec_path = os.path.join(self.state, "runs", "ben-7.json")
+        for name, status, events, receipt in cases:
+            with self.subTest(name):
+                with open(rec_path) as f:
+                    rec = json.load(f)
+                with open(rec_path, "w") as f:
+                    json.dump(dict(rec, restarts=0), f)
+                self.put("inbox/ben-7.jsonl", json.dumps(msg) + "\n")
+                self.put("runs/ben-7.delivery.jsonl", "".join(json.dumps(e) + "\n" for e in events))
+                self.put("status/ben-7.status", status)
+                self.show(self.BUSY)
+                code = 0 if receipt else 3
+                r, d = self.delivery(msg["id"])
+                self.assertEqual([r.returncode, d["ack"]], [code, receipt], r.stdout)  # delivery inspection
+                self.assertEqual(self.crew("acked", "ben-7", msg["id"], "--project", self.project).returncode, code)
+                with mock.patch.dict(os.environ, self.env):
+                    watch = self.mod.commands()["watch"]
+                    # silent-claim gate: any valid receipt is acknowledged work, another id's included
+                    self.assertEqual(watch.acked_work(self.state, "ben-7"), receipt or name == "wrong id")
+                    self.put("status/ben-7.status", status + "done: #7 #12 %s\n" % ("a" * 40))
+                    idle = self.mod.idle_builder(self.state, "ben-7")  # the reclaim (and upgrade) gate
+                self.assertEqual(idle is not None, receipt)
+                self.show(self.BUSY, dead="1")
+                self.put("status/ben-7.status", status)
+                r = self.crew("restart", "ben-7", "--project", self.project, "--timeout", "1")  # restart carry
+                self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+                self.assertEqual([m["id"] for m in self.inbox()], [] if receipt else [msg["id"]])
 
 
 if __name__ == "__main__":

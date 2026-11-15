@@ -28,7 +28,7 @@ import tempfile
 import time
 from crew_shared import (
     brief_src, BUSY, commands, coordinator_harness, crew_render, dialog, ENGINE_CMD, harness, harnesses, identity,
-    LAUNCH, POINTER, proc, profile, require_ownership, role_notes, runs, stop_pane, tmux, unacked, wait_harness,
+    LAUNCH, POINTER, proc, profile, receipts, require_ownership, role_notes, runs, stop_pane, tmux, unacked, wait_harness,
     window_env)
 
 
@@ -59,7 +59,7 @@ def busy(values, state, session, windows):
         if name in leads and commands()["lead"].pending(state, name):
             return name + ": pending inbox message"
         undelivered = Path(state) / "inbox" / (name + ".undelivered")  # a failed send's nudge (the coordinator's too)
-        acks = {line[5:] for line in lines if line.startswith("ack: ")}
+        acks = set(receipts(state, name))
         if undelivered.exists() and (ids := [i for i in undelivered.read_text().split() if i not in acks]):
             return name + ": undelivered inbox message %s (%s)" % (ids[0], undelivered)
         pane = tmux.pane(session, index)
