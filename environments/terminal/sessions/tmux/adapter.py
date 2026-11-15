@@ -159,6 +159,23 @@ def attach(target, read_only=True):
     return subprocess.run(["tmux", *server(), "attach-session", *(["-r"] if read_only else []), "-t", target]).returncode
 
 
+def socket_path():
+    """The crew server's socket path, for comparing it with a calling client's $TMUX (#1845)."""
+    own = server()
+    return own[1] if own[0] == "-S" else os.path.join(os.path.dirname(default_socket()), own[1])
+
+
+def client_socket():
+    """The socket of the tmux server the caller is a client of, from its $TMUX; None outside tmux."""
+    value = os.environ.get("TMUX", "")
+    return value.rsplit(",", 2)[0] if value else None
+
+
+def switch(target):
+    """Switch the calling tmux client to target on the crew's server instead of nesting an attach (#1845)."""
+    return subprocess.run(["tmux", *server(), "switch-client", "-t", target]).returncode
+
+
 def attach_hint(session):
     """The owner's attach line on the crew's server: plain `tmux attach` on the default server (#818, #1327)."""
     own = server()
