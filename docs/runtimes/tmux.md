@@ -1586,8 +1586,11 @@ same wake turn or the next, which the guard then lets end.
   what follows an exit 4 or a second miss is under [Q7](#q7-failure).
 - Busy delivery (#1850). For a worker run, `runs/<window>.delivery.jsonl`
   records each message (`recorded`, with the run identity and the status
-  file's size) and each nudge (`submitted` or `failed`); `mdstack kill`
-  removes it with the run. Delivery, worker and disposition are separate
+  file's size, written before the inbox line) and each nudge (`submitted` or
+  `failed`); `mdstack kill` removes it with the run. A restart keeps every
+  unacked inbox message under its id: in place the files stay, and a clean
+  worktree's fresh spawn gets them back, each `recorded` again for the
+  successor run, whose nudge count starts at zero. Delivery, worker and disposition are separate
   axes: delivery `recorded`/`submitted`/`acked`/`failed`, worker
   `busy`/`idle`/`dead`/`missing`/`ambiguous`/`quota`/`unreachable`,
   disposition `pending`/`dispatched`/`superseded`/`blocked`. Busy and idle
