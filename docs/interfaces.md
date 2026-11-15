@@ -148,6 +148,49 @@ the owner's per-change merge-ok at the landed cut's head.
 | Record release | Writes the release id once, on the landed cut revision: a tag, or the full 40-character commit hash ([`release_id`](profile.md#release)); never moves or rewrites it | R, I5 |
 | Notify | Posts the release link or id on the release item and closes it | I5 |
 
+### status
+
+Optional: a backend may leave the whole concern undeclared, and only a
+profile with a [`[status]` table](profile.md#status) that sets a destination
+or `enabled = true` needs it
+([shared status](specs/shared-status.md#7-optional-seam-s6),
+[#1313](https://github.com/mw-ding/mdstack/issues/1313)). It carries one
+diagnostic status record per install into one owner-chosen place; a record
+is never a `crew:v1` marker, gate input or permission to act, so no
+invariant depends on it. Like `classify` it is not an `<op:>` token: the
+runtime's `mdstack status` commands run the bound backend map's `[status]`
+commands through `sh -c`, each with one JSON request on stdin and one JSON
+object on stdout, and bootstrap and a team's pack never bind it.
+
+| Operation | Guarantee | Protects |
+|---|---|---|
+| Read records (`read-records`) | Request `{destination}`; returns `{login, issue, complete, comments}`: the authenticated account, the destination's state (`open`, `closed`, `missing`, `unknown`), every comment's `{id, author, body}` and whether every page read; never writes | none (diagnostic) |
+| Publish record (`publish-record`) | Request `{destination, publisher, op, comment_id, body}`; verifies the authenticated account, then sends one create (`register` only) or one edit of the instance's own slot and returns `{outcome, comment_id, error}`, outcome exactly one of `applied`, `rejected`, `not-sent`, `uncertain`; never retries by itself, never edits the destination body, another comment or a label, never deletes | none (diagnostic) |
+
+`resolve` refuses `enabled = true` unless both operations are `supported`
+(`emulated` is refused), and a set `destination` unless `read-records` is
+`supported`; with no destination and status off the concern is not checked.
+The status backend's map declares `[ids] status-destination`, the pattern a
+destination must fully match. With a `[status]` table and no
+`[backends.status]`, `resolve` binds the bundled `github` backend (provenance
+`default`); without the table nothing about status prints.
+
+```toml
+# pack manifest.toml
+[capabilities.status]
+read-records = "supported"
+publish-record = "supported"
+# pack render/backends/<pack>.toml
+[status]
+read-records = "<cli> status read"
+publish-record = "<cli> status publish"
+[ids]
+status-destination = "https://boards\\.example\\.test/[0-9]+"
+```
+
+A map command takes no `<placeholder>`; the runtime sets `MDSTACK_ROOT`
+(the install) and `MDSTACK_PYTHON` in its environment.
+
 ### knowledge
 
 Optional, and outside the profile: no profile binds it. A knowledge
@@ -200,6 +243,11 @@ Rules:
   default binds to the pack with no `[release]` table. The error names the missing half and the file it
   belongs in. There is no opt-out; a binding set by any layer other than
   the default, such as an explicit `name = "github"`, is kept.
+- **Status rule.** `enabled = true` in [`[status]`](profile.md#status) needs
+  `status.read-records` and `status.publish-record` both `supported`; a set
+  `destination` needs `status.read-records` `supported`. Without either the
+  concern is not checked, so every existing profile and manifest resolves
+  unchanged ([#1313](https://github.com/mw-ding/mdstack/issues/1313)).
 - A declaration changes no protocol rule. The profile file that carries it is
   13.10 ([#122](https://github.com/mw-ding/eng-crew/issues/122)).
 

@@ -94,11 +94,14 @@ OPERATIONS = {
     "owner-channel": ["ask", "notify"],
     "release": ["cut", "approve-check", "record-release", "notify"],
 }
-OPTIONAL_CONCERNS = ["release", "classify"]  # a backend or profile may leave these out (docs/interfaces.md)
+OPTIONAL_CONCERNS = ["release", "classify", "status"]  # a backend or profile may leave these out (docs/interfaces.md)
 # Extension concerns (docs/interfaces.md#bindable-sensitivity-design): core runs the bound command beside its own
 # rules, so no backend map replaces them as <op:> tokens, and bootstrap and a team's pack never bind them.
 EXTENSION_OPERATIONS = {"classify": ["sensitive"]}
-CONCERNS = dict(OPERATIONS, **EXTENSION_OPERATIONS)
+# The shared-status concern (docs/specs/shared-status.md §7, #1313): optional, run by the runtime's status commands
+# through the bound backend map's [status] commands; not an <op:> token, and bootstrap and a team's pack never bind it.
+STATUS_OPERATIONS = {"status": ["read-records", "publish-record"]}
+CONCERNS = dict(OPERATIONS, **EXTENSION_OPERATIONS, **STATUS_OPERATIONS)
 # The knowledge concern (docs/interfaces.md#knowledge, #1229): a connector manifest may declare it, alone or beside the
 # core concerns; no profile binds it, since sources and credentials live in the install's private config.
 KNOWLEDGE_OPERATIONS = {"knowledge": ["read", "propose-edit"]}
@@ -186,6 +189,12 @@ STATE_TAGS = ["crew:ready", "crew:in-review", "crew:changes", "crew:approved", "
               "crew:hold", "crew:external", "crew:spec", "crew:needs-mirror", "crew:express"]
 ID_UNSAFE = set(" \t\r\n<>=\"'`")  # an id must never break a marker line or a command argument
 TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "templates")
+_spec = importlib.util.spec_from_file_location("status_record", os.path.join(_ROOT, "core", "status-record.py"))
+status_record = importlib.util.module_from_spec(_spec)  # shared-status record S and [status] patterns (#1313)
+_spec.loader.exec_module(status_record)
+# [status] (docs/specs/shared-status.md §2): key -> (type, default); bounds checked in validate.
+STATUS_FIELDS = {"enabled": (bool, False), "destination": (str, None), "instance_id": (str, None),
+                 "decision_log": (str, None), "publish_interval": (int, 300), "stale_after": (int, 900)}
 
 
 def backend_ids(profile, pack_base, err, backends=BACKENDS):
@@ -214,7 +223,9 @@ def backend_ids(profile, pack_base, err, backends=BACKENDS):
                 err(name, "(file)", "cannot read backend map %s (%s)" % (path, e))
                 continue
             maps[name] = check_table(lambda k, reason: err(name, k, reason), "ids", ids,
-                                     dict({k: (str, None) for k in ID_CONCERNS}, marker_key=(str, None)))
+                                     dict({k: (str, None) for k in ID_CONCERNS}, marker_key=(str, None),
+                                          **{"status-destination": (str, None)}))
+            maps[name].pop("status-destination", None)  # the status map's own key (status_destination)
             marker = maps[name].pop("marker_key", None)
             check_choice(lambda k, reason: err(name, k, reason), "ids.marker_key", marker, ID_MARKER_KEYS)
             if marker in ID_MARKER_KEYS:
@@ -235,6 +246,65 @@ def backend_ids(profile, pack_base, err, backends=BACKENDS):
         if concern == "change" and name in markers:
             out["marker_key"] = (markers[name], name)
     return out
+
+
+def status_map(name, pack_base):
+    """The status backend's map path: the pack's render/backends/<name>.toml, else the bundled one; None if neither."""
+    paths = ([os.path.join(pack_base, "render", "backends", name + ".toml")] if pack_base else []) + \
+        [os.path.join(TEMPLATES_DIR, "backends", name + ".toml")]
+    return next((p for p in paths if os.path.isfile(p)), None)
+
+
+def status_destination(profile, pack_base, err):
+    """(status-destination pattern, map name) from the bound status backend's map [ids], or None: no [status]
+    table, no map or no declared pattern (docs/specs/shared-status.md §2). err(name, key, reason)."""
+    if not isinstance(profile.get("status"), dict):
+        return None
+    table = profile.get("backends") if isinstance(profile.get("backends"), dict) else {}
+    name = (table.get("status") if isinstance(table.get("status"), dict) else {}).get("name", "github")
+    path = status_map(name, pack_base) if isinstance(name, str) else None
+    if path is None:
+        return None
+    try:
+        with open(path, "rb") as f:
+            ids = tomllib.load(f).get("ids", {})
+    except (OSError, tomllib.TOMLDecodeError) as e:
+        err(name, "(file)", "cannot read backend map %s (%s)" % (path, e))
+        return None
+    pattern = ids.get("status-destination") if isinstance(ids, dict) else None
+    if pattern is None:
+        return None
+    try:
+        re.compile(pattern)
+    except (re.error, TypeError) as e:
+        err(name, "ids.status-destination", "pattern does not compile (%s)" % e)
+        return None
+    return pattern, name
+
+
+def validate_status(table, err, destination=None):
+    """[status] (docs/specs/shared-status.md §2); destination is the bound map's (pattern, name), else None."""
+    st = check_table(err, "status", table, STATUS_FIELDS)
+    if "instance_id" in st and not status_record.INSTANCE_ID.fullmatch(st["instance_id"]):
+        err("status.instance_id", "expected [a-z0-9][a-z0-9-]{0,62}, got %s" % json.dumps(st["instance_id"]))
+    if "decision_log" in st and status_record.url_problem(st["decision_log"], ["issues"], None):
+        err("status.decision_log", "expected an issue URL https://github.com/<owner>/<repo>/issues/<n>, got %s"
+            % json.dumps(st["decision_log"]))
+    if "destination" in st and destination is None:
+        err("status.destination", "the status backend's map declares no [ids] status-destination pattern")
+    elif "destination" in st and not re.fullmatch(destination[0], st["destination"]):
+        err("status.destination", "%s does not match the status-destination pattern %s (status backend %s)"
+            % (json.dumps(st["destination"]), destination[0], destination[1]))
+    interval = st.get("publish_interval", 300)
+    if not 60 <= interval <= 3600:
+        err("status.publish_interval", "must be 60-3600 seconds, got %d" % interval)
+    stale = st.get("stale_after", 900)
+    if not 2 * interval <= stale <= 86400:
+        err("status.stale_after", "must be 2 x publish_interval (%d) to 86400 seconds, got %d" % (2 * interval, stale))
+    if st.get("enabled"):
+        for key in ("destination", "instance_id", "decision_log"):
+            if key not in table:
+                err("status." + key, "missing; enabled = true needs destination, instance_id and decision_log")
 
 
 def type_name(value):
@@ -787,8 +857,9 @@ def validate_project(profile, err):
         err("repo.doc_home", "expected a nonempty project-relative directory without .. (no escape from the checkout)")
 
 
-def validate(profile, err, backends=BACKENDS, pack_dir=None, item=None):
-    """item: the tracker backend's declared [ids] item pattern as (pattern, map name), None when undeclared."""
+def validate(profile, err, backends=BACKENDS, pack_dir=None, item=None, status_ids=None):
+    """item: the tracker backend's declared [ids] item pattern as (pattern, map name), None when undeclared;
+    status_ids: the status backend's [ids] status-destination as (pattern, map name), None when undeclared."""
     if "pack" in profile:
         return validate_manifest(profile, err, pack_dir)
     req = (dict, REQUIRED)
@@ -797,7 +868,9 @@ def validate(profile, err, backends=BACKENDS, pack_dir=None, item=None):
                                              size_budget=(dict, None), builder=(dict, None), flavor=(dict, None),
                                              release=(dict, None), triage=(dict, None), install=(dict, None),
                                              docs=(dict, None), reflection=(dict, None), ci=(dict, None),
-                                             report=(dict, None)))
+                                             report=(dict, None), status=(dict, None)))
+    if "status" in top:  # shared status (docs/specs/shared-status.md §2, #1313)
+        validate_status(top["status"], err, status_ids)
     if "flavor" in top:
         validate_flavor(profile, err)
     if "report" in top:
@@ -1273,7 +1346,7 @@ def is_team(data):
 
 def team_layers(data, file, repo, err):
     """(team profile, repo profile, repo name, team name) in the legacy profile shape; err(layer, key, reason) on a problem."""
-    for key in sorted(data.keys() - {"team", "repos"}):
+    for key in sorted(data.keys() - {"team", "repos", "status"}):  # [status] is team-level, beside [team] (#1313)
         err("team", key, "unknown key in a team file (team settings go in [team], repo settings in [repos.<name>])")
     team, repos = data.get("team", {}), data.get("repos", {})
     if not isinstance(team, dict) or not isinstance(repos, dict) or not repos:
@@ -1300,7 +1373,7 @@ def team_layers(data, file, repo, err):
     repo = repo or next(iter(repos))
     if repo not in repos or not isinstance(repos[repo], dict):
         return err("team", "repos", "names no repo %r (repos: %s)" % (repo, ", ".join(repos)))
-    out = {}
+    out = {"status": copy.deepcopy(data["status"])} if "status" in data else {}
     for key, value in team.items():
         if key in ("name", "pack", "personas", "accounts"):
             continue
@@ -1511,6 +1584,39 @@ def classify_binding(merged, prov, files, pack_dir, err):
     return cmd
 
 
+def status_binding(merged, prov, files, pack_base, err):
+    """The bound status backend's {operation: command} from its map [status], or None (docs/specs/shared-status.md
+    §2, §7). enabled = true needs both operations supported; a set destination needs read-records supported;
+    emulated counts as not supported. With destination unset the concern is not checked."""
+    st, be = merged["status"], merged["backends"]["status"]
+    if "destination" not in st and not st.get("enabled"):
+        return None
+    layer, caps = source(prov, "backends.status.name"), be.get("capabilities", {})
+    ops = STATUS_OPERATIONS["status"] if st.get("enabled") else ["read-records"]
+    for op in ops:
+        if caps.get(op, "unsupported") != "supported":
+            return err(layer, "backends.status.name", "binds %s, whose status.%s is %s; %s needs it supported "
+                       "(docs/specs/shared-status.md)" % (be["name"], op, caps.get(op, "undeclared"),
+                                                          "enabled = true" if st.get("enabled") else "a destination"))
+    path = status_map(be["name"], pack_base)
+    try:
+        with open(path, "rb") as f:
+            table = tomllib.load(f).get("status")
+    except (OSError, TypeError, tomllib.TOMLDecodeError):
+        table = None
+    files["status-map"] = path or "backends/%s.toml" % be["name"]
+    cmds = {}
+    for op in STATUS_OPERATIONS["status"]:
+        cmd = table.get(op) if isinstance(table, dict) else None
+        if op in ops and (not isinstance(cmd, str) or not cmd.strip()):
+            return err("status-map", "status." + op, "no command for the %s status backend" % be["name"])
+        if isinstance(cmd, str) and MAP_PLACEHOLDER.search(cmd):
+            return err("status-map", "status." + op, "unfilled placeholder <%s>" % MAP_PLACEHOLDER.search(cmd).group(1))
+        if isinstance(cmd, str) and cmd.strip():
+            cmds[op] = cmd
+    return cmds
+
+
 ROOT_CHILDREN = ("state_dir", "worktree_root", "live_dir", "mdstack", "checkout")
 
 
@@ -1670,6 +1776,14 @@ def resolve_profile(project, org_profile=None, pack_manifest=None, meta=None):
             if isinstance(rt, dict) and rt.get("name") == "tmux" and isinstance(rt.get("options"), dict) \
                     and "session" not in rt["options"]:
                 rt["options"]["session"], prov["runtime.options.session"] = "crew-team-" + team, "team"
+        status = merged.get("status")
+        if isinstance(status, dict):  # [status] defaults and the bundled binding apply only with the table (#1313)
+            for key, (_, default) in STATUS_FIELDS.items():
+                if default is not None and key not in status:
+                    status[key], prov["status." + key] = default, "core"
+            backends = merged.get("backends")
+            if isinstance(backends, dict) and "status" not in backends:
+                backends["status"], prov["backends.status.name"] = {"name": "github"}, "default"
         land, strategy = {}, {}
         connectors = plugin["items"]["connectors"] if plugin else {}
         fold_manifests(merged, prov, files, err, external, land, strategy, connectors)
@@ -1683,7 +1797,9 @@ def resolve_profile(project, org_profile=None, pack_manifest=None, meta=None):
             else pack_dir
         ids = backend_ids(merged, pack_base, lambda name, key, reason: problems.append(
             "backend-map:%s:%s: %s" % (name, key, reason)), names)
-        validate(merged, verr, names, item=ids["item"] if ids["item"][1] else None)
+        status_ids = status_destination(merged, pack_base, lambda name, key, reason: problems.append(
+            "backend-map:%s:%s: %s" % (name, key, reason)))
+        validate(merged, verr, names, item=ids["item"] if ids["item"][1] else None, status_ids=status_ids)
         if len(problems) == count and team:
             project_relaxation(layers, merged, err)
         if len(problems) == count:
@@ -1692,6 +1808,8 @@ def resolve_profile(project, org_profile=None, pack_manifest=None, meta=None):
             resolve_root(merged.get("paths"), prov, merged.get("repo"))
             doc_home_escape(merged, project, verr)
         if len(problems) == count:  # one resolved copy for every consumer; a profile layer cannot set [ids]
+            if status_ids:
+                ids["status-destination"] = status_ids
             merged["ids"] = {key: pattern for key, (pattern, _) in ids.items()}
             prov.update({"ids." + key: "backend-map:" + name if name else "core" for key, (_, name) in ids.items()})
         if len(problems) == count and external:
@@ -1711,6 +1829,11 @@ def resolve_profile(project, org_profile=None, pack_manifest=None, meta=None):
         if meta is not None:
             meta.update({"land." + key: entry for key, entry in land.items()})
             meta.update({"strategy." + key: entry for key, entry in strategy.items()})
+        if len(problems) == count and isinstance(merged.get("status"), dict):
+            cmds = status_binding(merged, prov, files, pack_base, err)
+            if meta is not None and cmds:
+                meta.update({"status." + op: (cmd, "pack:" + merged["backends"]["status"]["name"])
+                             for op, cmd in cmds.items()})
         if len(problems) == count and "classify" in merged["backends"]:
             cmd = classify_binding(merged, prov, files, pack_dir, err)
             if meta is not None and cmd is not None:
@@ -2073,8 +2196,10 @@ def main(argv=None):
                 if isinstance(pack, str) and pack.strip() else None
             ids = backend_ids(profile, pack_base, lambda name, key, reason: problems.append(
                 "backend-map:%s:%s: %s" % (name, key, reason)), names)
+            status_ids = status_destination(profile, pack_base, lambda name, key, reason: problems.append(
+                "backend-map:%s:%s: %s" % (name, key, reason)))
             validate(profile, err, names, os.path.dirname(os.path.abspath(args.file)),
-                     item=ids["item"] if ids["item"][1] else None)
+                     item=ids["item"] if ids["item"][1] else None, status_ids=status_ids)
             if args.install:
                 scan_install_placeholders(profile, err)
     except OSError as e:

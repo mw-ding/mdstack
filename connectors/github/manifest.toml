@@ -71,3 +71,7 @@ cut = "supported"
 approve-check = "supported"
 record-release = "supported"
 notify = "supported"
+
+[capabilities.status]
+read-records = "supported"
+publish-record = "supported"

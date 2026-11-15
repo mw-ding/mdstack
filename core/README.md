@@ -13,6 +13,7 @@ Shared libraries only, used by every axis. Part of the
 | `crew-routines.py` | Role routine validation and due-slot logic ([routines](../docs/routines.md)) |
 | `crew-memory.py` | Core memory lint and brief injection ([memory](../docs/memory.md)) |
 | `crew-pack.py` | Pack plug-in discovery and checks ([packs](../docs/packs.md#pack-plug-ins)) |
+| `status-record.py` | Shared-status record S v1: closed schema, slot body and content identity ([shared status](../docs/specs/shared-status.md#3-record-s-version-1-s1)) |
 | `secret-patterns.py` | Secret-scan patterns shared by profile validation and the repo guard |
 | `path-glob.py` | Path glob matching shared by profile rules and the repo guard |
 | `markdown-scan.py` | Markdown fence, code-span, comment and link scanning shared by the docs scan and the repo guard |

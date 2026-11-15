@@ -39,6 +39,7 @@ core/crew-routines.py	deliverable	all	Install CLI: validate role routines (sched
 core/markdown-scan.py	deliverable	all	Shared module: markdown fence, code-span, comment and link scanning for `docs-scan.py` and the repo guard ([#281](https://github.com/mw-ding/eng-crew/issues/281))
 core/path-glob.py	deliverable	all	Shared module: path glob matching for `crew-config.py` and the repo guard ([#281](https://github.com/mw-ding/eng-crew/issues/281))
 core/secret-patterns.py	deliverable	all	Shared module: secret-scan patterns for `crew-config.py` and the repo guard ([#281](https://github.com/mw-ding/eng-crew/issues/281))
+core/status-record.py	deliverable	all	Shared module: shared-status record S v1 schema, slot body and content identity for `crew-config.py` and the status commands ([#1313](https://github.com/mw-ding/mdstack/issues/1313))
 dev/**	internal	n/a	Guards and tests: tests per module, shared test helpers and fixtures (dev/tests/), run by CI and release validation, not installed
 docs/README.md	internal	n/a	Maintainer docs: the docs index, not loaded by roles
 docs/architecture.md	deliverable	all	Protocol bundle (core): the text roles load and cite
