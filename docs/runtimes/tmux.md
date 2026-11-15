@@ -738,7 +738,7 @@ use `--project "$CREW_PROJECT"`.
 ### mdstack up
 
 ```sh
-cli/mdstack up [--project <config.toml>] [--org-profile <path>] [--inputs <inputs-dir>] [--coordinator-only] [--resume <id>]
+cli/mdstack up [--project <config.toml>] [--org-profile <path>] [--inputs <inputs-dir>] [--coordinator-only] [--resume <id>] [--attach]
 cli/mdstack up --team <config-home>/teams/<team>.toml [--org-profile <path>] [--inputs <inputs-dir>]
 cli/mdstack up <role> [--project <config.toml>] [--org-profile <path>]
 ```
@@ -751,6 +751,20 @@ instances back down to `min` ([role lifecycle](../roles-registry.md#lifecycle), 
 ([launch topology](../configuration/runtime-options.md#launch-topology)). On a
 `session` profile, `mdstack up` starts only the coordinator
 ([session binding](session.md#starting-the-coordinator), #1548).
+
+`--attach` is the owner's start-or-reattach shortcut (#1845), also reachable
+as `<home>/start --attach` ([mdstack layout](#mdstack-layout)). It runs
+`mdstack up` as below, so a running crew gets no second session or watcher,
+then attaches the terminal interactively to window 0 of the session on the
+server step 2 resolves. A crew `mdstack up` could not start is not attached.
+From a client of that same server (`$TMUX` names its socket) it runs
+`tmux switch-client` to window 0 instead of nesting an attach. A client of
+another tmux server is refused, exit 1, before anything starts: detach and
+retry. Run from a crew pane (`CREW_ROLE` set) it refuses, exit 2, before
+anything starts, so an agent never takes the owner's terminal. It takes
+`--project` only (not `--team` or a role) and only a `tmux` profile. A
+flag on `up`, not a no-target `mdstack attach`, keeps `attach` free of start
+side effects, and reuses the existing `start` wrapper instead of adding one.
 
 `--team` starts one instance for every repo of a
 [team file](../profile.md#team-files) (#634): one session and coordinator,
@@ -1065,7 +1079,8 @@ cli/mdstack layout [--project <config.toml>] [--org-profile <path>] [--write] [-
 `checkout`, `state`, `worktree_root`, `live_dir`, `mdstack` and the CLI the
 wrappers run. `--write` writes two one-command starts: `<home>/start` runs
 `mdstack up --project <project>` from any cwd (extra arguments pass through,
-for example `--coordinator-only`), and `<home>/start-owner` starts
+for example `--coordinator-only`, or `--attach` to start or reattach to
+window 0), and `<home>/start-owner` starts
 the owner's session (`--owner-cmd`, default `claude`) in the checkout. Both
 hold absolute, shell-quoted paths and a generated marker line; rerun
 `--write` after the layout moves. A wrapper file without the marker is
