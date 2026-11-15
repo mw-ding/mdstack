@@ -2861,7 +2861,7 @@ only; outcome, proof boundary, release status and lessons are in
 | L3 | #1914 | Help on stdout/exit 0 vs usage/exit 2 lesson (PR #1924) | 40–70 docs | Carry-in | default | done |
 | L4 | #1915 | Builder brief against the session consumer's budget lesson (PR #1923) | 40–70 docs | Carry-in | default | done |
 | MC | not filed | Delete the temporary workaround entries in `memory/roles/coordinator.md`. **Excluded:** not admitted until the owner confirms the v7.14.0 install; if confirmed before S1, the coordinator files it and this row returns to `open` | ~7 deleted lines | Owner install confirmation; #1927 | default | dropped |
-| S1 | #1926 | Status, settled choices, lesson links and tracker reconciliation (this change) | 40–70 docs | Every admitted member landed | default | done |
+| S1 | #1926 | Status, settled choices, lesson links and tracker reconciliation (PR #1931) | 40–70 docs | Every admitted member landed | default | done |
 
 **Target environment: N/A**: every acceptance path uses fake tmux and
 disposable profiles and state; no platform or device requirement. **Owner
