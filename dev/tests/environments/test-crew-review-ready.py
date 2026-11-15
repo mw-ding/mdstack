@@ -267,6 +267,22 @@ class ReviewReadiness(pool_tests.ReviewerPool):
             ("after reset: note", [self.verdict(OLD, 2, "pass"), self.reset(), self.note("fix", "1")], False, {}, 1, True),
             ("after reset: note before it", [self.verdict(OLD, 2, "pass"), self.note("fix", "2"), self.reset()], False, {}, 1, False),
         ]
+        self.run_rows(rows)
+        self.fresh()
+        self.scene([self.verdict(self.sha, 2, "pass")])  # no-op merge-up: same head, nothing to note
+        self.offer(2)
+        self.assertEqual((self.reviewers(), self.messages()), ([], []))  # consumed, never a wait
+        say("D1.5 %-36s -> consumed; no wait for a note never posted" % "merge-up no-op (passed head)")
+
+    def test_reset_epoch_and_requested_round(self):  # D1.1/D1.3, PR #1904 review r1
+        self.run_rows(lambda: [
+            ("reset before verdict: body only", [self.reset()], True, {}, 1, False),
+            ("reset before verdict: later note", [self.reset(), self.note("fix", "1")], True, {}, 1, True),
+            ("requested round: not the live 2", [self.verdict(OLD, 1, "changes"), self.note()], False, {}, 3, False),
+            ("requested round: the live 2", [self.verdict(OLD, 1, "changes"), self.note()], False, {}, 2, True)])
+
+    def run_rows(self, rows):
+        """Each row (why, reviews, opened, live fields, round, admitted) on a fresh fixture through reviewer-pool."""
         for row in range(len(rows())):
             if row:
                 self.fresh()
@@ -274,17 +290,12 @@ class ReviewReadiness(pool_tests.ReviewerPool):
             with self.subTest(why):
                 self.scene(reviews, opened, **live)
                 # a replayed new-head for a head whose newest verdict is its own is consumed (#1124): explicit handoff
-                self.offer(round_, paths=("review",) if "same head" in why else ("work",))
+                self.offer(round_, paths=("review",) if "same head" in why or "round:" in why else ("work",))
                 if admitted:
                     self.assertEqual((self.reviewers(), self.messages()), (["vera-12-r%d-review" % round_], []))
                 else:
                     self.assert_parked(why)
-                say("D1.5 %-36s -> %s" % (why, "one review" if admitted else "parked"))
-        self.fresh()
-        self.scene([self.verdict(self.sha, 2, "pass")])  # no-op merge-up: same head, nothing to note
-        self.offer(2)
-        self.assertEqual((self.reviewers(), self.messages()), ([], []))  # consumed, never a wait
-        say("D1.5 %-36s -> consumed; no wait for a note never posted" % "merge-up no-op (passed head)")
+                say("D1   %-36s -> %s" % (why, "one review" if admitted else "parked"))
 
 
 if __name__ == "__main__":

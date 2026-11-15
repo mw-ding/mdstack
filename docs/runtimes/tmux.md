@@ -1955,10 +1955,11 @@ runtime's verdicts and coordinator resets set the epoch:
 | Pushed after opening, before any verdict | A round-0 `ci-fix` or a `merge-up` note at head |
 | Same head after a `changes` verdict (evidence-only fix) | A later `fix` note at head with that verdict's round |
 | New head after a verdict | A later `fix` or `ci-fix` note at head with the verdict's round, or a `merge-up` note |
-| New head after a round reset | A later `fix`, `ci-fix` or `merge-up` note at head |
+| Any head after a round reset, before or after a first verdict | A later `fix`, `ci-fix` or `merge-up` note at head |
 
-Fix, ci-fix and body records need inline proof or a reasoned N/A (presence
-only; the reviewer judges it). An open rereview at head, a head whose newest
+The requested round must also be the live round, counted as poll counts it
+(#1005). Fix, ci-fix and body records need inline proof or a reasoned N/A
+(presence only; the reviewer judges it). An open rereview at head, a head whose newest
 verdict passed (left to deduplication) and express changes skip the check.
 A clean merge-up still goes to the synthesizer unchanged. Until the head is
 ready, the reviewer lead parks the request as an `evidence` wait. A new
