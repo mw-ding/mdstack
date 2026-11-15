@@ -348,17 +348,17 @@ def mismatch(want, got):
 
 def unready(values, pr, head, round_):
     """Why a fresh review of the live head at round_ may not start, or None (#1878). The published builder record for
-    the head's operation is authoritative; `done:`, head events and the backstop only wake this check. One table R
-    binds every field (D1.1): this repo, the PR's one linked item as the builder-signed body's marker names it (and a
-    note's issue=, if any), this PR, the full head, the builder's login and signature, the epoch, the operation kind
-    with its record round, the requested round and inline proof; a record that leaves any field missing or binds it
-    otherwise refuses. This runtime's verdicts and coordinator resets set the epoch: a head whose newest verdict passed
-    is left to deduplication; otherwise the requested round must be the live round (poll's, #1005); a changes verdict
-    at head needs a later `fix` note there; another head after a verdict needs a later `fix`, `ci-fix` or `merge-up`
-    note at it (fix and ci-fix carry the verdict's round); after a reset, verdict or not, a later note of any round.
-    With neither, the opened head is ready from the builder-signed PR body; a head committed after opening needs a
-    round-0 `ci-fix` or a `merge-up` note. Fix, ci-fix and body need inline proof or a reasoned N/A; the reviewer
-    judges it."""
+    the head's operation is authoritative; `done:`, head events and the backstop only wake this check. One table R binds
+    every field (D1.1): this repo, the PR's one linked item as the builder-signed body's marker names it (and a note's
+    issue=, if any), this PR, the full head, the author login against the configured builder login, the builder's
+    signature as authenticated, the epoch, the operation kind with its record round, the requested round and inline
+    proof; a record that leaves any field missing or binds it otherwise refuses. This runtime's verdicts and coordinator
+    resets set the epoch: a head whose newest verdict passed is left to deduplication; otherwise the requested round
+    must be the live round (poll's, #1005); a changes verdict at head needs a later `fix` note there; another head after
+    a verdict needs a later `fix`, `ci-fix` or `merge-up` note at it (fix and ci-fix carry the verdict's round); after a
+    reset, verdict or not, a later note of any round. With neither, the opened head is ready from the builder-signed PR
+    body; a head committed after opening needs a round-0 `ci-fix` or a `merge-up` note. Fix, ci-fix and body need inline
+    proof or a reasoned N/A; the reviewer judges it."""
     poll, n = commands()["poll"], pr["number"]
     if pr["state"] != "OPEN" or pr["headRefOid"] != head:
         return "%s is not the open PR's live head" % head
@@ -390,7 +390,7 @@ def unready(values, pr, head, round_):
         if poll.signed_by(values, "builder", body) else set()
     want = {"repo": ("%s/%s" % (values["repo.owner"], values["repo.name"])).lower(),
             "item": {str(i["number"]) for i in pr.get("closingIssuesReferences") or []}, "pr": str(n), "head": head,
-            "actor": "builder", "epoch": "current",
+            "login": values.get("identities.builder.gh_user"), "signature": "builder", "epoch": "current",
             "kind": re.compile("|".join("%s@%s" % (k, "[0-9]+" if r is None else r) for k, r in kinds.items())),
             "round": str(poll.pr_snapshot(dict(pr, statusCheckRollup=[]), values=values)["round"]),  # needs no CI
             "proof": "inline"}
@@ -404,8 +404,8 @@ def unready(values, pr, head, round_):
         why = mismatch(want, {
             "repo": repo_of(pr.get("url")), "item": "/".join(sorted(items)) if all(items) else None,
             "pr": m.get("pr"), "head": m.get("sha"),
-            "actor": "builder" if poll.signed_by(values, "builder", review) else
-                     (review.get("author") or {}).get("login"),
+            "login": (review.get("author") or {}).get("login"),  # untrusted; compared, never a sentinel
+            "signature": "builder" if poll.signed_by(values, "builder", review) else None,
             "epoch": epoch,
             "kind": "%s@%s" % (m["pass"], m.get("round", "n/a")),  # a published merge-up may omit round
             "round": str(round_),
