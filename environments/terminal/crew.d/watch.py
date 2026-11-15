@@ -224,6 +224,24 @@ def silent_claim(state, session, name, rec, cls, now):
     return None if any(b.search(screen) for b in BUSY) else beat
 
 
+def deliveries(state, session, windows, seen, mine):
+    """Token-free re-probe of workers' pending deliveries (#1850, D2.4): one `delivery` wake when a message's delivery,
+    worker or action changed since the last scan to one needing the lead (nudge, restart, escalate); a first sight,
+    busy or held waits, and an unchanged state never wake. The book in seen keeps only still-pending ids."""
+    book, live = seen.get("deliveries", {}), {}
+    wakes = []
+    for name, rec in runs(state):
+        for d in [] if remote_run.host_of(rec) else commands()["send"].pending(state, session, name, rec, windows, mine):
+            key, now = "%s %s" % (name, d["id"]), [d["delivery"], d["worker"], d["action"]]
+            live[key] = now
+            if book.get(key, now) != now and d["action"] in ("nudge", "restart", "escalate"):
+                wakes.append({"reason": "delivery", "window": name, "id": d["id"], "delivery": d["delivery"],
+                              "worker": d["worker"], "disposition": d["disposition"], "action": d["action"],
+                              "event": "%s %s: %s, %s" % (name, d["id"], d["reason"], d["action"])})
+    seen["deliveries"] = live
+    return wakes
+
+
 def utc(t):
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(t))
 
@@ -242,7 +260,7 @@ def stall(state, seen, name, now, since=None, liveness=None):
 
 
 def scan(state, session, now, stale, seen, idle_ttl=1800, stuck_after=1800, idle_stall=1800, schedule_home=None,
-         repo=None):
+         repo=None, mine=None):
     """Wake records: new status lines, runs dead, missing or silent past stale, owner asks past their deadline and
     finishing work deferred past stuck_after (in a team, this repo's from the team schedule at schedule_home); each
     fires once per key. A working run whose pane printed nothing for
@@ -354,6 +372,7 @@ def scan(state, session, now, stale, seen, idle_ttl=1800, stuck_after=1800, idle
             wakes.append({"reason": "stale", "window": name, "liveness": cls, "silent": int(now - beat), "run": identity,
                           "action": "restart" if cls in ("dead", "missing") and not rec.get("restarts") else "escalate"})
             stall(state, seen, name, now, utc(beat), cls)
+    wakes += deliveries(state, session, windows, seen, mine or (lambda env: isinstance(env, dict)))
     for n, text, due in asks(state):  # whatever the backstop: the ask's §6 auto-apply time (tmux.md C8)
         if now >= due and seen["keys"].get("ask " + n) != text:  # once per (ask, deadline)
             seen["keys"]["ask " + n] = text
@@ -850,7 +869,8 @@ def run(args):
                 found += pull_hosts(values, state, seen, time.time(), args.stale)
             trial = json.loads(json.dumps(seen))  # committed only once its wakes are queued
             wakes = scan(state, session, time.time(), args.stale, trial, values["runtime.options.idle_builder_ttl"],
-                         values["runtime.options.stuck_after"], args.idle_stall, home, repo) + found
+                         values["runtime.options.stuck_after"], args.idle_stall, home, repo,
+                         commands()["send"].ours(args.project, args.org_profile, values)) + found
             others = queued(state, wake, trial)
             if code_sig() != code and not held:  # before route resolves the live profile with old code (#702)
                 reexec(lock)  # trial is not committed, so the new image finds this scan's status lines and records again

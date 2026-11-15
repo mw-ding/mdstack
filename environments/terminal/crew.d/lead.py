@@ -68,6 +68,13 @@ def enabled(state, role):
     return role in POOLS and os.path.exists(os.path.join(state, "render", "runtime", role + "-lead.md"))
 
 
+def busy(session, name, state):
+    """Whether the lead's live, identity-matching harness is mid-turn on its adapter's screen (#1850)."""
+    rec = dict(records(state)).get(name)
+    windows = dict((n, i) for i, n in tmux.list_windows(session)) if tmux.has_session(session) else {}
+    return commands()["send"].worker(session, name, rec, windows) == "busy"
+
+
 def recovery(liveness, restarts):
     return "none" if liveness == "alive" else "restart" if liveness in ("dead", "missing") and not restarts else "blocked"
 
@@ -164,7 +171,9 @@ def handoff(args, role, kind, refs):
     if prior:  # a done (completed or withdrawn) message is never reused: a re-send starts a new handoff
         if commands()["send"].wait_ack(lead_state(state), name, prior["id"], 0) == 0:
             return 0
-        if commands()["send"].nudge(session, POOLS[role], "inbox: " + prior["id"]):
+        if busy(session, name, state):  # a mid-turn lead reads its whole inbox next turn: no Enter (#1850, D2.2)
+            print("crew: pending %s to %s: lead busy; nothing typed" % (prior["id"], name))
+        elif commands()["send"].nudge(session, POOLS[role], "inbox: " + prior["id"]):
             return 4
         return commands()["send"].wait_ack(lead_state(state), name, prior["id"], args.wait_ack) \
             if getattr(args, "wait_ack", None) is not None else 0
@@ -300,6 +309,8 @@ def retry_pending(args, name=None, recheck=False, admission=False):
         if messages:
             if ensure(args, rec["role"].removesuffix("-lead")):
                 raise RuntimeError("crew: cannot retry lead " + worker)
+            if busy(session, worker, state):  # its next turn reads every pending id; the backstop retries later
+                continue
             if commands()["send"].nudge(session, rec["index"], "inbox: " + messages[0]["id"]):
                 raise RuntimeError("crew: cannot nudge lead " + worker)
 
