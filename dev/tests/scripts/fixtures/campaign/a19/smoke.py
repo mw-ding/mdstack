@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""A19 installed-adapter smoke (docs/campaign-harness.md#a19): `smoke.py SOURCE ROOT [--only ENGINE/BACKEND]...
+"""A19 installed-adapter smoke (docs/campaign-scenarios/A19.md#a19): `smoke.py SOURCE ROOT [--only ENGINE/BACKEND]...
 [--skip ENGINE=REASON]... [--model ENGINE=MODEL]... [--repo OWNER/NAME]` runs, for every installed harness with an
 interactive launch and every installed session backend, launch, doorbell, ack, probe and stop on one disposable run
 through SOURCE's own runtime code: the adapter's role argv under the bypass launch policy (--repo names the repository

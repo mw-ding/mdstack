@@ -4,8 +4,8 @@ relative markdown links, crew marker SHAs, optional name denylist,
 deliverables manifest coverage, spec slice status, design headers naming an
 open milestone, CHANGELOG fragments,
 per-script docs, index files (inventory fresh, entries sorted, docs index
-complete), no committed evidence directory, union merge for append-only docs
-(`.gitattributes`), markdown lint (check-markdown.py on every tracked *.md
+complete), no committed evidence directory, the campaign scenario index
+(one file per scenario, index generated and complete), markdown lint (check-markdown.py on every tracked *.md
 file), tests per module, and the team spec's dependency rules with the
 runtime-word lint, core memory (layout, size limits, no personal data), role routines and
 campaign scenarios (campaign-lint.py: unhandled assertions, required cases kept against origin/main).
@@ -13,7 +13,7 @@ In a git work tree it also warns on stderr, naming them, about non-ignored
 untracked files, which the path checks skip (exit code unchanged).
 Python 3 stdlib only, no network.
 
-Usage: check-repo.py [--root DIR] [--config FILE] [--fix] [--only secrets|docs|links|markers|blockers|shapes|denylist|deliverables|spec-status|design-headers|fragments|script-docs|index|evidence|attributes|markdown|test-layout|deps|memory|routines|campaign]...
+Usage: check-repo.py [--root DIR] [--config FILE] [--fix] [--only secrets|docs|links|markers|blockers|shapes|denylist|deliverables|spec-status|design-headers|fragments|script-docs|index|evidence|scenarios|markdown|test-layout|deps|memory|routines|campaign]...
 Every failure prints `file:line: [rule] reason`; exit 1 if any, else 0.
 """
 import argparse
@@ -21,6 +21,7 @@ import ast
 import datetime
 import importlib.util
 import io
+import json
 import os
 import posixpath
 import re
@@ -122,22 +123,133 @@ def check_evidence(root, fail):
         fail("evidence/", 1, "inline-evidence", "evidence belongs inline in the change body or signed reviews, not in the repo")
 
 
-UNION_MERGE = ["docs/campaign-harness.md"]
+SCENARIO_DIR, SCENARIO_DOC = "docs/campaign-scenarios", "docs/campaign-harness.md"
+SCENARIO_BEGIN, SCENARIO_END = "<!-- scenarios:begin", "<!-- scenarios:end -->"
+SCENARIO_HEAD = ["", "| ID | Source | Spec | Sandbox |", "|---|---|---|---|"]
+SCENARIO_ID = re.compile(r"A\d\d")
+SCENARIO_FIELD = re.compile(r"- (Source|Spec|Driver|Sandbox): (.+)")
+SCENARIO_SPEC = "[`%s.json`](../../dev/tests/scripts/fixtures/campaign/%s.json)"
+SCENARIO_ROW = re.compile(r"\| \[(A\d\d)\]")
+DRIVER_ONLY = "dev/tests/scripts/fixtures/campaign/driver-only.txt"
 
 
-def check_attributes(root, fail):
-    """Issue #1112: each append-only doc in UNION_MERGE that exists has a
-    `<path> merge=union` line in `.gitattributes`, so a local merge-up keeps
-    both sides of two appends at the same place without a manual resolution."""
-    have = set()
-    for line in read_lines(os.path.join(root, ".gitattributes")) or []:
-        cols = line.split()
-        if len(cols) > 1 and not cols[0].startswith("#") and "merge=union" in cols[1:]:
-            have.add(cols[0])
-    for rel in UNION_MERGE:
-        if os.path.exists(os.path.join(root, rel)) and rel not in have:
-            fail(".gitattributes", 1, "union-merge",
-                 "%s is append-only; add a `%s merge=union` line" % (rel, rel))
+def scenario_row(root, name, drivers, fail):
+    """The index row of docs/campaign-scenarios/<name>, or None after a failure. The file opens with
+    `# <Axx>` and the fields `- Source:`, `- Sandbox:` and exactly one of `- Spec:` (the committed
+    `<Axx>.json`, whose `id` is Axx; sandbox fresh or shared) or `- Driver:` (a driver-only scenario listed
+    in DRIVER_ONLY, with no committed spec, linking an existing driver; sandbox n/a)."""
+    rel = SCENARIO_DIR + "/" + name
+    sid = name[:-3] if name.endswith(".md") else name
+
+    def bad(n, reason):
+        fail(rel, n, "scenario-index", reason)
+
+    if not name.endswith(".md") or not SCENARIO_ID.fullmatch(sid):
+        return bad(1, "not a scenario file; name it <Axx>.md")
+    lines = read_lines(os.path.join(root, rel)) or []
+    if lines[:2] != ["# " + sid, ""]:
+        return bad(1, "start with `# %s` and a blank line" % sid)
+    fields = {}
+    for n, line in enumerate(lines[2:], 3):
+        m = SCENARIO_FIELD.fullmatch(line)
+        if not m:
+            break
+        if m.group(1) in fields:
+            return bad(n, "second `%s:` field" % m.group(1))
+        fields[m.group(1)] = m.group(2)
+    if "Source" not in fields or "Sandbox" not in fields or ("Spec" in fields) == ("Driver" in fields):
+        return bad(3, "needs `- Source:`, `- Sandbox:` and exactly one of `- Spec:` or `- Driver:`")
+    spec = os.path.join(root, CAMPAIGN, sid + ".json")
+    if ("Driver" in fields) != (sid in drivers):
+        return bad(3, "a `- Driver:` scenario is exactly one listed in %s" % DRIVER_ONLY)
+    if "Spec" in fields:
+        if fields["Spec"] != SCENARIO_SPEC % (sid, sid):
+            return bad(3, "Spec must be exactly %s" % (SCENARIO_SPEC % (sid, sid)))
+        try:
+            with open(spec, encoding="utf-8") as f:
+                spec_id = json.load(f).get("id")
+        except (OSError, ValueError, AttributeError):
+            return bad(3, "dangling: no readable committed spec %s/%s.json" % (CAMPAIGN, sid))
+        if spec_id != sid:
+            return bad(3, "dangling: %s/%s.json has id %r" % (CAMPAIGN, sid, spec_id))
+        if fields["Sandbox"] not in ("fresh", "shared"):
+            return bad(3, "Sandbox of a committed spec is fresh or shared")
+        return "| [%s](campaign-scenarios/%s) | %s | `%s.json` | %s |" % (sid, name, fields["Source"], sid, fields["Sandbox"])
+    if os.path.exists(spec):
+        return bad(3, "%s/%s.json is committed; use `- Spec:`, not `- Driver:`" % (CAMPAIGN, sid))
+    targets = [t for t in link_destinations(fields["Driver"]) if "://" not in t]
+    if not targets or not all(os.path.isfile(os.path.join(root, SCENARIO_DIR, unquote(t.split("#")[0])))
+                              for t in targets):
+        return bad(3, "dangling: Driver must link an existing driver file")
+    if fields["Sandbox"] != "n/a":
+        return bad(3, "Sandbox of a driver-only scenario is n/a")
+    return "| [%s](campaign-scenarios/%s) | %s | driver | n/a |" % (sid, name, fields["Source"])
+
+
+def check_scenarios(root, fail, fix):
+    """Issue #1419 (one file per campaign scenario, so neither appends nor rewrites share lines): every
+    committed campaign spec <Axx>.json has its own docs/campaign-scenarios/<Axx>.md, every scenario file
+    resolves its spec or driver (scenario_row), and the index between the markers of
+    docs/campaign-harness.md is generated from those files, sorted by ID: `--fix` rewrites it; a missing,
+    duplicate or stale row fails, and so does a driver-only ID listed in DRIVER_ONLY without its file, so
+    JSON-only enumeration never drops it; with such a failure `--fix` leaves the index as is. Skipped when
+    the harness doc is absent."""
+    lines = read_lines(os.path.join(root, SCENARIO_DOC))
+    if lines is None:
+        return
+    record_failures = []
+
+    def fail(*a, report=fail):
+        record_failures.append(a)
+        report(*a)
+
+    d = os.path.join(root, SCENARIO_DIR)
+    names = sorted(os.listdir(d)) if os.path.isdir(d) else []
+    cd = os.path.join(root, CAMPAIGN)
+    for spec in sorted(os.listdir(cd)) if os.path.isdir(cd) else []:
+        if SCENARIO_ID.fullmatch(spec[:-5]) and spec.endswith(".json") and spec[:-5] + ".md" not in names:
+            fail("%s/%s" % (CAMPAIGN, spec), 1, "scenario-index", "missing: no %s/%s.md for this committed spec"
+                 % (SCENARIO_DIR, spec[:-5]))
+    drivers = set()
+    for n, line in enumerate(read_lines(os.path.join(root, DRIVER_ONLY)) or [], 1):
+        if not line.strip() or line.startswith("#"):
+            continue
+        if not SCENARIO_ID.fullmatch(line) or line in drivers:
+            fail(DRIVER_ONLY, n, "scenario-index", "one new driver-only scenario ID (Axx) per line")
+        elif line + ".md" not in names:
+            fail(DRIVER_ONLY, n, "scenario-index", "missing: no %s/%s.md for this driver-only scenario"
+                 % (SCENARIO_DIR, line))
+        drivers.add(line)
+    rows = [r for r in (scenario_row(root, n, drivers, fail) for n in names) if r]
+    want = SCENARIO_HEAD + rows + [""]
+    begin = next((i for i, l in enumerate(lines) if l.startswith(SCENARIO_BEGIN)), None)
+    end = next((i for i, l in enumerate(lines) if l == SCENARIO_END), None)
+    if begin is None or end is None or begin > end:
+        fail(SCENARIO_DOC, 1, "scenario-index", "no '%s ...' and '%s' lines around the scenario index"
+             % (SCENARIO_BEGIN, SCENARIO_END))
+        return
+    have = lines[begin + 1:end]
+    if have == want:
+        return
+    if fix and not record_failures:
+        lines[begin + 1:end] = want
+        with open(os.path.join(root, SCENARIO_DOC), "w", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n")
+        return
+    seen = set()
+    for n, line in enumerate(have, begin + 2):
+        m = SCENARIO_ROW.match(line)
+        if m and m.group(1) in seen:
+            fail(SCENARIO_DOC, n, "scenario-index", "duplicate row for %s" % m.group(1))
+        elif m and line not in rows:
+            fail(SCENARIO_DOC, n, "scenario-index", "stale row for %s: not generated from %s"
+                 % (m.group(1), SCENARIO_DIR))
+        seen.add(m.group(1) if m else None)
+    for row in rows:
+        if row not in have:
+            fail(SCENARIO_DOC, begin + 1, "scenario-index", "missing row for %s" % SCENARIO_ROW.match(row).group(1))
+    fail(SCENARIO_DOC, begin + 1, "scenario-index",
+         "scenario index is not generated from %s; run `python3 scripts/check-repo.py --fix`" % SCENARIO_DIR)
 
 
 def check_secrets(root, fail):
@@ -949,13 +1061,13 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--root", default=os.path.dirname(here), help="repo root (default: parent of scripts/)")
     ap.add_argument("--config", help="required-docs config (default: <script dir>/required-docs.txt)")
-    ap.add_argument("--only", action="append", choices=["secrets", "docs", "links", "markers", "blockers", "shapes", "denylist", "deliverables", "spec-status", "design-headers", "fragments", "script-docs", "index", "evidence", "attributes", "markdown", "test-layout", "deps", "memory", "routines", "campaign"],
+    ap.add_argument("--only", action="append", choices=["secrets", "docs", "links", "markers", "blockers", "shapes", "denylist", "deliverables", "spec-status", "design-headers", "fragments", "script-docs", "index", "evidence", "scenarios", "markdown", "test-layout", "deps", "memory", "routines", "campaign"],
                     help="run only these checks (repeatable)")
-    ap.add_argument("--fix", action="store_true", help="rewrite the generated inventory table (index check) in place")
+    ap.add_argument("--fix", action="store_true", help="rewrite the generated inventory table (index check) and scenario index (scenarios check) in place")
     args = ap.parse_args(argv)
     root = os.path.abspath(args.root)
     config = os.path.abspath(args.config or os.path.join(here, "required-docs.txt"))
-    checks = set(args.only or ["secrets", "docs", "links", "markers", "blockers", "shapes", "denylist", "deliverables", "spec-status", "design-headers", "fragments", "script-docs", "index", "evidence", "attributes", "markdown", "test-layout", "deps", "memory", "routines", "campaign"])
+    checks = set(args.only or ["secrets", "docs", "links", "markers", "blockers", "shapes", "denylist", "deliverables", "spec-status", "design-headers", "fragments", "script-docs", "index", "evidence", "scenarios", "markdown", "test-layout", "deps", "memory", "routines", "campaign"])
 
     failures = []
 
@@ -990,8 +1102,8 @@ def main(argv=None):
         check_script_docs(root, fail)
     if "index" in checks:
         check_index(root, config, fail, args.fix)
-    if "attributes" in checks:
-        check_attributes(root, fail)
+    if "scenarios" in checks:
+        check_scenarios(root, fail, args.fix)
     if "markdown" in checks:
         check_markdown(root, fail)
     if "test-layout" in checks:

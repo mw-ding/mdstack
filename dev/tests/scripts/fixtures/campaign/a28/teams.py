@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""A28 two-full-team preflight and lifecycle (docs/campaign-harness.md#a28, #1440): `teams.py SOURCE ROOT --production
+"""A28 two-full-team preflight and lifecycle (docs/campaign-scenarios/A28.md, #1440): `teams.py SOURCE ROOT --production
 FILE --sentinel FILE [--engine ENGINE/MODEL] [--release ID] [--ready SECS] [--handoff]` first tears down every earlier run under
 ROOT through its manifest (`campaign-sandbox.py teardown`, never a bare tmux call; a run without a valid manifest is
 refused, #1474), then sets up a fresh level-a sandbox with two teams in ROOT/<run> (`campaign-sandbox.py setup --teams

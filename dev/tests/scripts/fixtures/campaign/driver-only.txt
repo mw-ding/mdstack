@@ -1,0 +1,5 @@
+# Driver-only campaign scenarios (#1419): one ID per line, sorted. Each has a
+# docs/campaign-scenarios/<ID>.md with a `- Driver:` field and no committed
+# <ID>.json; check-repo.py (scenarios) fails when one is missing or unlisted,
+# so enumerating the JSON specs alone never drops it from the index.
+A29
