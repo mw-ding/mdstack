@@ -140,12 +140,25 @@ The live buffer. How to append, when to batch and who owns it are in
   and #1877, its incomplete train read-before-write coverage
   ([findings](https://github.com/mw-ding/mdstack/pull/1877#pullrequestreview-5904913556),
   [repair](https://github.com/mw-ding/mdstack/pull/1877#pullrequestreview-5906333201)),
+  each PR counted once.
+  Added 2026-11-15 by the
+  [M57-close sweep](https://github.com/mw-ding/mdstack/issues/1903#issuecomment-6895229944)
+  (#1916): #1896, its pending payload
+  ([finding](https://github.com/mw-ding/mdstack/pull/1896#pullrequestreview-5908314357));
+  #1904, counted once for its round/reset, item and author findings
+  ([round/reset](https://github.com/mw-ding/mdstack/pull/1904#pullrequestreview-5908818891),
+  [item](https://github.com/mw-ding/mdstack/pull/1904#pullrequestreview-5909239411),
+  [author](https://github.com/mw-ding/mdstack/pull/1904#pullrequestreview-5909393321));
+  #1905, its confirmed slot
+  ([finding](https://github.com/mw-ding/mdstack/pull/1905#pullrequestreview-5908877174));
+  and #1906, its invalid earlier ack
+  ([finding](https://github.com/mw-ding/mdstack/pull/1906#pullrequestreview-5909433991)),
   each PR counted once
 - **Smell:** A gate or action consumed only the fields, lines or flags it
   expected. A missing field, truncated status, unparsed flag, missing run
   record, later changes request or replayed authority read then passed as
   clean.
-- **Count:** 18
+- **Count:** 22
 - **Proposed fix layer:** types/schemas: validate the whole contract and
   treat anything incomplete as unknown; per-site regression tests hold it.
 - **Status:** fixed by #979, #981, #984, #991, #996, #1008, #1154, #1163,
@@ -195,12 +208,21 @@ The live buffer. How to append, when to batch and who owns it are in
   (#1887): #1877, its fake returned a URL real gh had not been asked for,
   hiding a broken ordinary `train check`
   ([finding](https://github.com/mw-ding/mdstack/pull/1877#pullrequestreview-5903990882),
-  [repair inventory](https://github.com/mw-ding/mdstack/pull/1877#pullrequestreview-5906333201))
+  [repair inventory](https://github.com/mw-ding/mdstack/pull/1877#pullrequestreview-5906333201)).
+  Added 2026-11-15 by the
+  [M57-close sweep](https://github.com/mw-ding/mdstack/issues/1903#issuecomment-6895229944)
+  (#1916): #1897, a driver-only deletion masked by a JSON-backed failure
+  ([finding](https://github.com/mw-ding/mdstack/pull/1897#pullrequestreview-5908358037));
+  #1908, its omitted session-render consumer
+  ([finding](https://github.com/mw-ding/mdstack/pull/1908#pullrequestreview-5910048200));
+  and #1909, a direct disposition test that missed the parked-wait wake
+  ([finding](https://github.com/mw-ding/mdstack/pull/1909#pullrequestreview-5910488046)),
+  each PR counted once
 - **Smell:** A fixture or check took a shortcut around the production path.
   Examples are a moved doc source, a skipped render stage, a shell that
   masks exit codes, a snapshot over git internals, a lint that knew one
   syntax form and a checker that reads only tracked files.
-- **Count:** 12
+- **Count:** 15
 - **Proposed fix layer:** CI check: route tests through the production
   pipeline and make every assertion fail closed.
 - **Status:** fixed by #888, #992, #1066, #1073, #1080, #1169, #1243, #1253
@@ -245,7 +267,11 @@ The live buffer. How to append, when to batch and who owns it are in
   #1094 and #1186. Added 2026-11-13 by the
   [M53-close sweep](https://github.com/mw-ding/mdstack/issues/1781#issuecomment-6866552379)
   (#1862): #1851, an MD038 code-span occurrence
-  ([#1128 record](https://github.com/mw-ding/mdstack/issues/1128#issuecomment-6866461542))
+  ([#1128 record](https://github.com/mw-ding/mdstack/issues/1128#issuecomment-6866461542)).
+  Added 2026-11-15 by the
+  [M57-close sweep](https://github.com/mw-ding/mdstack/issues/1903#issuecomment-6895229944)
+  (#1916): #1910, its banner omitted the installation status AC2 required
+  ([finding](https://github.com/mw-ding/mdstack/pull/1910#pullrequestreview-5910831280))
 - **Smell:** Text that moved or was quoted kept its words but not what its
   readers relied on. Runtime qualifiers were dropped (#1125). Numbered lists
   were split under new headings (#1127). A code span gained a separator
@@ -253,7 +279,7 @@ The live buffer. How to append, when to batch and who owns it are in
   heading broke an anchor (#1133). Generated commands lost `--project` or
   their order (#1142, #1143). A descriptive phrase parsed as a closing
   reference (#1211). A wrapped `#N` line became a heading (#1212).
-- **Count:** 10
+- **Count:** 11
 - **Proposed fix layer:** lint and CI check for the mechanical half
   (markdownlint, the CI `links` job, `check-markdown.py` MD018 and the render
   test's `assert_crew_commands_parse`); prose only for qualifiers, slice
@@ -276,11 +302,18 @@ The live buffer. How to append, when to batch and who owns it are in
   handoff
   ([finding](https://github.com/mw-ding/mdstack/pull/1876#pullrequestreview-5902179715),
   [repair](https://github.com/mw-ding/mdstack/pull/1876#pullrequestreview-5903113186),
-  [passing source verdict](https://github.com/mw-ding/mdstack/pull/1876#pullrequestreview-5903457187))
+  [passing source verdict](https://github.com/mw-ding/mdstack/pull/1876#pullrequestreview-5903457187)).
+  Added 2026-11-15 by the
+  [M57-close sweep](https://github.com/mw-ding/mdstack/issues/1903#issuecomment-6895229944)
+  (#1916): #1906, counted once for its restart and inbox/ledger interruption,
+  including its later ack finding
+  ([finding](https://github.com/mw-ding/mdstack/pull/1906#pullrequestreview-5908983465)),
+  and #1909, its spawned fix that never woke the relay
+  ([finding](https://github.com/mw-ding/mdstack/pull/1909#pullrequestreview-5910488046))
 - **Smell:** A record was produced correctly, then lost downstream. The
   consumers were accuracy history, ID parsing, the wake matcher, the reaper,
   scheduler inputs and the reservation ledger.
-- **Count:** 8
+- **Count:** 10
 - **Proposed fix layer:** CI check: key records by stable identity and test
   each consumer with the record as the runtime produces it.
 - **Status:** fixed by #1007, #1009, #1063, #1065, #1071, #1081 and #1150;
