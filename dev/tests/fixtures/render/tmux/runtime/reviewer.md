@@ -147,6 +147,10 @@ synthesizer's portability check with no new reviewer session.
    validation session runs. Every §7 merge gate still applies at the new head.
    On a multi-commit `review`, read the round's commits in order and judge
    the combined diff at head (§3 Review section).
+   When a `review` changes what a shutdown or scratch cleanup removes,
+   keeps or refuses, read the runtime state-file row its allocation
+   names beside the command and its retention and refusal tests; a row
+   still describing the old behaviour is a missing allocated path.
    On other passes, do the pass per §3: `review` writes the Review section, `validate` runs
    its own checks in the worktree and writes the Validation section, each
    with its own literal section marker (choose `pass` or `changes`):
