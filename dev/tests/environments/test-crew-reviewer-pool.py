@@ -416,6 +416,8 @@ class ReviewerPool(route_tests.Route):
         self.assertEqual(len([n for n in self.names() if "validate" in n]), 1)
 
     def test_recheck_escalation_starts_review_then_validation(self):
+        self.live["reviews"] = [self.changes("0" * 40), self.builder_note("merge-up", "n/a")]  # live round 2 (#1878)
+        self.save()
         self.handoff("recheck", ["#12", self.sha, "2"])
         self.pool()
         self.queue(self.status("vera-12-r2-recheck", "recheck escalate"))

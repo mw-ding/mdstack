@@ -468,6 +468,8 @@ class Route(SpawnBase):
         self.transcript.append(("mdstack spawn reviewer --pr 12 --pass recheck --round 2 --project <fixture>/crew.toml", r))
         name = "vera-12-r2-recheck"
         self.assertIn(name, self.names())
+        self.live["reviews"] = [self.changes("0" * 40), self.builder_note("merge-up", "n/a")]  # live round 2 (#1878)
+        self.save()
         self.queue(self.status(name, "recheck escalate"), self.status(name, "recheck escalate"))
         self.route()
         self.assertEqual(self.names(), ["ash", "vera-12-r2-review"])
@@ -636,6 +638,8 @@ class Route(SpawnBase):
         self.route()
         self.assertEqual(len(self.windows()), 1)
         self.assertEqual(self.pending(), [])
+        self.live["reviews"] = [self.changes(self.sha), self.builder_note("fix", 1)]  # round 2 is live (#1878)
+        self.save()
         self.queue(dict(self.event("fix-at-head"), round=2))
         self.route()
         self.assertIn("vera-12-r2-review", self.names())
@@ -661,6 +665,11 @@ class Route(SpawnBase):
         self.live["commits"] = [{"oid": self.sha, "committedDate": "2026-01-01T00:20:00Z"}]
         self.save()
         return previous
+
+    def changes(self, sha, round_=1):
+        """This runtime's signed round-k changes verdict at sha."""
+        return self.signed("<!-- crew:v1 role=reviewer-validator pass=verdict pr=12 sha=%s round=%d verdict=changes -->"
+                           % (sha, round_))
 
     def builder_note(self, kind, round_, proof="~~~text\n$ make test\nok\n~~~"):
         """A builder-signed `kind` note at the live head with inline proof: the record a fresh review needs (#1878)."""
@@ -1030,6 +1039,8 @@ class Route(SpawnBase):
         self.queue(self.event())
         self.route()
         self.assertEqual(len(self.windows()), 1)
+        self.live["reviews"] = [self.changes("0" * 40), self.builder_note("fix", 1)]  # round 2 is live (#1878)
+        self.save()
         self.queue(dict(self.event(), round=2))
         self.route()
         self.assertIn("vera-12-r2-review", self.names())
