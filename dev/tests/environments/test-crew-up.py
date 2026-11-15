@@ -931,6 +931,109 @@ class OwnServer(Base):
         self.assertEqual(alive.returncode, 0, "the decoy's session survived")
 
 
+class UpAttach(Base):
+    """#1845: mdstack up --attach starts or reuses the crew, then attaches window 0 interactively on the configured
+    server, switches a same-server tmux client instead of nesting, and refuses a foreign client or a crew pane
+    before anything starts. Fake tmux only: no real session is touched."""
+    TARGET = "=crew-acme-widgets:0"
+
+    def setUp(self):
+        super().setUp()
+        for name in ("CREW_ROLE", "TMUX", "TMUX_PANE"):  # this suite may itself run in a crew pane
+            self.env.pop(name, None)
+        self.env["TMUX_TMPDIR"] = os.path.join(self.tmp, "tmux-tmp")
+        self.socket_dir = os.path.join(self.env["TMUX_TMPDIR"], "tmux-%d" % os.getuid())
+
+    def attach(self, **env):
+        return self.crew("up", "--project", self.project, "--inputs", INPUTS, "--attach", **env)
+
+    def joins(self):
+        return [c for c in self.calls() if c[0] in ("attach-session", "switch-client")]
+
+    def sockets(self):
+        with open(self.log + ".sockets") as f:
+            return f.read().splitlines()
+
+    def test_starts_then_attaches_window_zero(self):
+        r = self.attach()
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.new_session()
+        self.assertEqual(self.joins(), [["attach-session", "-t", self.TARGET]])  # no -r: interactive
+        names = [c[0] for c in self.calls()]
+        self.assertLess(names.index("new-session"), names.index("attach-session"))
+
+    def test_running_crew_attaches_with_no_second_session_on_replay(self):
+        self.assertEqual(self.up().returncode, 0)
+        for _ in range(2):
+            r = self.attach()
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertIn("crew-acme-widgets already running", r.stdout)
+        self.new_session()  # exactly one, from the first plain up
+        self.assertEqual(self.joins(), [["attach-session", "-t", self.TARGET]] * 2)
+
+    def test_same_server_client_switches_instead_of_nesting(self):
+        r = self.attach(TMUX="%s,4242,3" % os.path.join(self.socket_dir, "default"))
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.new_session()
+        self.assertEqual(self.joins(), [["switch-client", "-t", self.TARGET]])
+
+    def test_dedicated_server_attaches_and_switches_on_its_own_socket(self):
+        with open(self.project, "a") as f:
+            f.write('\n[runtime.options]\ntmux_server = "dedicated"\n')
+        r = self.attach()
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertEqual(self.joins(), [["attach-session", "-t", self.TARGET]])
+        self.assertEqual(self.sockets()[-1], "crew-acme-widgets")  # the join ran on -L <session>
+        r = self.attach(TMUX="%s,4242,3" % os.path.join(self.socket_dir, "crew-acme-widgets"))
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertEqual(self.joins()[-1], ["switch-client", "-t", self.TARGET])
+        self.assertEqual(self.sockets()[-1], "crew-acme-widgets")
+
+    def test_foreign_server_client_refuses_before_any_start(self):
+        for tmux_server, foreign in (("default", "crew-acme-widgets"), ("dedicated", "default")):
+            with self.subTest(tmux_server=tmux_server):
+                self.write_profile()
+                with open(self.project, "a") as f:
+                    f.write('\n[runtime.options]\ntmux_server = "%s"\n' % tmux_server)
+                r = self.attach(TMUX="%s,4242,3" % os.path.join(self.socket_dir, foreign))
+                self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+                self.assertIn("this tmux client is on another server", r.stdout)
+                self.assertIn("detach and retry", r.stdout)
+                self.assertFalse([c for c in self.calls() if c[0] != "has-session"], self.calls())
+                self.assertFalse(os.path.exists(os.path.join(self.state, "render")))
+
+    def test_crew_pane_refuses_before_any_tmux_call_or_write(self):
+        self.assertEqual(self.up().returncode, 0)  # even with the crew running
+        before = self.calls()
+        for role in ("coordinator", "builder"):
+            r = self.attach(CREW_ROLE=role, TMUX="%s,4242,3" % os.path.join(self.socket_dir, "default"))
+            self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+            self.assertEqual(r.stdout, "crew: refusing up --attach: run from a crew pane (CREW_ROLE=%s); it is the "
+                                       "owner's terminal shortcut\n" % role)
+        self.assertEqual(self.calls(), before)
+
+    def test_failed_start_does_not_attach(self):
+        with open(self.project, "a") as f:
+            f.write('\n[runtime.options.notes]\ncoordinator = ["policy.md"]\n')
+        r = self.attach()
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn("cannot read runtime.options.notes.coordinator file policy.md", r.stdout)
+        self.assertEqual(self.joins(), [])
+        self.assertFalse(any(c[0] == "new-session" for c in self.calls()))
+
+    def test_takes_project_only(self):
+        r = self.crew("up", "--team", self.project, "--attach")
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertIn("refusing up --attach: it takes --project, not --team", r.stdout)
+        self.assertEqual(self.calls(), [])
+
+    def test_help_names_the_shortcut(self):
+        r = self.crew("up", "--help")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("--attach", r.stdout)
+        self.assertIn("window 0", r.stdout)
+
+
 class OrphanLeads(Base):
     """#818: after a server loss, mdstack up stops a recorded lead whose pane process ignored SIGHUP, and nothing else."""
     def spawn(self, orphan):

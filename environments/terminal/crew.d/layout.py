@@ -9,7 +9,7 @@ start there), checkout (paths.checkout, else home), state (the project's state d
 mdstack (the install link) and the CLI the wrappers run.
 
 --write writes two POSIX sh wrappers and prints each path: `<home>/start` runs `mdstack up` for this profile from any
-cwd, and `<home>/start-owner` starts the owner's session (`--owner-cmd`, default `claude`) in the checkout (#1316).
+cwd (`<home>/start --attach` then attaches to window 0, #1845), and `<home>/start-owner` starts the owner's session (`--owner-cmd`, default `claude`) in the checkout (#1316).
 Paths are absolute and shell-quoted, so rerun --write after the layout moves. A wrapper file that exists without the
 generated marker line is refused (exit 1) and left as it is. Nothing is written under ~/.claude or any other
 user-level config.
