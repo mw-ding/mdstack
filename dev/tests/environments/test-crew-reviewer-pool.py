@@ -833,6 +833,176 @@ class ReviewerPool(route_tests.Route):
             self.assertEqual(json.loads(f.read()), request)
         self.assertEqual(len(self.messages()), 1)
 
+    def relayed(self):
+        """#1871's production path: a reviewer's review-changes status, relayed by reviewer-pool to the builder lead
+        (ben-lead, beside a spawned ben-7); the builder lead acknowledges it. The relay's inbox id."""
+        self.put("render/runtime/builder-lead.md", "Manage the builder pool; never build.\n")
+        if not os.path.exists(os.path.join(self.state, "runs", "ben-7.json")):
+            self.assertEqual(self.spawn("builder", "--issue", "7").returncode, 0)
+        with mock.patch.dict(os.environ, self.env):
+            self.assertEqual(self.lead.event(self.args, "reviewer", dict(
+                self.status("vera-12-r1-review", "review changes"), round=1)), 0)
+        self.pool()
+        relay = [m for m in self.lead.pending(self.state, "ben-lead") if m["kind"] == "work"]
+        self.assertEqual(len(relay), 1)
+        self.ben_status("ack: %s\n" % relay[0]["id"])
+        return relay[0]["id"]
+
+    def ben_status(self, line, name="ben-lead"):
+        with open(os.path.join(self.state, "status", name + ".status"), "a") as f:
+            f.write(line)
+
+    def disposition(self, msg_id):
+        """`mdstack lead relay builder ID` as the builder lead runs it: (exit, stdout, lines it added to its status)."""
+        path = os.path.join(self.state, "status", "ben-lead.status")
+        before = open(path).read() if os.path.exists(path) else ""
+        r = self.crew("lead", "relay", "builder", msg_id, "--project", self.project)
+        return r.returncode, r.stdout.strip(), (open(path).read() if os.path.exists(path) else "")[len(before):]
+
+    def test_relayed_changes_wait_for_the_coordinator_fix_and_settle_on_its_receipt(self):  # #1871
+        relay = self.relayed()
+        code, first, added = self.disposition(relay)
+        self.assertEqual((code, added), (0, "waiting: #12 fix id=%s\n" % relay))
+        self.assertIn("crew: relay %s #12 %s r1 review changes: awaiting coordinator fix" % (relay, self.sha), first)
+        self.assertFalse(os.path.exists(os.path.join(self.state, "inbox", "ben-7.jsonl")))  # no fix launched
+        backstop = lambda: [a[len("inbox: "):] for c in self.calls()[before:] if c[0] == "send-keys"
+                            for a in c if a.startswith("inbox: ")]
+        before = len(self.calls())
+        with mock.patch.dict(os.environ, self.env):
+            for _ in range(10):  # omitted handoff: an unchanged fix wait is never re-typed
+                self.lead.retry_pending(self.args, "ben-lead", recheck=True)
+            self.assertNotIn(relay, [m["id"] for m in self.lead.actionable(self.state, "ben-lead")])
+        self.assertEqual(backstop(), [])
+        self.assertEqual(self.disposition(relay)[0::2], (0, "waiting: #12 fix id=%s\n" % relay))  # still pending
+        with mock.patch.dict(os.environ, self.env):  # the watcher's next scan records the re-written wait's baseline
+            self.assertNotIn(relay, [m["id"] for m in self.lead.actionable(self.state, "ben-lead")])
+        findings = os.path.join(self.state, "verdicts", "pr12-%s-r1-review.md" % self.sha[:7])
+        self.put(os.path.relpath(findings, self.state), "findings")
+        with mock.patch.dict(os.environ, self.env):  # the coordinator's explicit fix: the only trigger
+            self.assertEqual(self.lead.handoff(self.args, "builder", "fix", ["#12", self.sha, findings]), 0)
+            self.assertIn(relay, [m["id"] for m in self.lead.actionable(self.state, "ben-lead")])  # same head wakes it
+        fix = [m for m in self.lead.pending(self.state, "ben-lead") if m["kind"] == "fix"][0]
+        self.ben_status("ack: %s\n" % fix["id"])
+        self.assertEqual(self.disposition(relay)[0::2], (0, "waiting: #12 fix id=%s\n" % relay))  # not yet delivered
+        r = self.crew("send", "ben-7", "fix", *fix["refs"], "--project", self.project)  # the lead delivers it
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        with open(os.path.join(self.state, "inbox", "ben-7.jsonl")) as f:
+            sent = [json.loads(line) for line in f]
+        self.assertEqual([m["kind"] for m in sent], ["fix"])
+        with mock.patch.dict(os.environ, self.env):
+            self.assertNotIn(relay, [m["id"] for m in self.lead.actionable(self.state, "ben-lead")])  # re-parked
+        self.ben_status("ack: %s\n" % sent[0]["id"], "ben-7")  # the worker's receipt
+        with mock.patch.dict(os.environ, self.env):
+            self.assertIn(relay, [m["id"] for m in self.lead.actionable(self.state, "ben-lead")])
+        code, out, added = self.disposition(relay)
+        self.assertEqual((code, added), (0, "done: %s\n" % relay))
+        self.assertIn("fix delivered", out)
+        with open(os.path.join(self.state, "inbox", "ben-7.jsonl")) as f:
+            self.assertEqual(len(f.readlines()), 1)  # no second handoff
+        self.assertEqual([m["id"] for m in self.lead.pending(self.state, "ben-lead")], [fix["id"]])
+        if "--relay-transcript" in sys.argv:
+            print(first + "\nomitted handoff: 10 backstops typed 0; relay still waiting\ncoordinator fix " + fix["id"] +
+                  " woke the relay (same head); worker ack settled it:\n" + out + "\nworker fix messages: 1")
+
+    def test_relay_disposition_table(self):  # #1871: one rule; every refusal beside its valid control
+        relay = self.relayed()
+        base = {p: open(os.path.join(self.state, p)).read() for p in
+                ("status/ben-lead.status", "inbox/ben-lead.jsonl", "runs/ben-7.json")}
+        event = [m for m in self.lead.pending(self.state, "ben-lead") if m["id"] == relay][0]["refs"][0]
+        wake = open(event).read()
+        later = "2099-01-01T00:00:00Z"
+
+        def fix(window, head, acked, ts="2026-01-01T00:00:00Z"):
+            def apply():
+                with open(os.path.join(self.state, "inbox", window + ".jsonl"), "a") as f:
+                    f.write(json.dumps(dict(id="f-" + window, kind="fix", refs=["#12", head], ts=ts)) + "\n")
+                if acked:
+                    self.ben_status("ack: f-%s\n" % window, window)
+            return apply
+
+        def live(**kv):
+            return lambda: (self.live.update(kv), self.save())
+
+        def spawned(head, start):
+            def apply():
+                rec = self.record("ben-7")
+                rec.update(head=head, start=start, args=dict(rec["args"], **{"pass": "fix", "pr": 12}))
+                self.put("runs/ben-7.json", json.dumps(rec))
+            return apply
+
+        def put(path, text):
+            return lambda: self.put(path, text)
+
+        waiting, done = "waiting: #12 fix id=%s\n" % relay, "done: %s\n" % relay
+        other = "f" * 40
+        rows = [  # (name, setup, msg id, exit, status lines added)
+            ("valid relay, no fix: awaiting coordinator fix", [], relay, 0, waiting),
+            ("held after relay: still awaiting", [live(labels=[{"name": "crew:hold"}])], relay, 0, waiting),
+            ("coordinator fix at the lead only", [fix("ben-lead", self.sha, True)], relay, 0, waiting),
+            ("worker copy unacknowledged", [fix("ben-7", self.sha, False)], relay, 0, waiting),
+            ("worker fix at another head", [fix("ben-7", other, True)], relay, 0, waiting),
+            ("worker received the fix (either order)", [fix("ben-7", self.sha, True)], relay, 0, done),
+            ("fix pass spawned after the lead copy", [fix("ben-lead", self.sha, True), spawned(self.sha, later)],
+             relay, 0, done),
+            ("fix pass older than the lead copy", [fix("ben-lead", self.sha, True, later),
+                                                   spawned(self.sha, "2026-01-01T00:00:00Z")], relay, 0, waiting),
+            ("PR closed: superseded", [live(state="CLOSED")], relay, 0, done),
+            ("head moved: superseded", [live(headRefOid=other)], relay, 0, done),
+            ("refuse: unknown id", [], "nope", 2, ""),
+            ("refuse: already done (replay)", [lambda: self.ben_status(done)], relay, 2, ""),
+            ("refuse: unacknowledged", [put("status/ben-lead.status", "")], relay, 2, ""),
+            ("refuse: event file missing", [lambda: os.remove(event)], relay, 2, ""),
+            ("refuse: not a changes event", [put(os.path.relpath(event, self.state), wake.replace(
+                "review changes", "review pass"))], relay, 2, ""),
+            ("refuse: not a work event", [put("inbox/ben-lead.jsonl", base["inbox/ben-lead.jsonl"].replace(
+                '"kind": "work"', '"kind": "build"'))], relay, 2, ""),
+        ]
+        for name, setup, msg_id, code, added in rows:
+            with self.subTest(name):
+                for path, text in base.items():
+                    self.put(path, text)
+                self.put(os.path.relpath(event, self.state), wake)
+                for path in ("inbox/ben-7.jsonl", "status/ben-7.status"):
+                    if os.path.exists(os.path.join(self.state, path)):
+                        os.remove(os.path.join(self.state, path))
+                self.live.update(state="OPEN", headRefOid=self.sha, labels=[])
+                self.save()
+                for step in setup:
+                    step()
+                got = self.disposition(msg_id)
+                self.assertEqual((got[0], got[2]), (code, added), got[1])
+                if "--relay-transcript" in sys.argv:
+                    print("%-42s exit %d  %s" % (name, got[0], got[2].strip().split(" id=")[0].split(":")[0] or "-"))
+                if code:
+                    self.assertIn("refusing relay", got[1])
+                    self.assertFalse(os.path.exists(os.path.join(self.state, "inbox", "ben-7.jsonl")) and
+                                     "f-ben-7" not in open(os.path.join(self.state, "inbox", "ben-7.jsonl")).read())
+
+    def test_team_root_relay_and_fix_rows_stay_in_their_repo(self):  # #1871: foreign context, valid control beside it
+        relay = self.relayed()
+        team = os.path.join(self.tmp, "team")
+        for rel in ("inbox/ben-lead.jsonl", "status/ben-lead.status"):
+            os.makedirs(os.path.dirname(os.path.join(team, rel)), exist_ok=True)
+            with open(os.path.join(self.state, rel)) as f:
+                lines = [json.dumps(dict(json.loads(l), context={"repo": "acme/widgets"})) + "\n" if
+                         rel.startswith("inbox") else l for l in f]
+            with open(os.path.join(team, rel), "w") as f:
+                f.writelines(lines + ([json.dumps(dict(id="f-other", kind="fix", refs=["#12", self.sha], ts="t",
+                                                      context={"repo": "acme/other"})) + "\n"]
+                                      if rel.startswith("inbox") else ["ack: f-other\n"]))
+        args = argparse.Namespace(project=self.project, org_profile=None, refs=[relay])
+        status = os.path.join(team, "status", "ben-lead.status")
+        for repo, code, added, rows in (("acme/other", 2, "", ["f-other"]),
+                                        ("acme/widgets", 0, "waiting: #12 fix id=%s\n" % relay, [])):
+            with self.subTest(repo), mock.patch.dict(os.environ, self.env), \
+                    mock.patch.object(self.lead, "lead_state", return_value=team), \
+                    mock.patch.object(self.lead.team_module, "repo_of", return_value=repo):
+                before = open(status).read()
+                self.assertEqual(self.lead.relay(args), code)
+                self.assertEqual(open(status).read()[len(before):], added)
+                self.assertEqual([r[1] for r in self.lead.fixes(self.state, "12") if r[0] == "ben-lead"], rows)
+                self.assertFalse(self.lead.delivered(self.state, "12", self.sha))  # a lead copy is never delivery
+
     def test_ci_jobs_without_steps_are_infra_never_green(self):
         poll = self.mod.commands()["poll"]
         self.live["statusCheckRollup"] = [dict(status="COMPLETED", conclusion="FAILURE", detailsUrl="https://github.com/acme/widgets/actions/runs/123/job/456")]
@@ -856,6 +1026,9 @@ if __name__ == "__main__":
         names = ["test_reviewer_floor_under_builder_load",
                  "test_review_held_by_builder_call_is_granted_on_next_reviewer_call",
                  "test_builder_completion_wakes_deferred_review"]
+    if "--relay-transcript" in sys.argv:  # #1871
+        names = ["test_relayed_changes_wait_for_the_coordinator_fix_and_settle_on_its_receipt",
+                 "test_relay_disposition_table", "test_team_root_relay_and_fix_rows_stay_in_their_repo"]
     if "--held-wait-transcript" in sys.argv:  # #1836
         names = ["test_held_ref_parks_with_a_dispatcher_wait_through_unchanged_hold",
                  "test_parked_ref_wakes_on_listed_changes_and_reparks"]

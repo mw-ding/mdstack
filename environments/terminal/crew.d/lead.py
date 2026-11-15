@@ -7,12 +7,17 @@ live at the team root, every repo's route hands it enveloped messages, and a rep
 (pending, waits, retries). Its brief lists each repo's rendered lead brief and `$CREW_PROJECT` is the team file, so a
 command without the message's `context.project` refuses for a multi-repo team.
 
-Usage: mdstack lead ensure|suites|handoff|report ROLE [KIND REF...] [--id ID] --project FILE
+A reviewer pool's relayed changes event never starts a fix: `lead relay builder ID` parks it as `waiting: #<n> fix
+id=<id>` (awaiting coordinator fix) until the coordinator's explicit `fix` reaches a worker or the request goes stale
+(#1871).
+
+Usage: mdstack lead ensure|suites|handoff|report|relay ROLE [KIND REF...|ID] [--id ID] --project FILE
 """
 import argparse
 import json
 import hashlib
 import os
+import re
 import shlex
 import time
 from crew_shared import (
@@ -24,7 +29,8 @@ from crew_shared import (
 POOLS = {"builder": 2, "reviewer": 3, "synthesizer": 1}
 DEFERRALS = {"capacity", "load", "suites", "probe-unavailable"}
 BLOCKS = {"spawn-failure", "missing-dependency", "owner-decision", "lead-fault"}
-WAITS = {"owner", "hold", "ci", "evidence"}  # typed waits a lead reports as `waiting: #<n> KIND id=<id>` (#1715, #1878)
+WAITS = {"owner", "hold", "ci", "evidence", "fix"}  # typed waits: `waiting: #<n> KIND id=<id>` (#1715, #1878, #1871)
+RELAY = re.compile(r"done: #(\d+) ([0-9a-f]{40}) (review|validate|recheck) changes(?:\s.*)?")
 
 
 def solo(values, issue=None, pr=None):
@@ -227,7 +233,35 @@ def fingerprint(state, ref, kind=None):
     pr = poll.get("observed", {}).get(n)
     return [None if pr is None else [pr.get(k) for k in ("state", "head", "ci")], "#" + n in poll.get("held", []),
             poll.get("answers", {}).get("#" + n), os.path.exists(os.path.join(state, "asks", n + ".json"))] + \
-        ([(poll.get("prs", {}).get(n) or {}).get("notes")] if kind == "evidence" else [])
+        ([(poll.get("prs", {}).get(n) or {}).get("notes")] if kind == "evidence" else []) + \
+        ([fixes(state, n)] if kind == "fix" else [])
+
+
+def fixes(state, n):
+    """#n's explicit `fix` handoffs as [window, id, head, ts, received] rows, the lead's copy and each worker's, so a
+    coordinator fix and its worker receipt wake a `fix` wait even at the same head (#1871)."""
+    rows, mine = [], team_module.repo_of(state) if lead_state(state) != state else None
+    for home in sorted({state, lead_state(state)}):
+        folder = os.path.join(home, "inbox")
+        for file in sorted(os.listdir(folder)) if os.path.isdir(folder) else []:
+            if not file.endswith(".jsonl"):
+                continue
+            with open(os.path.join(folder, file)) as f:
+                found = [m for m in map(json.loads, f) if m.get("kind") == "fix" and m["refs"][:1] == ["#" + n] and
+                         (home == state or (m.get("context") or {}).get("repo") == mine)]  # a team root's: this repo's
+            got = receipts(home, file[:-len(".jsonl")]) if found else {}
+            rows += [[file[:-len(".jsonl")], m["id"], m["refs"][1:2], m.get("ts"), m["id"] in got] for m in found]
+    return rows
+
+
+def delivered(state, n, head):
+    """Whether a coordinator `fix` for #n at head reached a worker: a recorded builder's copy with its receipt, or a fix
+    pass spawned at that head after the lead's copy (any other window's) arrived."""
+    rows, builders = fixes(state, n), {w: rec for w, rec in runs(state) if rec["role"] == "builder"}
+    sent = [r[3] for r in rows if r[0] not in builders and r[2] == [head]]
+    return any(r[0] in builders and r[2] == [head] and r[4] for r in rows) or any(
+        rec.get("args", {}).get("pass") == "fix" and rec["args"].get("pr") == int(n) and rec.get("head") == head and
+        any(t and rec.get("start", "") >= t for t in sent) for rec in builders.values())
 
 
 def frees(seen, now):
@@ -359,6 +393,41 @@ def report(args):
                                 window=coordinator, kind="blocked", refs=sent_refs, wait_ack=None))
 
 
+def relay(args):
+    """The builder lead's disposition of a reviewer pool's relayed changes event (#1871). It never starts a fix or
+    sends a handoff. `done: <id>` once a matching coordinator fix reached a worker or the PR closed or left that head;
+    else `waiting: #<n> fix id=<id>`, awaiting coordinator fix. Refuses, writing nothing, an id that is not this repo's
+    acknowledged pending relay or whose event is missing."""
+    values, _, state = profile(args)
+    if not require_ownership(values, "write"):
+        return 1
+    name, msg_id = values["identities.builder.name"].lower() + "-lead", args.refs[0]
+    message = next((m for m in pending(state, name) if m["id"] == msg_id), None)
+    problem = "not a pending message of this repo" if message is None else "not acknowledged" if msg_id not in \
+        receipts(lead_state(state), name) else "not a work event" if message["kind"] != "work" else None
+    wake = {}
+    try:
+        if not problem:
+            with open(message["refs"][0]) as f:
+                wake = json.load(f)
+    except (OSError, ValueError) as e:
+        problem = "event unreadable: %s" % e
+    match = RELAY.fullmatch(wake.get("line", "")) if not problem else None
+    if problem or not match:
+        print("crew: refusing relay %s: %s; nothing written" % (msg_id, problem or "not a relayed changes event"))
+        return 2
+    n, head, kind = match[1], match[2], match[3]
+    pr = commands()["route"].gh("pr", "view", n, "-R", "%s/%s" % (values["repo.owner"], values["repo.name"]),
+                                "--json", "state,headRefOid")
+    settled = "superseded" if pr["state"] != "OPEN" or pr["headRefOid"] != head else \
+        "fix delivered" if delivered(state, n, head) else None
+    with open(os.path.join(lead_state(state), "status", name + ".status"), "a") as out:
+        out.write("done: %s\n" % msg_id if settled else "waiting: #%s fix id=%s\n" % (n, msg_id))
+    print("crew: relay %s #%s %s r%s %s changes: %s" % (msg_id, n, head, wake.get("round", "?"), kind,
+                                                        settled or "awaiting coordinator fix"))
+    return 0
+
+
 def suites(values, state, closed=None):
     """Live tool sessions of runs whose item is open; runs with a live session on a closed item go to `closed`."""
     count = 0
@@ -384,7 +453,7 @@ def suites(values, state, closed=None):
 
 def register(sub):
     p = sub.add_parser("lead")
-    p.add_argument("action", choices=["ensure", "handoff", "suites", "report"])
+    p.add_argument("action", choices=["ensure", "handoff", "suites", "report", "relay"])
     p.add_argument("role", choices=sorted(POOLS))
     p.add_argument("refs", nargs="*")
     p.add_argument("--timeout", type=float, default=15)
@@ -398,6 +467,11 @@ def register(sub):
 def run(args):
     if args.action == "report":
         return report(args)
+    if args.action == "relay":
+        if args.role != "builder" or len(args.refs) != 1:
+            print("crew: relay requires builder and one inbox id")
+            return 2
+        return relay(args)
     if args.action == "ensure":
         return ensure(args, args.role)
     if args.action == "handoff":
