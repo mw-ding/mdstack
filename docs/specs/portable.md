@@ -2997,7 +2997,7 @@ order, sizes and tiers come from
 [M60 approval](https://github.com/mw-ding/mdstack/issues/985#issuecomment-6902560439),
 which also records the coordinator's #1929 scope amendment. `path:line`
 citations refer to base `cc09d81b7b71aa2796ea9147187c301b28dc6c27`.
-S0 is recorded as done for this opening slice (PR #TBD), effective on merge.
+S0 is recorded as done for this opening slice (PR #1940), effective on merge.
 Order: S0 first; then #1929, #753 and #1166 independently; #1933 after #1929
 lands, because it uses #1929's lesson format; S1 last. One issue → one PR,
 except #1166, a post-merge run request with no PR (its ACs). Sizes are
@@ -3005,7 +3005,7 @@ non-test lines, planning ranges, not limits.
 
 | ID | Issue | Scope / named paths | Size | Depends on | Tier | Status |
 |---|---|---|---|---|---|---|
-| S0 | #1938 | This section (PR #TBD) | 120–180 docs | Signed M60 approval | default | done |
+| S0 | #1938 | This section (PR #1940) | 120–180 docs | Signed M60 approval | default | done |
 | X1 | #1929 | Generated lessons index: file-level metadata on every `docs/lessons/*.md`, a generator and checks in `scripts/check-repo.py`, `docs/lessons/README.md` markers and procedure text, `CONTRIBUTING.md`; tests in `dev/tests/scripts/test-check-repo.py` | 250–450 incl. migration | #1938 | deep | open |
 | L1 | #1933 | Published-head readback lesson for #1923, in X1's format | 40–80 docs | #1929 landed | default | open |
 | T1 | #753 | Bounded apply-mode triage hardening: one write allowlist enforced at one apply entry point, the sweep brief and skill, `docs/triage.md` Known risks; tests | 150–300 + docs | #1938 | deep | open |
