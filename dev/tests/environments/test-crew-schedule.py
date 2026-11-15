@@ -1142,7 +1142,8 @@ class Team(Base):
         with mock.patch.object(route, "profile", return_value=(values, "fake", self.a)), \
                 mock.patch.object(s.commands()["poll"], "express_lane", return_value=False), \
                 mock.patch.object(s, "schedule_decide", return_value=out), \
-                mock.patch.object(route, "invoke") as spawn:
+                mock.patch.object(route, "ready_check"), \
+                mock.patch.object(route, "invoke") as spawn:  # admission grants only; readiness has its own tests (#1878)
             try:
                 route.review(args, self.a, dict(number=7, reviews=[]), SHA, kind, round_)
             except RuntimeError as e:

@@ -16,6 +16,10 @@ from crew_testlib import CREW, FAKE_PS, FAKE_TMUX_PANES, PROFILE, SpawnBase
 
 
 class Route(SpawnBase):
+    # The opened head's builder-signed PR body: ready for a first review (#1878).
+    BODY = "Closes #7\n\n## Test Output\n\n~~~text\n$ make test\nok\n~~~\n\n" \
+        "<!-- crew:v1 role=builder issue=7 tier=default engine=codex model=gpt-6.1-sol -->\n— 🛠️ Ben (Builder) · codex · gpt-6.1-sol"
+
     def setUp(self):
         super().setUp()
         self.sha = self.pr(12, "codex gpt-6.1-sol medium")
@@ -25,7 +29,9 @@ class Route(SpawnBase):
                          statusCheckRollup=[], headRefName="builder/7-feature", baseRefName="main",
                          headRepositoryOwner={"login": "acme"}, headRepository={"name": "widgets"},
                          isCrossRepository=False, closingIssuesReferences=[{"number": 7}],
-                         url="https://github.com/acme/widgets/pull/12")
+                         url="https://github.com/acme/widgets/pull/12", author={"login": "acme-bot"},
+                         body=self.BODY, createdAt="2026-01-01T00:10:00Z",
+                         commits=[{"oid": self.sha, "committedDate": "2026-01-01T00:00:00Z"}])
         self.save()
         with open(os.path.join(self.tmp, "bin", "gh"), "w") as f:
             f.write("#!/usr/bin/env python3\nimport json, sys\n"
@@ -462,6 +468,8 @@ class Route(SpawnBase):
         self.transcript.append(("mdstack spawn reviewer --pr 12 --pass recheck --round 2 --project <fixture>/crew.toml", r))
         name = "vera-12-r2-recheck"
         self.assertIn(name, self.names())
+        self.live["reviews"] = [self.changes("0" * 40), self.builder_note("merge-up", "n/a")]  # live round 2 (#1878)
+        self.save()
         self.queue(self.status(name, "recheck escalate"), self.status(name, "recheck escalate"))
         self.route()
         self.assertEqual(self.names(), ["ash", "vera-12-r2-review"])
@@ -616,7 +624,8 @@ class Route(SpawnBase):
         old = self.record("vera-12-r1-review")["worktree"]
         self.git("reset", "-q", "--hard", self.sha)
         self.sha = self.pr(12, "codex gpt-6.1-sol high")
-        self.live["headRefOid"] = self.sha
+        self.live.update(headRefOid=self.sha, commits=[{"oid": self.sha, "committedDate": "2026-01-01T00:20:00Z"}],
+                         reviews=[self.builder_note("ci-fix", 0)])  # pushed after opening: its round-0 ci-fix note
         self.save()
         self.queue(self.event())
         self.route()
@@ -629,6 +638,8 @@ class Route(SpawnBase):
         self.route()
         self.assertEqual(len(self.windows()), 1)
         self.assertEqual(self.pending(), [])
+        self.live["reviews"] = [self.changes(self.sha), self.builder_note("fix", 1)]  # round 2 is live (#1878)
+        self.save()
         self.queue(dict(self.event("fix-at-head"), round=2))
         self.route()
         self.assertIn("vera-12-r2-review", self.names())
@@ -650,10 +661,21 @@ class Route(SpawnBase):
         self.git("push", "-q", "origin", "HEAD:refs/pull/12/head")
         self.live.update(headRefOid=self.sha, _parents=[{"sha": previous}, {"sha": default}] if merge else
                          [{"sha": previous}], _comparison="identical")
-        self.live["reviews"].append(dict(body="<!-- crew:v1 role=builder pass=fix pr=12 sha=%s round=2 "
-                                              "verdict=n/a engine=codex model=gpt-6.1-sol effort=medium -->" % self.sha))
+        self.live["reviews"].append(self.builder_note("fix", 2))  # its published fix note (#1878)
+        self.live["commits"] = [{"oid": self.sha, "committedDate": "2026-01-01T00:20:00Z"}]
         self.save()
         return previous
+
+    def changes(self, sha, round_=1):
+        """This runtime's signed round-k changes verdict at sha."""
+        return self.signed("<!-- crew:v1 role=reviewer-validator pass=verdict pr=12 sha=%s round=%d verdict=changes -->"
+                           % (sha, round_))
+
+    def builder_note(self, kind, round_, proof="~~~text\n$ make test\nok\n~~~"):
+        """A builder-signed `kind` note at the live head with inline proof: the record a fresh review needs (#1878)."""
+        return dict(author={"login": "acme-bot"}, body="%s\n<!-- crew:v1 role=builder pass=%s pr=12 sha=%s round=%s "
+                    "verdict=n/a engine=codex model=gpt-6.1-sol effort=medium -->\n— 🛠️ Ben (Builder) · codex · gpt-6.1-sol"
+                    % (proof, kind, self.sha, round_))
 
     def test_merge_up_stays_queued_for_synthesizer_without_reviewer(self):
         previous = self.approved_push()
@@ -909,6 +931,7 @@ class Route(SpawnBase):
     def test_merge_up_approved_only_by_another_runtime_gets_review(self):  # #1290
         self.approved_push()
         self.live["reviews"][0] = self.signed(self.live["reviews"][0]["body"].split("\n—")[0], name="Grok Bot")
+        self.live["reviews"][-1] = self.builder_note("merge-up", "n/a")  # no own verdict: the merge-up note (#1878)
         self.save()
         self.queue(dict(reason="status", window="ben-7", line="done: #7 #12 " + self.sha))
         self.route()
@@ -1016,6 +1039,8 @@ class Route(SpawnBase):
         self.queue(self.event())
         self.route()
         self.assertEqual(len(self.windows()), 1)
+        self.live["reviews"] = [self.changes("0" * 40), self.builder_note("fix", 1)]  # round 2 is live (#1878)
+        self.save()
         self.queue(dict(self.event(), round=2))
         self.route()
         self.assertIn("vera-12-r2-review", self.names())
@@ -1130,15 +1155,14 @@ class Route(SpawnBase):
         self.route()
         self.assertEqual(self.pending(), [])
         self.assertEqual(self.windows(), [])
-        fix = "<!-- crew:v1 role=builder pass=fix pr=12 sha=%s round=1 verdict=n/a -->" % self.sha
-        self.live["reviews"].append(dict(body=fix))
+        self.live["reviews"].append(self.builder_note("fix", 1))
         self.save()
         self.queue(dict(self.event("fix-at-head"), round=2))
         self.route()
         self.assertIn("vera-12-r2-review", self.names())
 
     def test_spawn_refuses_head_that_changed_after_live_read(self):
-        self.live["headRefOid"] = "f" * 40
+        self.live.update(headRefOid="f" * 40, commits=[{"oid": "f" * 40, "committedDate": "2026-01-01T00:00:00Z"}])
         self.save()
         self.queue(dict(self.event(), refs=["#12", "f" * 40]))
         self.route()

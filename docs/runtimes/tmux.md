@@ -517,7 +517,9 @@ CI is a wait: the lead acknowledges it and appends
 validate, recheck or `work` request whose PR is live `crew:escalated`
 (`owner`) or `crew:hold` (`hold`), keeps the id pending and writes it again
 on each re-run while the label stays (#1836); `done:` stays for dispatched
-or obsolete work. While the ref's fresh state is unchanged, no path re-types
+or obsolete work. It writes `waiting: #<n> evidence id=<id>` for a fresh
+review whose head is not yet ready (Review readiness below), and that
+wait's fresh state adds poll's builder records at head (`notes`). While the ref's fresh state is unchanged, no path re-types
 that id (lead backstop, slot release or coordinator backstop) and route
 consumes the line; a repeated ack never re-arms it. Fresh state is
 token-free: the state, head and CI of `mdstack poll`'s `observed` entry, its
@@ -1952,7 +1954,41 @@ de-duplicated by PR/head/pass/round; held refs for older heads are discarded.
 Files referenced in a handoff remain until the builder reports `done:` or
 posts its fix marker, so it can read both CI failures and findings.
 An evidence-only fix still starts the next review once through `fix-at-head`
-or the builder's `done:` line. Review and validation record observed CI state
+or the builder's `done:` line.
+
+**Review readiness (#1878).** A fresh review pass starts only once the
+head's published builder record for its operation is readable, because
+`route.review()` checks it live before any claim, reservation or spawn, on
+every path: poll events, the builder's `done:`, explicit `mdstack review`
+handoffs and lead retries. One comparison binds every field of the
+readiness record to the live request, and any missing, foreign or
+conflicting field refuses with reviewer state unchanged: this repo, the PR's
+one linked item as the builder-signed body's marker (and a note's `issue=`,
+if any) names it, this PR, the full head, the builder's login and signature,
+the current epoch, the operation kind with its record round, the requested
+round and inline proof. This runtime's verdicts and coordinator resets set
+the epoch:
+
+| Head | Ready from |
+|---|---|
+| Opened head, before any verdict (head commit dated at or before the PR) | The builder-signed PR body |
+| Pushed after opening, before any verdict | A round-0 `ci-fix` or a `merge-up` note at head |
+| Same head after a `changes` verdict (evidence-only fix) | A later `fix` note at head with that verdict's round |
+| New head after a verdict | A later `fix` or `ci-fix` note at head with the verdict's round, or a `merge-up` note |
+| Any head after a round reset, before or after a first verdict | A later `fix`, `ci-fix` or `merge-up` note at head |
+
+The requested round must also be the live round, counted as poll counts it
+(#1005). Fix, ci-fix and body records need inline proof or a reasoned N/A
+(presence only; the reviewer judges it). An open rereview at head, a head whose newest
+verdict passed (left to deduplication) and express changes skip the check.
+A clean merge-up still goes to the synthesizer unchanged. Until the head is
+ready, the reviewer lead parks the request as an `evidence` wait. A new
+builder note at head, seen by poll, wakes it even when `done:` was lost or
+the builder was reclaimed; a moved head or closed PR retires it. There is
+no time-based waiver: a missing or unknown record stays a visible wait
+under the existing stuck-demand escalation, and an unreadable read is
+retried, never admitted. Without a reviewer lead, route keeps the record
+queued with its reason for the coordinator. Review and validation record observed CI state
 as information only, and independently reproduced failures remain findings.
 
 ### mdstack attach
