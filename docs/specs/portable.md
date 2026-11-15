@@ -2536,7 +2536,7 @@ release status and lessons are in [M57 outcome and lessons](#m57-outcome-and-les
 | L6 | #1884 | Inline guard controls lesson; `templates/policy/builder/fix-rounds.md` (PR #1907) | 25–45 docs | #1891; after D1's edit to the same fragment | default | done |
 | SD | #1889 | Shared-status contract: [shared-status.md](shared-status.md); its M57 reference here (PR #1896) | 120–190 docs | #1891; precedes ST | deep | done |
 | ST | #1313 | Shared status: new `core/status-record.py`, `connectors/github/status.py`; `core/crew-config.py`, GitHub manifest/map, `status.py`, new `_status_shared.py`, `watch.py`; interface/profile/backend/runtime docs; deliverables manifest (PR #1905) | 350–600 | #1889 merged; D1–D3 states as observations | deep | done |
-| S1 | #1890 | Status, evidence, decisions, lessons and tracker reconciliation (PR #PRNUM, effective on merge) | 40–80 docs | All thirteen members landed or explicitly superseded | default | done |
+| S1 | #1890 | Status, evidence, decisions, lessons and tracker reconciliation (PR #1910, effective on merge) | 40–80 docs | All thirteen members landed or explicitly superseded | default | done |
 
 Lesson units add a dated `docs/lessons/YYYY-MM-DD-<slug>.md` (actual creation
 date) and its lesson Index row, cite the source repair and set Status from
