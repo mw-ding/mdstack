@@ -471,26 +471,35 @@ def read_phase(args, action):
         raise Refused("destination %s: %s" % (st["destination"], "issue " + found["issue"] if found["issue"] != "open"
                                               else "a comment page did not read"))
     ctx["comments"] = status_comments(found["comments"])
-    if action == "publish":
-        slot = next((c for c in found["comments"] if c["id"] == receipt["comment_id"]), None)
-        if slot is None:
-            raise Refused("conflict: bound slot comment %s is not on %s" % (receipt["comment_id"], st["destination"]))
-        rec, _ = record.parse_slot(slot["body"])
-        if not same_login(slot["author"], publisher) or not holds(rec, "instance_id", st["instance_id"]) or \
-                not holds(rec, "registration_id", receipt["registration_id"]):
-            raise Refused("conflict: %s is not this publisher's slot for %s/%s"
-                          % (slot["url"], st["instance_id"], receipt["registration_id"]))
-        other = next((c for c, r, _ in ctx["comments"] if c["id"] != slot["id"] and (
-            holds(r, "instance_id", st["instance_id"]) or holds(r, "registration_id", receipt["registration_id"]))), None)
-        if other:
-            raise Refused("conflict: %s also holds %s or its registration" % (other["url"], st["instance_id"]))
-        ctx["slot"], ctx["slot_rec"] = slot, rec
+    if action == "publish" or mine and receipt["comment_id"] is not None:  # register's idempotent success too
+        ctx["slot"], ctx["slot_rec"] = bound_slot(ctx)
     srcs = sources(args, values)
     sections = collect(args, values, st, home, srcs)
     sequence = receipt["sequence"] + 1 if action == "publish" else 1
     rid = receipt["registration_id"] if mine else "r-" + "0" * 32  # register draws its ID under the lock
     ctx.update(srcs=srcs, sections=sections, record=checked(build(values, st, srcs, sections, rid, sequence)))
     return ctx
+
+
+def bound_slot(ctx):
+    """(slot comment, its parsed object) for a receipt with a confirmed registration: the comment must be on the
+    destination, publisher-authored and hold this instance_id and registration_id, and no other status comment may
+    hold either; else Refused conflict naming the comment (spec §4 step 2, §5 step 6)."""
+    st, receipt, publisher, found = ctx["st"], ctx["receipt"], ctx["publisher"], ctx["listing"]
+    slot = next((c for c in found["comments"] if c["id"] == receipt["comment_id"]), None)
+    if slot is None:
+        raise Refused("conflict: bound slot comment %s is not on %s; recovering means a new instance_id and register"
+                      % (receipt["comment_id"], st["destination"]))
+    rec, _ = record.parse_slot(slot["body"])
+    if not same_login(slot["author"], publisher) or not holds(rec, "instance_id", st["instance_id"]) or \
+            not holds(rec, "registration_id", receipt["registration_id"]):
+        raise Refused("conflict: %s is not this publisher's slot for %s/%s"
+                      % (slot["url"], st["instance_id"], receipt["registration_id"]))
+    other = next((c for c, r, _ in ctx["comments"] if c["id"] != slot["id"] and (
+        holds(r, "instance_id", st["instance_id"]) or holds(r, "registration_id", receipt["registration_id"]))), None)
+    if other:
+        raise Refused("conflict: %s also holds %s or its registration" % (other["url"], st["instance_id"]))
+    return slot, rec
 
 
 # --- write phase and outcomes ---

@@ -234,6 +234,44 @@ class Isolation(Shared):
         self.edit_slot(lambda c, rec: c.update(user="acme-bot"))
         self.ok(self.crew("status", "publish"), "published sequence 2")  # control
 
+    def test_register_verifies_its_live_slot(self):
+        """Round-1 finding 2: register's idempotent success needs the bound slot on the destination, publisher-authored,
+        holding this instance and registration, with no other comment holding either; else zero writes and the URL."""
+        self.ok(self.crew("status", "register"), "registered alpha")
+        slot = self.slot()
+        before = self.frozen()
+        self.ok(self.crew("status", "register"), "registered alpha")  # control: the intact slot, no write
+        self.assert_zero(before)
+        rows = [  # (edit of the fake destination's comments, expected refusal)
+            (lambda cs: cs.remove(next(c for c in cs if c["id"] == slot["id"])),
+             "conflict: bound slot comment %d is not on %s" % (slot["id"], DEST)),
+            (lambda cs: next(c for c in cs if c["id"] == slot["id"]).update(user="mallory"),
+             "#issuecomment-%d is not this publisher's slot for alpha/" % slot["id"]),
+            (lambda cs: next(c for c in cs if c["id"] == slot["id"]).update(body=sr.slot_body(dict(
+                sr.parse_slot(slot["body"])[0], registration_id="r-" + "f" * 32))),
+             "#issuecomment-%d is not this publisher's slot for alpha/" % slot["id"]),
+            (lambda cs: next(c for c in cs if c["id"] == slot["id"]).update(body=sr.slot_body(dict(
+                sr.parse_slot(slot["body"])[0], instance_id="beta"))),
+             "#issuecomment-%d is not this publisher's slot for alpha/" % slot["id"]),
+            (lambda cs: next(c for c in cs if c["id"] == slot["id"]).update(body="Edited by hand."),
+             "#issuecomment-%d is not this publisher's slot for alpha/" % slot["id"]),
+            (lambda cs: cs.append({"id": 40, "user": "acme-bot", "body": slot["body"]}),
+             "#issuecomment-40 also holds alpha or its registration"),
+        ]
+        saved = copy.deepcopy(self.load_api())
+        for edit, want in rows:
+            with self.subTest(want=want):
+                self.api = copy.deepcopy(saved)
+                edit(self.api["issues"]["acme/status/5"]["comments"])
+                self.save_api()
+                for action in ("register", "publish"):
+                    before = self.frozen()
+                    self.refused(self.crew("status", action), want)
+                    self.assert_zero(before)
+        self.api = saved
+        self.save_api()
+        self.ok(self.crew("status", "register"), "registered alpha")  # control restored
+
     def test_duplicates_on_a_later_page(self):
         self.ok(self.crew("status", "register"), "registered alpha")
         copy_body = sr.slot_body(dict(sr.parse_slot(self.slot()["body"])[0], sequence=9))
