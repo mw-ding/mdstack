@@ -1595,9 +1595,15 @@ same wake turn or the next, which the guard then lets end.
   `busy`/`idle`/`dead`/`missing`/`ambiguous`/`quota`/`unreachable`,
   disposition `pending`/`dispatched`/`superseded`/`blocked`. Busy and idle
   come only from the harness adapter's `BUSY` and composer screens; a screen
-  showing neither is `ambiguous`, never idle. Only the target's own
-  `ack: <id>` written after the message was recorded is `acked`; a queued,
-  submitted, echoed or busy message never is. A later message of the same
+  showing neither is `ambiguous`, never idle. One receipt rule decides
+  every consumer: `acked` (with or without `--delivery`), `send --wait-ack`,
+  restart's carry and quota pending list, the reclaim and upgrade idle
+  checks, the synthesizer queue, the watcher's acked-work check and the
+  leads' waits and deferrals. A receipt is the target's own `ack: <id>`
+  written after the message's latest `recorded` send; an ack already there,
+  or a previous run's, never counts, and a message with no record keeps the
+  plain matching-line rule. A queued, submitted, echoed or busy message is
+  never `acked`. A later message of the same
   kind and first ref for this project supersedes it.
 - A send whose kind, refs and envelope match a worker's pending message adds
   no second message and keeps its id. While the worker is busy, or its item
