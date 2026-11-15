@@ -130,13 +130,14 @@ SCENARIO_ID = re.compile(r"A\d\d")
 SCENARIO_FIELD = re.compile(r"- (Source|Spec|Driver|Sandbox): (.+)")
 SCENARIO_SPEC = "[`%s.json`](../../dev/tests/scripts/fixtures/campaign/%s.json)"
 SCENARIO_ROW = re.compile(r"\| \[(A\d\d)\]")
+DRIVER_ONLY = "dev/tests/scripts/fixtures/campaign/driver-only.txt"
 
 
-def scenario_row(root, name, fail):
+def scenario_row(root, name, drivers, fail):
     """The index row of docs/campaign-scenarios/<name>, or None after a failure. The file opens with
     `# <Axx>` and the fields `- Source:`, `- Sandbox:` and exactly one of `- Spec:` (the committed
-    `<Axx>.json`, whose `id` is Axx; sandbox fresh or shared) or `- Driver:` (a driver-only scenario with
-    no committed spec, linking an existing driver; sandbox n/a)."""
+    `<Axx>.json`, whose `id` is Axx; sandbox fresh or shared) or `- Driver:` (a driver-only scenario listed
+    in DRIVER_ONLY, with no committed spec, linking an existing driver; sandbox n/a)."""
     rel = SCENARIO_DIR + "/" + name
     sid = name[:-3] if name.endswith(".md") else name
 
@@ -159,6 +160,8 @@ def scenario_row(root, name, fail):
     if "Source" not in fields or "Sandbox" not in fields or ("Spec" in fields) == ("Driver" in fields):
         return bad(3, "needs `- Source:`, `- Sandbox:` and exactly one of `- Spec:` or `- Driver:`")
     spec = os.path.join(root, CAMPAIGN, sid + ".json")
+    if ("Driver" in fields) != (sid in drivers):
+        return bad(3, "a `- Driver:` scenario is exactly one listed in %s" % DRIVER_ONLY)
     if "Spec" in fields:
         if fields["Spec"] != SCENARIO_SPEC % (sid, sid):
             return bad(3, "Spec must be exactly %s" % (SCENARIO_SPEC % (sid, sid)))
@@ -188,10 +191,18 @@ def check_scenarios(root, fail, fix):
     committed campaign spec <Axx>.json has its own docs/campaign-scenarios/<Axx>.md, every scenario file
     resolves its spec or driver (scenario_row), and the index between the markers of
     docs/campaign-harness.md is generated from those files, sorted by ID: `--fix` rewrites it; a missing,
-    duplicate or stale row fails. Skipped when the harness doc is absent."""
+    duplicate or stale row fails, and so does a driver-only ID listed in DRIVER_ONLY without its file, so
+    JSON-only enumeration never drops it; with such a failure `--fix` leaves the index as is. Skipped when
+    the harness doc is absent."""
     lines = read_lines(os.path.join(root, SCENARIO_DOC))
     if lines is None:
         return
+    record_failures = []
+
+    def fail(*a, report=fail):
+        record_failures.append(a)
+        report(*a)
+
     d = os.path.join(root, SCENARIO_DIR)
     names = sorted(os.listdir(d)) if os.path.isdir(d) else []
     cd = os.path.join(root, CAMPAIGN)
@@ -199,7 +210,17 @@ def check_scenarios(root, fail, fix):
         if SCENARIO_ID.fullmatch(spec[:-5]) and spec.endswith(".json") and spec[:-5] + ".md" not in names:
             fail("%s/%s" % (CAMPAIGN, spec), 1, "scenario-index", "missing: no %s/%s.md for this committed spec"
                  % (SCENARIO_DIR, spec[:-5]))
-    rows = [r for r in (scenario_row(root, n, fail) for n in names) if r]
+    drivers = set()
+    for n, line in enumerate(read_lines(os.path.join(root, DRIVER_ONLY)) or [], 1):
+        if not line.strip() or line.startswith("#"):
+            continue
+        if not SCENARIO_ID.fullmatch(line) or line in drivers:
+            fail(DRIVER_ONLY, n, "scenario-index", "one new driver-only scenario ID (Axx) per line")
+        elif line + ".md" not in names:
+            fail(DRIVER_ONLY, n, "scenario-index", "missing: no %s/%s.md for this driver-only scenario"
+                 % (SCENARIO_DIR, line))
+        drivers.add(line)
+    rows = [r for r in (scenario_row(root, n, drivers, fail) for n in names) if r]
     want = SCENARIO_HEAD + rows + [""]
     begin = next((i for i, l in enumerate(lines) if l.startswith(SCENARIO_BEGIN)), None)
     end = next((i for i, l in enumerate(lines) if l == SCENARIO_END), None)
@@ -210,7 +231,7 @@ def check_scenarios(root, fail, fix):
     have = lines[begin + 1:end]
     if have == want:
         return
-    if fix:
+    if fix and not record_failures:
         lines[begin + 1:end] = want
         with open(os.path.join(root, SCENARIO_DOC), "w", encoding="utf-8") as f:
             f.write("\n".join(lines) + "\n")

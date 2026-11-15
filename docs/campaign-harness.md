@@ -190,7 +190,9 @@ Each scenario has its own file under
 committed spec (or, for a driver-only scenario such as A29, the driver that
 runs it), whether it needs a fresh sandbox, and its notes. Edit the scenario
 file, never this table. A29 has no JSON spec: `a28/teams.py --handoff` runs it
-from an operator shell.
+from an operator shell. Driver-only IDs are recorded in
+`dev/tests/scripts/fixtures/campaign/driver-only.txt`, so the index never
+loses one that has no JSON spec.
 
 <!-- scenarios:begin: generated from docs/campaign-scenarios/ by `python3 scripts/check-repo.py --fix` -->
 

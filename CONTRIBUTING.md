@@ -149,7 +149,9 @@ already exist for the changelog ([fragments](#changelog)) and for script usage
 - Each campaign scenario has its own `docs/campaign-scenarios/<Axx>.md`. Edit
   that file, then run `python3 scripts/check-repo.py --fix`; the scenario index
   in `docs/campaign-harness.md` is generated from those files and fails closed
-  on a missing, duplicate, stale or dangling entry (`scenario-index`). Two PRs
+  on a missing, duplicate, stale or dangling entry (`scenario-index`). A
+  scenario with a driver and no JSON spec is also listed in
+  `dev/tests/scripts/fixtures/campaign/driver-only.txt`. Two PRs
   whose index rows conflict: merge `main`, then run `--fix`.
 - Two PRs that add entries at the same sorted place (adjacent names) still
   conflict: merge `main`, keep both lines, run `--fix`. A `merge=union`

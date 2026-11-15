@@ -918,6 +918,7 @@ def scenario_tree(d):
         write(d, "%s/%s.md" % (SC_DIR, sid), scenario_file(sid))
     write(d, SC_CAMP + "/a29/run.py", "")
     write(d, SC_DIR + "/A29.md", scenario_file("A29", box="n/a", spec=SC_DRIVER))
+    write(d, SC_CAMP + "/driver-only.txt", "# driver-only scenarios\nA29\n")
     write(d, SC_DOC, "# Campaign\n\n<!-- scenarios:begin -->\n<!-- scenarios:end -->\n")
     return run(d, "--only", "scenarios", "--fix")
 
@@ -966,6 +967,13 @@ for label, mutate, want in [
      "second `Source:` field"),
     ("bad sandbox for a spec", lambda d: sc_sub(d, A01, "Sandbox: shared", "Sandbox: n/a"), "fresh or shared"),
     ("bad sandbox for a driver", lambda d: sc_sub(d, A29, "Sandbox: n/a", "Sandbox: shared"), "is n/a"),
+    ("a recorded driver-only scenario's file deleted", lambda d: os.remove(os.path.join(d, A29)),
+     "missing: no docs/campaign-scenarios/A29.md for this driver-only scenario"),
+    ("a Driver scenario not recorded", lambda d: write(d, SC_CAMP + "/driver-only.txt", ""), "exactly one listed"),
+    ("a recorded driver-only ID with a Spec", lambda d: write(d, SC_CAMP + "/driver-only.txt", "A01\nA29\n"),
+     "exactly one listed"),
+    ("a bad driver-only record line", lambda d: write(d, SC_CAMP + "/driver-only.txt", "A29\nA29\n"),
+     "one new driver-only scenario ID"),
     ("index markers missing", lambda d: write(d, SC_DOC, "# Campaign\n"), "no '<!-- scenarios:begin ...'"),
 ]:
     with tempfile.TemporaryDirectory() as d:
@@ -981,6 +989,15 @@ with tempfile.TemporaryDirectory() as d:
     rc2, out2 = run(d, "--only", "scenarios")
     expect("scenarios: --fix regenerates a stale index",
            rc == 0 and rc2 == 0 and "| [A01](campaign-scenarios/A01.md) | #9 |" in sc_read(d, SC_DOC), out + out2)
+
+with tempfile.TemporaryDirectory() as d:
+    scenario_tree(d)
+    os.remove(os.path.join(d, A29))
+    rc, out = run(d, "--only", "scenarios", "--fix")
+    rc2, out2 = run(d, "--only", "scenarios")
+    expect("scenarios: --fix refuses and keeps the row when a driver-only scenario's file is gone (review r1)",
+           rc == 1 and rc2 == 1 and "| [A29](campaign-scenarios/A29.md)" in sc_read(d, SC_DOC)
+           and "for this driver-only scenario" in out2, out + out2)
 
 with tempfile.TemporaryDirectory() as d:
     write(d, SC_CAMP + "/A01.json", '{"id": "A01"}\n')
