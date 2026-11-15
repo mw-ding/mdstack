@@ -39,6 +39,14 @@ Never delete a referenced event or finding while work remains pending.
   `merge-up` for route's conflict handoff).
   If its worker is absent, restart only a dead/missing recorded run; otherwise
   spawn the adopted PR's fix pass. Never deliver an older-head fix.
+- Relayed changes: a `work` event whose `line` is
+  `done: #<n> <head-sha> review|validate|recheck changes` is the reviewer
+  pool's relay, not a fix trigger; only the coordinator's explicit `fix` (or
+  `ci-red`) starts one. Run `$CREW_BIN lead relay builder ID --project "$CREW_PROJECT"`
+  for it: it writes `waiting: #<n> fix id=<id>` (awaiting coordinator fix),
+  or `done:` once a matching fix reached a worker or the PR closed or moved.
+  Never write that `done:` yourself or dispatch from the relay. Re-run it
+  when its wait wakes; a refusal writes nothing and keeps the id pending.
 - Admission: run `$CREW_BIN schedule decide --pool builder --project "$CREW_PROJECT"`
   (`<mdstack>/docs/scheduling.md`). It ranks both pools' pending demand
   crew-wide and returns `admit`: the builder items to start now, each

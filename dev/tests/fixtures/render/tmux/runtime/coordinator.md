@@ -144,7 +144,9 @@ On every wake (watcher, owner, start), run
   once; the pushed head starts review through `new-head`.
 - `review-changes-requested`, or a reviewer
   `done: #<n> <head-sha> review changes`: send kind `fix` as above, once per
-  PR/head/round, with any held CI failure.
+  PR/head/round, with any held CI failure. The reviewer lead's relay of that
+  status only parks an awaiting-coordinator-fix wait at the builder lead; it
+  never replaces this handoff.
 - A builder `done: #<n> #<pr> <head-sha>` after a fix round whose head equals
   the round's verdict head (an evidence-only fix), or `fix-at-head`: no
   `new-head` will come, so hand the reviewer lead that head and next round,

@@ -519,7 +519,17 @@ validate, recheck or `work` request whose PR is live `crew:escalated`
 on each re-run while the label stays (#1836); `done:` stays for dispatched
 or obsolete work. It writes `waiting: #<n> evidence id=<id>` for a fresh
 review whose head is not yet ready (Review readiness below), and that
-wait's fresh state adds poll's builder records at head (`notes`). While the ref's fresh state is unchanged, no path re-types
+wait's fresh state adds poll's builder records at head (`notes`). The
+reviewer pool's relay of a `done: #<n> <head> review|validate|recheck changes`
+status to the builder lead never starts a fix (#1871): the builder lead runs
+`mdstack lead relay builder ID`, which writes `waiting: #<n> fix id=<id>`
+(awaiting coordinator fix), or `done:` once a coordinator `fix` for that PR
+and head reached a worker (its ack, or a fix pass spawned at that head after
+the lead's copy) or the PR closed or left that head. It sends nothing, and it
+refuses, writing nothing, an id that is not the repo's acknowledged pending
+relay or whose event file is missing. A `fix` wait's fresh state adds the
+PR's `fix` handoffs and their receipts, so the coordinator's same-head `fix`
+wakes it. While the ref's fresh state is unchanged, no path re-types
 that id (lead backstop, slot release or coordinator backstop) and route
 consumes the line; a repeated ack never re-arms it. Fresh state is
 token-free: the state, head and CI of `mdstack poll`'s `observed` entry, its
