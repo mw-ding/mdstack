@@ -6,8 +6,11 @@ the transcript's copy and other text never cleared); against a fake composer, st
 cleared with `C-u`, other text kept, a swallowed `Enter` retried without retyping, exit 4 when
 the nudge never submits or the clear fails; no key typed into any captured stuck screen in
 `fixtures/dialog/` (exit 4, inbox line kept, `dialog` reported) and no `Enter` retried into a
-prompt that comes up after typing, while a working screen still gets the nudge (#315). Run in
-CI.
+prompt that comes up after typing, while a working screen still gets the nudge (#315). Busy delivery (#1850): a
+duplicate send of a pending message keeps its id and adds no message; a busy worker gets no key past two waits and a
+late ack still settles it (D2.2); dead or replaced workers take one restart unless held, idle ones one re-nudge then a
+named block, dialog and unknown screens no key, quota the restart path, and an interrupted send resumes its id (D2.3).
+Run in CI.
 """
 import importlib.machinery
 import importlib.util
@@ -16,7 +19,7 @@ import os
 import unittest
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # dev/tests/: crew_testlib
-from crew_testlib import CREW, FAKE_COMPOSER, FAKE_TMUX_PANES, screen, SendBase, STUCK, WORKING
+from crew_testlib import CREW, DeliveryBase, FAKE_COMPOSER, FAKE_TMUX_PANES, screen, SendBase, STUCK, WORKING
 
 
 class Send(SendBase):
@@ -291,6 +294,98 @@ class NoNudgeIntoDialog(SendBase):
                 self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
                 self.assertIn(["send-keys", "-t", "=crew-acme-widgets:10", "-l", "inbox: " + self.inbox()[-1]["id"]],
                               self.calls())
+
+
+class BusyDelivery(DeliveryBase):  # #1850 D2.2, D2.3
+    REFS = ("fix", "#12", "a" * 40)
+
+    def test_busy_worker_keeps_one_pending_id_past_two_waits_until_its_late_ack(self):
+        self.show(self.BUSY)
+        r = self.send(*self.REFS)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        msg_id = self.inbox()[0]["id"]
+        typed = self.typed()
+        self.assertEqual(sum(1 for c in typed if c[-1] == "inbox: " + msg_id), 1)
+        for wait in ("0.2", "0.2"):  # two waits and a retry by the old recipe, each a fresh process
+            r = self.send(*self.REFS, "--wait-ack", wait)
+            self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
+            self.assertIn("pending %s to ben-7: worker busy; same id kept; not sent again, nothing typed" % msg_id, r.stdout)
+        r = self.send(*self.REFS)  # a duplicate caller
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertEqual([m["id"] for m in self.inbox()], [msg_id])
+        self.assertEqual(self.typed(), typed)  # no retyped nudge, no Enter
+        r, d = self.delivery(msg_id)
+        self.assertEqual([d["delivery"], d["worker"], d["disposition"], d["action"], d["nudges"], d["restarts"]],
+                         ["submitted", "busy", "pending", "wait", 1, 0])
+        self.show(self.IDLE)  # busy -> idle, then the late ack
+        self.put("status/ben-7.status", "ack: %s\n" % msg_id)
+        r, d = self.delivery(msg_id)
+        self.assertEqual([r.returncode, d["disposition"], d["nudges"]], [0, "dispatched", 1])
+        self.assertFalse(os.path.exists(os.path.join(self.state, "inbox", "ben-7.undelivered")))
+
+    def test_idle_unacked_gets_one_renudge_of_the_same_id_then_a_named_block(self):
+        self.assertEqual(self.send(*self.REFS).returncode, 0)
+        msg_id = self.inbox()[0]["id"]
+        self.assertEqual(self.delivery(msg_id)[1]["action"], "nudge")
+        r = self.send(*self.REFS)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("sent %s to ben-7 (pending id kept)" % msg_id, r.stdout)
+        self.assertEqual(sum(1 for c in self.typed() if c[-1] == "inbox: " + msg_id), 2)
+        typed = self.typed()
+        r = self.send(*self.REFS)
+        self.assertEqual(r.returncode, 4, r.stdout + r.stderr)
+        self.assertIn("nudge not submitted: %s to ben-7: idle-unacked after one re-nudge (escalate)" % msg_id, r.stdout)
+        self.assertEqual(self.typed(), typed)
+        self.assertEqual([m["id"] for m in self.inbox()], [msg_id])
+        d = self.delivery(msg_id)[1]
+        self.assertEqual([d["disposition"], d["action"], d["nudges"]], ["blocked", "escalate", 2])
+        r = self.send("fix", "#12", "b" * 40)  # a new head supersedes the old message: a new id, nudged
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertEqual(self.delivery(msg_id)[1]["disposition"], "superseded")
+
+    def test_worker_states_choose_restart_escalation_or_wait_with_no_unsafe_key(self):
+        self.show(self.BUSY)
+        self.assertEqual(self.send(*self.REFS).returncode, 0)
+        msg_id = self.inbox()[0]["id"]
+        rec = os.path.join(self.state, "runs", "ben-7.json")
+        with open(rec) as f:
+            original = json.load(f)
+        quota = "• Working\n■ You've hit your usage limit. Upgrade to Pro or try again in 2 days.\n"
+        for name, pane, restarts, held, expect in [
+                ("busy -> dead", dict(dead="1"), 0, False, ("dead", "pending", "restart")),
+                ("replacement process, same window", dict(id="%99", pid="9000099"), 0, False, ("missing", "pending", "restart")),
+                ("dead after its one restart", dict(dead="1"), 1, False, ("dead", "blocked", "escalate")),
+                ("dead but held", dict(dead="1"), 0, True, ("dead", "pending", "wait")),
+                ("dialog", dict(screen=screen("claude-proceed")), 0, False, ("ambiguous", "blocked", "escalate")),
+                ("unknown screen", dict(screen="loading...\n"), 0, False, ("ambiguous", "blocked", "escalate")),
+                ("quota", dict(screen=quota), 0, False, ("quota", "pending", "restart"))]:
+            with self.subTest(name):
+                self.show(self.BUSY, **pane)
+                with open(rec, "w") as f:
+                    json.dump(dict(original, restarts=restarts), f)
+                self.put("poll-state.json", json.dumps({"held": ["#12"] if held else []}))
+                typed = self.typed()
+                d = self.delivery(msg_id)[1]
+                self.assertEqual((d["worker"], d["disposition"], d["action"]), expect)
+                self.assertEqual([d["id"], d["restarts"]], [msg_id, restarts])
+                r = self.send(*self.REFS)
+                self.assertEqual(r.returncode, 0 if expect[2] == "wait" else 4, r.stdout + r.stderr)
+                self.assertEqual(self.typed(), typed)  # no key into a dead, replaced, dialog or unknown screen
+                self.assertEqual([m["id"] for m in self.inbox()], [msg_id])  # no discarded or duplicated work
+
+    def test_interrupted_send_resumes_its_recorded_id(self):
+        self.assertEqual(self.send(*self.REFS).returncode, 0)
+        msg_id = self.inbox()[0]["id"]
+        ledger = os.path.join(self.state, "runs", "ben-7.delivery.jsonl")
+        with open(ledger) as f:
+            recorded = f.readline()
+        self.put("runs/ben-7.delivery.jsonl", recorded + '{"id": "%s", "event": "subm' % msg_id)  # killed before nudge
+        d = self.delivery(msg_id)[1]
+        self.assertEqual([d["delivery"], d["nudges"], d["action"]], ["recorded", 0, "nudge"])
+        r = self.send(*self.REFS)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertEqual([m["id"] for m in self.inbox()], [msg_id])
+        self.assertEqual(self.delivery(msg_id)[1]["delivery"], "submitted")
 
 
 if __name__ == "__main__":

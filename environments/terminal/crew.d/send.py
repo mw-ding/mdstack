@@ -13,12 +13,14 @@ team root; a builder window may carry its repo tag (`<name>-<issue>-<owner>__<re
 
 Usage: mdstack send WINDOW KIND REF... [--wait-ack SECS] --project FILE
 """
+import contextlib
 import json
 import os
 import re
 import time
-from crew_shared import (commands, COMPOSER, coordinator_window, crew_render, dialog, lead_state, NAMES, profile,
-                         queue_lock, remote_run, tmux, wait_ack, runs, synthesizer_work, window_alias, work_context)
+from crew_shared import (BUSY, commands, COMPOSER, coordinator_window, crew_render, dialog, lead_state, NAMES, probe,
+                         profile, queue_lock, remote_run, tmux, wait_ack, runs, synthesizer_work, window_alias,
+                         work_context)
 
 
 WORKER = r"-\d+(?:-[a-z0-9_-]+)?"  # a builder window: <name>-<issue>, in a team with its repo tag (#1858)
@@ -91,6 +93,128 @@ def nudge(session, index, text):
                 return "dialog: a prompt came up after the nudge was typed; Enter not retried"
             tmux.press(session, index, "Enter")
     return "`%s` is still in its composer after %d Enter retries" % (text, RETRIES)
+
+
+# Delivery (#1850): delivery, worker and disposition are separate axes. runs/<window>.delivery.jsonl is the durable
+# ledger (removed with the run): one `recorded` event per message, with the run identity and the status file's size at
+# send, then one `submitted` or `failed` per nudge. Only an `ack: <id>` past that size discharges a message.
+def ledger(state, window):
+    return os.path.join(state, "runs", window + ".delivery.jsonl")
+
+
+def note(state, window, msg_id, event, **kv):
+    """Append one ledger event; a partial last line (a writer killed mid-append) is ended first, never extended."""
+    os.makedirs(os.path.join(state, "runs"), exist_ok=True)
+    line = json.dumps(dict(id=msg_id, event=event, at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), **kv))
+    with open(ledger(state, window), "ab+") as f:
+        f.seek(max(f.seek(0, 2) - 1, 0))
+        f.write((b"\n" if f.read(1) not in (b"", b"\n") else b"") + line.encode() + b"\n")
+
+
+def lines(path):
+    """The JSON objects of a JSONL file; a missing file or a partial line (a writer killed mid-append) adds none."""
+    found = []
+    with contextlib.suppress(FileNotFoundError):
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                with contextlib.suppress(ValueError):
+                    found += [m for m in [json.loads(line)] if isinstance(m, dict)]
+    return found
+
+
+def run_id(rec):
+    return commands()["watch"].run_identity(rec) if rec else None
+
+
+def recorded(state, window, msg_id, rec):
+    """Record a new message in the ledger: the run it goes to and the status size an ack must follow."""
+    status = os.path.join(state, "status", window + ".status")
+    note(state, window, msg_id, "recorded", run=run_id(rec), status=os.path.getsize(status) if os.path.exists(status) else 0)
+
+
+def submitted(state, window, msg_id, rec, failed):
+    note(state, window, msg_id, "failed" if failed else "submitted", run=run_id(rec), **{"reason": failed} if failed else {})
+
+
+def ack_after(state, window, msg_id, offset):
+    """The target's own `ack: <id>` line written after offset (a shorter, rewritten file is read whole)."""
+    try:
+        with open(os.path.join(state, "status", window + ".status"), "rb") as f:
+            data = f.read()
+    except FileNotFoundError:
+        return False
+    text = data[offset if offset <= len(data) else 0:].decode("utf-8", "replace")
+    return any(line.split()[:2] == ["ack:", msg_id] for line in text.splitlines())
+
+
+def worker(session, name, rec, windows):
+    """The worker axis: busy|idle|dead|missing|ambiguous|quota|unreachable. Busy and idle come only from the adapters'
+    declared screens (a BUSY line, else a composer row); a screen showing neither is ambiguous, never idle."""
+    if rec is None:
+        return "ambiguous"
+    if not tmux.has_session(session):
+        return "unreachable"
+    cls = probe(session, name, rec, windows)
+    if cls != "alive":
+        return cls
+    screen = tmux.capture(session, rec["index"])
+    if any(b.search(screen.lower()) for b in BUSY):
+        return "busy"
+    return "idle" if any(GLYPH.match(row) for row in screen.splitlines()) else "ambiguous"
+
+
+def ours(project, org_profile, values):
+    """Whether a message's envelope is this project's; a message without one is not."""
+    config, ctx = crew_render.crew_config, work_context(project, values)
+    return lambda env: env is not None and not config.envelope_problem(
+        env, ctx, lambda ref: config.project_identity(ref, org_profile))
+
+
+def delivery(state, session, window, msg_id, rec, windows, mine):
+    """The delivery record D of msg_id in window's inbox, or None when the inbox has no such message or its envelope
+    fails mine. Disposition and action follow D2.1-D2.3: only the actual ack dispatches; busy waits under the same id;
+    dead/missing/quota take the run's one restart; idle takes one re-nudge per run; anything else escalates, untyped."""
+    msgs = lines(os.path.join(state, "inbox", window + ".jsonl"))
+    msg = next((m for m in msgs if m.get("id") == msg_id), None)
+    if msg is None or not mine(msg.get("context")):
+        return None
+    found = [e for e in lines(ledger(state, window)) if e.get("id") == msg_id]
+    first = next((e for e in found if e.get("event") == "recorded"), {})
+    tries = [e for e in found if e.get("event") in ("submitted", "failed") and e.get("run") == run_id(rec)]
+    ack, who = ack_after(state, window, msg_id, first.get("status", 0)), worker(session, window, rec, windows)
+    later = [m for m in msgs[msgs.index(msg) + 1:] if m.get("kind") == msg["kind"] and
+             m.get("refs", [])[:1] == msg["refs"][:1] and mine(m.get("context"))]  # another project's never supersedes
+    refs = set(re.findall(r"#\d+", " ".join([msg["refs"][0], str((rec or {}).get("item", ""))])))
+    restarts = (rec or {}).get("restarts", 0)
+    if ack:
+        disposition, action, why = "dispatched", "none", "acked"
+    elif later:
+        disposition, action, why = "superseded", "none", "superseded by " + later[-1]["id"]
+    elif who == "busy":
+        disposition, action, why = "pending", "wait", "worker busy; same id kept"
+    elif refs & commands()["watch"].held(state):
+        disposition, action, why = "pending", "wait", "item held"
+    elif who in ("dead", "missing", "quota"):
+        disposition, action, why = ("pending", "restart", "worker " + who) if not restarts else \
+            ("blocked", "escalate", "worker %s after its one restart" % who)
+    elif who == "idle" and len(tries) < 2:
+        disposition, action, why = "pending", "nudge", "worker idle, unacked after %d nudge(s)" % len(tries)
+    else:
+        disposition, action, why = "blocked", "escalate", "idle-unacked after one re-nudge" if who == "idle" else \
+            "worker %s; nothing typed" % who
+    return {"id": msg_id, "window": window, "context": msg.get("context"), "kind": msg["kind"], "refs": msg["refs"],
+            "run": first.get("run"), "inbox": True, "submit": tries[-1]["event"] if tries else None, "ack": ack,
+            "delivery": "acked" if ack else tries[-1]["event"] if tries else "recorded", "worker": who,
+            "disposition": disposition, "action": action, "reason": why, "nudges": len(tries), "restarts": restarts,
+            "observed": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+
+
+def pending(state, session, name, rec, windows, mine):
+    """Delivery records of name's ledger-recorded messages that are neither acked nor superseded (the watcher's
+    token-free re-probe, D2.4)."""
+    ids = dict.fromkeys(e["id"] for e in lines(ledger(state, name)) if e.get("event") == "recorded" and "id" in e)
+    found = [delivery(state, session, name, i, rec, windows, mine) for i in ids]
+    return [d for d in found if d and d["disposition"] in ("pending", "blocked")]
 
 
 def remote_send(values, state, args, rec, msg):
@@ -167,7 +291,8 @@ def run(args):
     if args.window in dict(commands()["lead"].records(state)):
         state = lead_state(state)
     with queue_lock(state):
-        index = dict((n, i) for i, n in tmux.list_windows(session)).get(args.window) if tmux.has_session(session) else None
+        windows = dict((n, i) for i, n in tmux.list_windows(session)) if tmux.has_session(session) else {}
+        index = windows.get(args.window)
         if index is None:
             builder = values.get("identities.builder.name", NAMES["builder"]).lower()
             if re.fullmatch(re.escape(builder) + WORKER, args.window) and args.kind in ("fix", "ci-red") and \
@@ -181,24 +306,43 @@ def run(args):
             return 1
         os.makedirs(os.path.join(state, "inbox"), exist_ok=True)
         inbox = os.path.join(state, "inbox", args.window + ".jsonl")
+        # A worker's pending message with the same kind, refs and envelope keeps its id: a duplicate send never adds a
+        # second message (#1850, D2.2).
+        same = [m["id"] for m in lines(inbox) if [m.get("kind"), m.get("refs"), m.get("context")] == [args.kind, args.refs, env]]
+        prior = rec and same and delivery(state, session, args.window, same[-1], rec, windows,
+                                                  ours(args.project, args.org_profile, values))
+        prior = prior if prior and prior["disposition"] in ("pending", "blocked") else None
         resolved = False
         if args.kind == "unblocked" and args.window == coordinator_window(values) and \
                 os.path.exists(inbox):
             with open(inbox, encoding="utf-8") as f:
                 resolved = any(m["kind"] == "blocked" and m["refs"] == args.refs for m in map(json.loads, f))
-        with open(inbox, "a", encoding="utf-8") as f:
-            f.write(line)
+        if not prior:
+            with open(inbox, "a", encoding="utf-8") as f:
+                f.write(line)
+            if rec:
+                recorded(state, args.window, msg["id"], rec)
         if dict(runs(state)).get(args.window, {}).get("role") == "synthesizer":
             synthesizer_work(state, args.window)
     if resolved:  # a self-resolved block closes its own blocked message; the coordinator reads it on its next wake
         print("crew: recorded %s to %s; block resolved itself, no nudge" % (msg["id"], args.window))
         return 0
-    failed = nudge(session, index, "inbox: " + msg["id"])  # a nudge only; the inbox file is the message
+    if prior and prior["action"] == "wait":  # busy (or held): no Enter, no duplicate, no fault; the same id waits
+        print("crew: pending %s to %s: %s; not sent again, nothing typed" % (prior["id"], args.window, prior["reason"]))
+        return wait_ack(state, args.window, prior["id"], args.wait_ack) if args.wait_ack is not None else 0
+    if prior and prior["action"] != "nudge":
+        print("crew: nudge not submitted: %s to %s: %s (%s); the message is in the inbox; treat %s as ambiguous" % (
+            prior["id"], args.window, prior["reason"], prior["action"], args.window))
+        return 4
+    msg_id = prior["id"] if prior else msg["id"]
+    failed = nudge(session, index, "inbox: " + msg_id)  # a nudge only; the inbox file is the message
+    if rec:
+        submitted(state, args.window, msg_id, rec, failed)
     if failed:  # kept until the window acks it or the operator clears it: mdstack upgrade waits on it (#1618)
         with open(os.path.join(state, "inbox", args.window + ".undelivered"), "a", encoding="utf-8") as f:
-            f.write(msg["id"] + "\n")
+            f.write(msg_id + "\n")
         print("crew: nudge not submitted: %s to %s: %s; the message is in the inbox; treat %s as ambiguous" % (
-            msg["id"], args.window, failed, args.window))
+            msg_id, args.window, failed, args.window))
         return 4
-    print("crew: sent %s to %s" % (msg["id"], args.window))
-    return wait_ack(state, args.window, msg["id"], args.wait_ack) if args.wait_ack is not None else 0
+    print("crew: sent %s to %s%s" % (msg_id, args.window, " (pending id kept)" if prior else ""))
+    return wait_ack(state, args.window, msg_id, args.wait_ack) if args.wait_ack is not None else 0
