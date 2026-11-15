@@ -2841,7 +2841,7 @@ order, sizes and the O1 choices come from
 [M59 approval](https://github.com/mw-ding/mdstack/issues/985#issuecomment-6899606468).
 Runtime module paths below are under `environments/terminal/crew.d/`;
 `path:line` citations refer to base `78cc763380c67e3cc2bbf552ff2f0a174be9ede5`.
-S0 is recorded as done for this opening slice (PR #TBD), effective on merge.
+S0 is recorded as done for this opening slice (PR #1928), effective on merge.
 Order: S0 → O1; the carry-ins L1–L4 were dispatched before M59 under the
 approved-work exception and continue independently, without waiting on S0 →
 S1 last. One issue → one PR. Sizes are non-test lines, planning ranges, not
@@ -2849,7 +2849,7 @@ limits.
 
 | ID | Issue | Scope / named paths | Size | Depends on | Tier | Status |
 |---|---|---|---|---|---|---|
-| S0 | #1927 | This section (PR #TBD) | 70–110 docs | Signed M59 approval | default | done |
+| S0 | #1927 | This section (PR #1928) | 70–110 docs | Signed M59 approval | default | done |
 | O1 | #1919 | Native `mdstack start`: new `start.py` command module, `up.py` attach operation, `_shared.py` `WRITES`, `layout.py` wrapper; help, tmux runtime doc and tests | 100–180 + 30–60 docs | #1927 | deep | open |
 | L1 | #1912 | Uncertain remote-write recovery lesson (PR #1922) | 40–70 docs | Carry-in | default | done |
 | L2 | #1913 | Malformed status-record lesson (PR #1921) | 40–70 docs | Carry-in | default | open |
