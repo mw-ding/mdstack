@@ -16,6 +16,13 @@ plus coordinator scratch cleanup, are built in source
 records evidence and integrated brief budgets. These landed after the
 7.12.0 cut; this binding makes no live deployment claim.
 
+M57's review readiness (PR #1904), busy-worker delivery (PR #1906), relay
+disposition (PR #1909), `mdstack up --attach` (PR #1894) and shared-status
+publishing and `status --all` (PR #1905) are built in source.
+[M57 status](../specs/portable.md#m57-outcome-and-lessons) records the
+evidence. They landed after the 7.13.0 cut and are in no release; this
+binding claims no installed crew or live terminal adoption.
+
 ## Decisions
 
 | #110 question | Decision | Section |

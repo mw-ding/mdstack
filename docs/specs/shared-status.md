@@ -1,9 +1,10 @@
 # Spec: shared status for independent crews
 
-**Status: design (SD, [#1889](https://github.com/mw-ding/mdstack/issues/1889),
-M57); not implemented.** ST ([#1313](https://github.com/mw-ding/mdstack/issues/1313))
-builds it after this file merges. Source presence of this design is not a
-release or an installed behaviour. Milestone row and decision record:
+**Status: design delivered (SD, [#1889](https://github.com/mw-ding/mdstack/issues/1889),
+PR #1896); built in source by ST ([#1313](https://github.com/mw-ding/mdstack/issues/1313),
+PR #1905), M57.** Source delivery is not a release: v7.13.0 predates both, so
+no release carries shared status yet. Nor is it an installation: no crew is
+claimed to be registered or publishing to a real issue. Milestone row and decision record:
 [portable spec, M57](portable.md#sd-and-st-shared-status-1889-1313).
 
 Several independent mdstack installs (crews, projects, hosts; each with its
