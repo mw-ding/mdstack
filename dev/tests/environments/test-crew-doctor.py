@@ -540,7 +540,7 @@ class Handoff(DoctorBase):
 
     def test_native_id_shown_as_written_through_the_read_item_binding(self):
         github = read(os.path.join(SCRIPTS, "..", "templates", "backends", "github.toml"))
-        write_pack(os.path.join(self.project_dir, "pack"), mapping=github + '\n[ids]\nitem = "[A-Z][A-Z0-9]+-[0-9]+"\n')
+        write_pack(os.path.join(self.project_dir, "pack"), mapping=github.replace("\n[ids]\n", '\n[ids]\nitem = "[A-Z][A-Z0-9]+-[0-9]+"\n'))
         with open(self.project) as f:
             text = f.read().replace("control_item = 99", 'control_item = "OPS-1042"')
         with open(self.project, "w") as f:

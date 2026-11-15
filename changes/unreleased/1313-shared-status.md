@@ -1,7 +1,7 @@
 ---
 type: added
 issue: 1313
-pr: 1903
+pr: 1905
 date: 2026-11-14
 box-skill: none
 ---

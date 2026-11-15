@@ -189,7 +189,10 @@ status-destination = "https://boards\\.example\\.test/[0-9]+"
 ```
 
 A map command takes no `<placeholder>`; the runtime sets `MDSTACK_ROOT`
-(the install) and `MDSTACK_PYTHON` in its environment.
+(the install) and `MDSTACK_PYTHON` in its environment. The bundled GitHub map
+now has an `[ids]` table for `status-destination`; a pack map built from a
+copy of it adds its own `[ids]` keys there, since TOML allows one `[ids]`
+table.
 
 ### knowledge
 

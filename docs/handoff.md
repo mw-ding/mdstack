@@ -508,7 +508,7 @@ change = "[0-9]+"                # read from the change backend's map (#876)
 | Rule | Detail |
 |---|---|
 | Source | The map of the backend bound to `backends.tracker` gives `item`; the map bound to `backends.change` gives `change`. The map comes from the pack's `render/backends/<name>.toml`, else `templates/backends/<name>.toml`, as in the [render overlay](packs.md#render-overlay) |
-| Default | An absent key is `[1-9][0-9]*`, today's GitHub number. The GitHub map declares no `[ids]` |
+| Default | An absent key is `[1-9][0-9]*`, today's GitHub number. The GitHub map declares no `item` or `change`; its `[ids]` holds only the status concern's `status-destination` ([status](interfaces.md#status), #1313), which these rules do not read |
 | Shape | A Python regular expression, used as a full match. `resolve` refuses one that does not compile or that matches an empty string, whitespace, or any of `<`, `>`, `=`, `"`, `'` and `` ` ``, so an id can never break a marker line or a command argument |
 | One copy | `resolve` loads it and prints `ids.item` and `ids.change` (and the change map's `ids.marker_key` when declared) with `backend-map:<name>` provenance. Consumers (ownership, handoff, doctor, and #876's precheck keys) read the resolved value and keep no regex of their own. A profile layer cannot set `[ids]` |
 

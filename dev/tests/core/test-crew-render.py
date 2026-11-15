@@ -1190,7 +1190,7 @@ class PackOverlay(unittest.TestCase):
 
     def test_native_control_item_renders_and_mismatch_fails(self):
         """#936: a string control_item matching the pack tracker map's [ids] item renders as <control-item>."""
-        write_pack(os.path.join(self.tmp, "pack"), mapping=self.github + '\n[ids]\nitem = "[A-Z][A-Z0-9]+-[0-9]+"\n')
+        write_pack(os.path.join(self.tmp, "pack"), mapping=self.github.replace("\n[ids]\n", '\n[ids]\nitem = "[A-Z][A-Z0-9]+-[0-9]+"\n'))
         project = os.path.join(self.tmp, "native.toml")
         for item, code_wanted in (('"OPS-1042"', 0), ('"ops 1042"', 1), ("12", 0)):
             with open(project, "w") as f:
@@ -1619,7 +1619,7 @@ class SessionRuntime(unittest.TestCase):
         for role in ("builder", "reviewer", "synthesizer"):
             self.assertNotIn("Ownership:", none["runtime/%s.md" % role])
         with open(os.path.join(os.path.dirname(SCRIPTS), "templates", "backends", "github.toml")) as f:
-            org = write_pack(os.path.join(self.tmp, "pack"), mapping=f.read() + '\n[ids]\nitem = "[A-Z]+-[0-9]+"\n')
+            org = write_pack(os.path.join(self.tmp, "pack"), mapping=f.read().replace("\n[ids]\n", '\n[ids]\nitem = "[A-Z]+-[0-9]+"\n'))
         for item, shown, extra in (("985", "985", ()), ('"OPS-1042"', "OPS-1042", ("--org-profile", org))):
             with self.subTest(control_item=item):  # a tracker-native item (#937) counts as a control item
                 got = self.render('[repo]\ncontrol_item = %s\n\n' % item, False, *extra)
