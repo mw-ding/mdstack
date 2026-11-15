@@ -1,3 +1,10 @@
+---
+title: Fix rounds on #1876 and #1877 added guards but described the failing run or posted no note; the fix procedure now points at §3's copyable fail-then-pass control, pasted as captured (#1884)
+date: 2026-11-15
+status: applied
+source: Two M56 PRs, both repaired before merge; intake card #1884
+---
+
 # Guard negative controls described, not captured, 2026-11-15
 
 ## A fix note pastes the guard's fail-then-pass control inline

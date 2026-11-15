@@ -1,3 +1,10 @@
+---
+title: Inline proof in the change record; reject committed evidence
+date: 2026-11-01
+status: open
+source: #143 and design PR #302; owner preference recorded 2026-10-29
+---
+
 # Inline evidence, 2026-11-01
 
 ## Keep review proof in the change record

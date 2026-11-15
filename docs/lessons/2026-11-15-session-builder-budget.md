@@ -1,3 +1,10 @@
+---
+title: A shared build-pass step on #1908 fit the tmux brief but put the session builder brief 14 bytes over budget, caught only by full-suite CI; keep the compact step, the budget and the session-profile upgrade test as the regression (#1915)
+date: 2026-11-15
+status: applied
+source: PR #1908 (closes #1844, M57)
+---
+
 # A shared builder step fit the tmux brief but overflowed the session one, 2026-11-15
 
 ## Measure shared builder text against every runtime that includes it

@@ -1,3 +1,10 @@
+---
+title: Mechanical routing consumed coordinator turns at about 20 windows; owner replies come first (#434)
+date: 2026-11-01
+status: open
+source: mw-ding/eng-crew#434, the run with about 20 concurrent windows
+---
+
 # Lesson: coordinator saturation during a tmux run
 
 ## Mechanical wakes delayed owner replies

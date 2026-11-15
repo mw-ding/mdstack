@@ -1,3 +1,10 @@
+---
+title: Verdicts rested on diff and CI; typed runtime evidence per shape (web, CLI, service, API, mobile) is now a merge gate with builder, validator and synthesizer duties (#83)
+date: 2026-10-29
+status: applied
+source: Gap-table row 8 (Verification / prove-it) in the framework gap analysis, and the validation pass in protocol §2
+---
+
 # Lessons: typed runtime evidence as a merge gate
 
 ## Entries

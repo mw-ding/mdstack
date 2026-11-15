@@ -1,3 +1,10 @@
+---
+title: First live run of the verified B2 hand-off on PR #38: pin the routine folder id, parent-turn-only marker, full 40-char SHA in markers (#39)
+date: 2026-10-23
+status: mixed
+source: PR #37 and PR #38: the verified hand-off from issue #36 run live
+---
+
 # Lessons: first live run of the verified B2 hand-off (Oct 23, 2026)
 
 Three wording gaps found when the verified hand-off from issue #36 ran live on

@@ -1,3 +1,10 @@
+---
+title: The status connector answered `--help` with a stderr usage error and exit 2 on #1905; repo-guard's `--help` sweep caught it, and help now prints to stdout with exit 0 while malformed arguments still exit 2 (#1914)
+date: 2026-11-15
+status: applied
+source: Shared-status change #1905 (closes #1313, M57), intake card #1914
+---
+
 # The status connector answered `--help` with a usage error, 2026-11-15
 
 ## A supported `--help` exits 0 on stdout; only malformed arguments exit 2

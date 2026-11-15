@@ -1,3 +1,10 @@
+---
+title: Failures die in chat; intake queue plus repo lesson store plus a scoped harness PR, with a weekly stuck sweep as the one live trigger (#89)
+date: 2026-10-29
+status: applied
+source: Issue #89 (M11) and the lessons already in this log
+---
+
 # Lessons: self-improve intake
 
 ## Entries

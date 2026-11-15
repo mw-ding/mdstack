@@ -1,3 +1,10 @@
+---
+title: The mirror hold waited on a hand copy with nothing checking it; the mirror comment now needs a deployed render and a clean drift check (#128)
+date: 2026-10-30
+status: applied
+source: spec R4 and the umbrella mw-ding/eng-crew#110
+---
+
 # Lessons: mirror hold as a drift check
 
 ## Entries

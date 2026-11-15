@@ -1,3 +1,10 @@
+---
+title: 13 repaired cards where a gate or action read part of its contract and took the gap as permission; fail closed on the whole contract (#1342)
+date: 2026-11-08
+status: applied
+source: 13 repaired intake cards, group H01 of the #1337 clustering, retained by #1342
+---
+
 # Complete gate and action contracts, 2026-11-08
 
 ## Fail closed on the whole contract, not the part a consumer reads

@@ -1,3 +1,10 @@
+---
+title: The #1896 shared-status draft kept only a hash of the pending record and retried after a timeout, so a delayed write could overwrite a newer one; the receipt now keeps the exact pending body and an uncertain send stops publication until readback confirms it (#1912)
+date: 2026-11-15
+status: applied
+source: Design change #1896 (closes #1889, M57 SD), intake card #1912
+---
+
 # A timed-out remote write left recovery unsafe in the shared-status draft, 2026-11-15
 
 ## Keep the exact pending bytes and stop until the outcome is known

@@ -1,3 +1,10 @@
+---
+title: Lighter-lane templates skip B2/watch and mirror holds; explicit messages route changes requests, red CI and cleanup (#57)
+date: 2026-10-25
+status: applied
+source: mw-ding/eng-crew#55 introduced the lighter lane; issue #57 records the template and routing follow-up
+---
+
 # Lessons: lighter-lane template sync and routing
 
 ## Entries

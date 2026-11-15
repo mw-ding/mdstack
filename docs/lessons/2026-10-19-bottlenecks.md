@@ -1,3 +1,10 @@
+---
+title: Bottleneck analysis of 22 pilot PRs: headline timings, five ranked losses, other lessons
+date: 2026-10-19
+status: mixed
+source: Bottleneck analysis of 22 pull requests from the agentconnect pilot, plus the pilot evidence log for agentconnect issue 579 / PR 585 and the pilot wiring notes
+---
+
 # Bottleneck analysis, 2026-10-19
 
 Entry format: see [README.md](README.md).

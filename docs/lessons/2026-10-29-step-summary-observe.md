@@ -1,3 +1,10 @@
+---
+title: Long agent runs were invisible mid-flight; builders write short step summaries and promote them onto the PR, raw logs stay local instead of a full tmux scrollback in chat (#85)
+date: 2026-10-29
+status: applied
+source: Gap-table row 9 (agent runtime / observe) in the M8 gap analysis, issue #85 in this repo
+---
+
 # Lessons: step-summary observe, not full tmux into chat
 
 ## Entries

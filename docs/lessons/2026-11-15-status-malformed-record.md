@@ -1,3 +1,10 @@
+---
+title: A wrong-typed item URL in one status record raised `TypeError` through `status --all` on #1905 and hid a valid instance; the parser now diagnoses every wrong type, held by a field-by-type matrix and a CLI matrix with a valid control (#1913)
+date: 2026-11-15
+status: applied
+source: The round-1 verdict on #1905 (closes #1313, M57 ST), intake card #1913
+---
+
 # Malformed shared-status record crashed the aggregate view, 2026-11-15
 
 ## Diagnose a wrong-typed record field; keep valid neighbours visible

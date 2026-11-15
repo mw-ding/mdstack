@@ -1,3 +1,10 @@
+---
+title: A fix round was written by Codex while the builder marker said claude-code; the reviewer engine must differ from the engine that actually wrote the round (#21)
+date: 2026-10-20
+status: applied
+source: PR #13 (roles doc, issue #3)
+---
+
 # Lessons: name the engine that actually wrote the round (Oct 20, 2026)
 
 One lesson from the review of the roles-doc PR (#13). Entries follow the

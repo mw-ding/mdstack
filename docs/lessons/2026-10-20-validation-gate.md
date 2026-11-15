@@ -1,3 +1,10 @@
+---
+title: A failed validation pass was overridden by an APPROVE on #16; the rule that a validation fail blocks APPROVE is now documented (#24)
+date: 2026-10-20
+status: applied
+source: PR #16 (routine and listener templates, issue #4); follow-up #24
+---
+
 # Lessons: a failed validation pass must block APPROVE (Oct 20, 2026)
 
 One lesson from the review of the routine-templates PR (#16). Entries follow the

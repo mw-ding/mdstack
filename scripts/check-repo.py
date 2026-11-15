@@ -5,7 +5,8 @@ deliverables manifest coverage, spec slice status, design headers naming an
 open milestone, CHANGELOG fragments,
 per-script docs, index files (inventory fresh, entries sorted, docs index
 complete), no committed evidence directory, the campaign scenario index
-(one file per scenario, index generated and complete), markdown lint (check-markdown.py on every tracked *.md
+(one file per scenario, index generated and complete), the lessons index (generated from each
+lesson's front matter; a lesson PR adds only its file), markdown lint (check-markdown.py on every tracked *.md
 file), tests per module, and the team spec's dependency rules with the
 runtime-word lint, core memory (layout, size limits, no personal data), role routines and
 campaign scenarios (campaign-lint.py: unhandled assertions, required cases kept against origin/main).
@@ -13,7 +14,7 @@ In a git work tree it also warns on stderr, naming them, about non-ignored
 untracked files, which the path checks skip (exit code unchanged).
 Python 3 stdlib only, no network.
 
-Usage: check-repo.py [--root DIR] [--config FILE] [--fix] [--only secrets|docs|links|markers|blockers|shapes|denylist|deliverables|spec-status|design-headers|fragments|script-docs|index|evidence|scenarios|markdown|test-layout|deps|memory|routines|campaign]...
+Usage: check-repo.py [--root DIR] [--config FILE] [--fix] [--only secrets|docs|links|markers|blockers|shapes|denylist|deliverables|spec-status|design-headers|fragments|script-docs|index|evidence|scenarios|lessons|markdown|test-layout|deps|memory|routines|campaign]...
 Every failure prints `file:line: [rule] reason`; exit 1 if any, else 0.
 """
 import argparse
@@ -250,6 +251,121 @@ def check_scenarios(root, fail, fix):
             fail(SCENARIO_DOC, begin + 1, "scenario-index", "missing row for %s" % SCENARIO_ROW.match(row).group(1))
     fail(SCENARIO_DOC, begin + 1, "scenario-index",
          "scenario index is not generated from %s; run `python3 scripts/check-repo.py --fix`" % SCENARIO_DIR)
+
+
+LESSON_DIR, LESSON_DOC = "docs/lessons", "docs/lessons/README.md"
+LESSON_BEGIN, LESSON_END = "<!-- lessons:begin", "<!-- lessons:end -->"
+LESSON_HEAD = ["", "| File | Date | Summary |", "|---|---|---|"]
+LESSON_NAME = re.compile(r"(\d{4}-\d\d-\d\d)-[a-z0-9]+(?:-[a-z0-9]+)*\.md")
+LESSON_KEY = re.compile(r"([A-Za-z_-]+):(.*)")
+LESSON_KEYS = ("title", "date", "status", "source")
+LESSON_STATUS = ("encoded", "applied", "superseded", "open", "mixed")
+LESSON_ENTRY = re.compile(r"- \*\*Status:\*\*")
+
+
+def lesson_row(root, name, fail):
+    """((date, name), index row) of docs/lessons/<name>, or None after a failure. The file opens with one
+    `---` front-matter block of exactly the single-line keys title (no pipe), date (YYYY-MM-DD, the
+    filename's date), status (LESSON_STATUS; `mixed` exactly when the file holds more than one entry,
+    counted by `- **Status:**` fields) and source, each once and non-empty."""
+    rel = LESSON_DIR + "/" + name
+
+    def bad(n, reason):
+        fail(rel, n, "lesson-index", reason)
+
+    m = LESSON_NAME.fullmatch(name)
+    if not m:
+        return bad(1, "not a lesson file; name it YYYY-MM-DD-<slug>.md")
+    lines = read_lines(os.path.join(root, rel)) or []
+    if lines[:1] != ["---"]:
+        return bad(1, "no front matter: open with a `---` block holding %s" % ", ".join(LESSON_KEYS))
+    end = next((i for i in range(1, len(lines)) if lines[i] == "---"), None)
+    if end is None:
+        return bad(1, "unclosed front matter: no closing `---` line")
+    meta = {}
+    for n, line in enumerate(lines[1:end], 2):
+        k = LESSON_KEY.fullmatch(line)
+        if not k or k.group(2)[:1] not in ("", " "):
+            return bad(n, "front matter holds single-line `key: value` lines only")
+        key, value = k.group(1), k.group(2).strip()
+        if key not in LESSON_KEYS:
+            return bad(n, "unknown front-matter key `%s`; allowed: %s" % (key, ", ".join(LESSON_KEYS)))
+        if key in meta:
+            return bad(n, "second `%s:` key" % key)
+        if not value:
+            return bad(n, "empty `%s:`" % key)
+        meta[key] = (n, value)
+    for key in LESSON_KEYS:
+        if key not in meta:
+            return bad(1, "front matter has no `%s:` key" % key)
+    (tn, title), (dn, date), (sn, status) = meta["title"], meta["date"], meta["status"]
+    if "|" in title:
+        return bad(tn, "title holds a pipe character; it is the index Summary cell")
+    try:
+        ok = re.fullmatch(r"\d{4}-\d\d-\d\d", date) and datetime.date.fromisoformat(date)
+    except ValueError:
+        ok = False
+    if not ok:
+        return bad(dn, "date `%s` is not YYYY-MM-DD" % date)
+    if date != m.group(1):
+        return bad(dn, "date %s is not the filename's date %s" % (date, m.group(1)))
+    if status not in LESSON_STATUS:
+        return bad(sn, "unknown status `%s`; use one of %s" % (status, ", ".join(LESSON_STATUS)))
+    entries = sum(1 for line in lines[end + 1:] if LESSON_ENTRY.match(line))
+    if (status == "mixed") != (entries > 1):
+        return bad(sn, "status `mixed` is exactly for a file holding more than one entry (found %d)" % entries)
+    return (date, name), "| [%s](%s) | %s | %s |" % (name, name, date, title)
+
+
+def check_lessons(root, fail, fix):
+    """Issue #1929 (lesson PRs conflicted pairwise on a hand-kept index): the index between the markers
+    of docs/lessons/README.md is generated from each lesson file's front matter (lesson_row), ordered by
+    (date, filename). Without `--fix` every committed row must equal its generated row, in generated
+    order, once; a valid file with no row yet is pending and passes, so a lesson PR adds only its file.
+    `--fix` rewrites the region to the full generated set only when every file and both markers are
+    valid; otherwise it reports and leaves the index unchanged. Skipped when the README is absent."""
+    lines = read_lines(os.path.join(root, LESSON_DOC))
+    if lines is None:
+        return
+    record_failures = []
+
+    def fail(*a, report=fail):
+        record_failures.append(a)
+        report(*a)
+
+    d = os.path.join(root, LESSON_DIR)
+    names = sorted(n for n in os.listdir(d) if n.endswith(".md") and n != "README.md")
+    rows = [r[1] for r in sorted(r for r in (lesson_row(root, n, fail) for n in names) if r)]
+    want = LESSON_HEAD + rows + [""]
+    begins = [i for i, l in enumerate(lines) if l.startswith(LESSON_BEGIN)]
+    ends = [i for i, l in enumerate(lines) if l == LESSON_END]
+    if len(begins) != 1 or len(ends) != 1 or begins[0] > ends[0]:
+        return fail(LESSON_DOC, 1, "lesson-index", "needs one '%s ...' line, then one '%s' line, around the index"
+                    % (LESSON_BEGIN, LESSON_END))
+    begin, end = begins[0], ends[0]
+    have = lines[begin + 1:end]
+    if fix and not record_failures:
+        if have != want:
+            lines[begin + 1:end] = want
+            with open(os.path.join(root, LESSON_DOC), "w", encoding="utf-8") as f:
+                f.write("\n".join(lines) + "\n")
+        return
+    if have[:3] != LESSON_HEAD or have[-1:] != [""] or len(have) < 4:
+        fail(LESSON_DOC, begin + 1, "lesson-index", "the index opens with a blank line and the `| File | Date | "
+             "Summary |` header and ends with a blank line; run `python3 scripts/check-repo.py --fix`")
+        return
+    seen, last = set(), -1
+    for n, line in enumerate(have[3:-1], begin + 5):
+        if line in seen:
+            fail(LESSON_DOC, n, "lesson-index", "duplicate row; keep one generated row per lesson")
+        elif line not in rows:
+            fail(LESSON_DOC, n, "lesson-index", "row is not generated from %s front matter; run "
+                 "`python3 scripts/check-repo.py --fix`" % LESSON_DIR)
+        elif rows.index(line) < last:
+            fail(LESSON_DOC, n, "lesson-index", "row is out of order; rows sort by (date, filename)")
+        else:
+            last = rows.index(line)
+        seen.add(line)
 
 
 def check_secrets(root, fail):
@@ -1061,13 +1177,13 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--root", default=os.path.dirname(here), help="repo root (default: parent of scripts/)")
     ap.add_argument("--config", help="required-docs config (default: <script dir>/required-docs.txt)")
-    ap.add_argument("--only", action="append", choices=["secrets", "docs", "links", "markers", "blockers", "shapes", "denylist", "deliverables", "spec-status", "design-headers", "fragments", "script-docs", "index", "evidence", "scenarios", "markdown", "test-layout", "deps", "memory", "routines", "campaign"],
+    ap.add_argument("--only", action="append", choices=["secrets", "docs", "links", "markers", "blockers", "shapes", "denylist", "deliverables", "spec-status", "design-headers", "fragments", "script-docs", "index", "evidence", "scenarios", "lessons", "markdown", "test-layout", "deps", "memory", "routines", "campaign"],
                     help="run only these checks (repeatable)")
-    ap.add_argument("--fix", action="store_true", help="rewrite the generated inventory table (index check) and scenario index (scenarios check) in place")
+    ap.add_argument("--fix", action="store_true", help="rewrite the generated inventory table (index check), scenario index (scenarios check) and lessons index (lessons check) in place")
     args = ap.parse_args(argv)
     root = os.path.abspath(args.root)
     config = os.path.abspath(args.config or os.path.join(here, "required-docs.txt"))
-    checks = set(args.only or ["secrets", "docs", "links", "markers", "blockers", "shapes", "denylist", "deliverables", "spec-status", "design-headers", "fragments", "script-docs", "index", "evidence", "scenarios", "markdown", "test-layout", "deps", "memory", "routines", "campaign"])
+    checks = set(args.only or ["secrets", "docs", "links", "markers", "blockers", "shapes", "denylist", "deliverables", "spec-status", "design-headers", "fragments", "script-docs", "index", "evidence", "scenarios", "lessons", "markdown", "test-layout", "deps", "memory", "routines", "campaign"])
 
     failures = []
 
@@ -1104,6 +1220,8 @@ def main(argv=None):
         check_index(root, config, fail, args.fix)
     if "scenarios" in checks:
         check_scenarios(root, fail, args.fix)
+    if "lessons" in checks:
+        check_lessons(root, fail, args.fix)
     if "markdown" in checks:
         check_markdown(root, fail)
     if "test-layout" in checks:

@@ -1,3 +1,10 @@
+---
+title: PR #41 merged before the builder's B2 hand-off reached its parent turn, so no watch or marker existed; the merge gate now requires the `pass=watch` marker (#43)
+date: 2026-10-23
+status: applied
+source: PR #41 timeline (Oct 23, 2026, PT)
+---
+
 # Lessons: the merge gate must require the builder's watch marker (Oct 23, 2026)
 
 One lesson from PR #41 (issue #43). Entries follow the lessons-log format: date,
