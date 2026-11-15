@@ -1,7 +1,7 @@
 ---
 type: added
 issue: 1883
-pr: TBD
+pr: 1898
 date: 2026-11-14
 box-skill: none
 ---
