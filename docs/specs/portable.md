@@ -2529,7 +2529,7 @@ limits.
 | L4 | #1882 | Repaired repo-tag collision lesson | 20–35 docs | #1891 | default | open |
 | L5 | #1883 | Resolved-profile compatibility lesson | 20–35 docs | #1891 | default | open |
 | L6 | #1884 | Inline guard controls lesson; `templates/policy/builder/fix-rounds.md` | 25–45 docs | #1891; after D1's edit to the same fragment | default | open |
-| SD | #1889 | Shared-status contract: new `docs/specs/shared-status.md`; its M57 reference here | 120–190 docs | #1891; precedes ST | deep | open |
+| SD | #1889 | Shared-status contract: [shared-status.md](shared-status.md); its M57 reference here | 120–190 docs | #1891; precedes ST | deep | open |
 | ST | #1313 | Shared status: new `core/status-record.py`, `connectors/github/status.py`; `core/crew-config.py`, GitHub manifest/map, `status.py`, new `_status_shared.py`, `watch.py`; interface/profile/backend/runtime docs; deliverables manifest | 350–600 | #1889 merged; D1–D3 states as observations | deep | open |
 | S1 | #1890 | Status, evidence, decisions, lessons and tracker reconciliation | 40–80 docs | All thirteen members landed or explicitly superseded | default | open |
 
@@ -2689,7 +2689,8 @@ No repaired code reopens to justify a lesson.
 
 #### SD and ST: shared status (#1889, #1313)
 
-SD settles the contract in `docs/specs/shared-status.md` before ST starts.
+SD settles the contract in [shared-status.md](shared-status.md) before ST starts;
+that file is authoritative for S.1–S.6 where this summary is shorter.
 Record **S** is a closed version-1 schema: `schema_version`, owner-selected
 `instance_id` unique within the destination, opaque `registration_id`,
 monotonic `sequence`, `observed_at`, `published_at`; canonical source repos,
