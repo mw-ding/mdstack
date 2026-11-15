@@ -179,7 +179,7 @@ def delivery(state, session, window, msg_id, rec, windows, mine):
     if msg is None or not mine(msg.get("context")):
         return None
     found = [e for e in lines(ledger(state, window)) if e.get("id") == msg_id]
-    first = next((e for e in found if e.get("event") == "recorded"), {})
+    first = next((e for e in reversed(found) if e.get("event") == "recorded"), {})  # the latest run it was recorded for
     tries = [e for e in found if e.get("event") in ("submitted", "failed") and e.get("run") == run_id(rec)]
     ack, who = ack_after(state, window, msg_id, first.get("status", 0)), worker(session, window, rec, windows)
     later = [m for m in msgs[msgs.index(msg) + 1:] if m.get("kind") == msg["kind"] and
@@ -203,7 +203,7 @@ def delivery(state, session, window, msg_id, rec, windows, mine):
         disposition, action, why = "blocked", "escalate", "idle-unacked after one re-nudge" if who == "idle" else \
             "worker %s; nothing typed" % who
     return {"id": msg_id, "window": window, "context": msg.get("context"), "kind": msg["kind"], "refs": msg["refs"],
-            "run": first.get("run"), "inbox": True, "submit": tries[-1]["event"] if tries else None, "ack": ack,
+            "run": first.get("run"), "ledger": bool(first), "inbox": True, "submit": tries[-1]["event"] if tries else None, "ack": ack,
             "delivery": "acked" if ack else tries[-1]["event"] if tries else "recorded", "worker": who,
             "disposition": disposition, "action": action, "reason": why, "nudges": len(tries), "restarts": restarts,
             "observed": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
@@ -215,6 +215,32 @@ def pending(state, session, name, rec, windows, mine):
     ids = dict.fromkeys(e["id"] for e in lines(ledger(state, name)) if e.get("event") == "recorded" and "id" in e)
     found = [delivery(state, session, name, i, rec, windows, mine) for i in ids]
     return [d for d in found if d and d["disposition"] in ("pending", "blocked")]
+
+
+def carry(state, name):
+    """name's unacked inbox messages, for a restart that removes the run's files (#1850, D2.3)."""
+    status = os.path.join(state, "status", name + ".status")
+    acks = {line.split()[1] for line in lines_text(status) if line.split()[:1] == ["ack:"] and len(line.split()) > 1}
+    return [m for m in lines(os.path.join(state, "inbox", name + ".jsonl")) if m.get("id") not in acks]
+
+
+def lines_text(path):
+    with contextlib.suppress(FileNotFoundError):
+        with open(path, encoding="utf-8") as f:
+            return f.read().splitlines()
+    return []
+
+
+def restore(state, name, messages, rec):
+    """Put carried messages back in the successor's inbox under their original ids, each recorded for the new run."""
+    if not messages:
+        return
+    os.makedirs(os.path.join(state, "inbox"), exist_ok=True)
+    with queue_lock(state), open(os.path.join(state, "inbox", name + ".jsonl"), "a", encoding="utf-8") as f:
+        for m in messages:
+            f.write(json.dumps(m) + "\n")
+            recorded(state, name, m["id"], rec)
+    print("crew: kept %d pending inbox message(s) for %s: %s" % (len(messages), name, " ".join(m["id"] for m in messages)))
 
 
 def remote_send(values, state, args, rec, msg):
@@ -317,11 +343,13 @@ def run(args):
                 os.path.exists(inbox):
             with open(inbox, encoding="utf-8") as f:
                 resolved = any(m["kind"] == "blocked" and m["refs"] == args.refs for m in map(json.loads, f))
-        if not prior:
-            with open(inbox, "a", encoding="utf-8") as f:
-                f.write(line)
+        if not prior:  # the ledger first: an interrupted send leaves no inbox message the watcher cannot see
             if rec:
                 recorded(state, args.window, msg["id"], rec)
+            with open(inbox, "a", encoding="utf-8") as f:
+                f.write(line)
+        elif not prior["ledger"]:  # an inbox line from before the ledger: record it now, under its id
+            recorded(state, args.window, prior["id"], rec)
         if dict(runs(state)).get(args.window, {}).get("role") == "synthesizer":
             synthesizer_work(state, args.window)
     if resolved:  # a self-resolved block closes its own blocked message; the coordinator reads it on its next wake

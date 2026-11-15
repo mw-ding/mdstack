@@ -295,6 +295,7 @@ def run(args):
         if host:
             return relaunch_remote(values, state, args.window, rec, items, budget)
         return relaunch(values, session, state, args.window, rec, items, args.timeout, args.project, budget)
+    carried = commands()["send"].carry(state, args.window)  # kill_run removes the inbox: pending ids survive (#1850)
     if kill_run(values, session, state, args.window):
         return 1
     mode = ["--train", str(a["train"])] if a.get("train") else ["--pass", a["pass"]]  # a train worker has no pass flag (#1391)
@@ -313,4 +314,5 @@ def run(args):
             new["restarts"] = budget
             with open(os.path.join(state, "runs", name + ".json"), "w") as f:
                 json.dump(new, f, indent=2)
+            commands()["send"].restore(state, name, carried, new)
     return code

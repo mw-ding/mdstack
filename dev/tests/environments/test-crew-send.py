@@ -9,14 +9,18 @@ the nudge never submits or the clear fails; no key typed into any captured stuck
 prompt that comes up after typing, while a working screen still gets the nudge (#315). Busy delivery (#1850): a
 duplicate send of a pending message keeps its id and adds no message; a busy worker gets no key past two waits and a
 late ack still settles it (D2.2); dead or replaced workers take one restart unless held, idle ones one re-nudge then a
-named block, dialog and unknown screens no key, quota the restart path, and an interrupted send resumes its id (D2.3).
+named block, dialog and unknown screens no key, quota the restart path, and an interrupted send resumes its id (D2.3);
+the ledger record precedes the inbox line, and an interruption at each durable boundary leaves one id the watcher
+tracks (D2.4).
 Run in CI.
 """
+import argparse
 import importlib.machinery
 import importlib.util
 import json
 import os
 import unittest
+from unittest import mock
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # dev/tests/: crew_testlib
 from crew_testlib import CREW, DeliveryBase, FAKE_COMPOSER, FAKE_TMUX_PANES, screen, SendBase, STUCK, WORKING
@@ -372,6 +376,42 @@ class BusyDelivery(DeliveryBase):  # #1850 D2.2, D2.3
                 self.assertEqual(r.returncode, 0 if expect[2] == "wait" else 4, r.stdout + r.stderr)
                 self.assertEqual(self.typed(), typed)  # no key into a dead, replaced, dialog or unknown screen
                 self.assertEqual([m["id"] for m in self.inbox()], [msg_id])  # no discarded or duplicated work
+
+    def test_interruption_at_each_durable_boundary_keeps_one_watchable_id(self):  # D2.4
+        ledger = os.path.join(self.state, "runs", "ben-7.delivery.jsonl")
+        self.show(self.BUSY)
+        self.assertEqual(self.send(*self.REFS).returncode, 0)
+        msg_id = self.inbox()[0]["id"]
+        with open(ledger) as f:
+            events = [json.loads(line) for line in f]
+        self.assertEqual([e["event"] for e in events], ["recorded", "submitted"])  # the ledger precedes the inbox line
+        # 1. after the ledger record, before the inbox line: no message to read; the retry sends one new id
+        self.put("runs/ben-7.delivery.jsonl", json.dumps(dict(events[0], id="20331118T031000Z-0rphan")) + "\n" +
+                 "".join(json.dumps(e) + "\n" for e in events))
+        self.assertEqual(self.delivery("20331118T031000Z-0rphan")[0].returncode, 2)
+        # 2. an inbox line with no ledger record (written before the record existed): a retry records it, same id
+        self.put("runs/ben-7.delivery.jsonl", "")
+        r = self.send(*self.REFS)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("pending %s to ben-7: worker busy" % msg_id, r.stdout)
+        self.assertEqual([m["id"] for m in self.inbox()], [msg_id])
+        d = self.delivery(msg_id)[1]
+        self.assertEqual([d["ledger"], d["delivery"], d["worker"], d["action"]], [True, "recorded", "busy", "wait"])
+        with mock.patch.dict(os.environ, self.env):
+            send, watch = self.mod.commands()["send"], self.mod.commands()["watch"]
+            values, session, state = self.mod.profile(argparse.Namespace(project=self.project, org_profile=None))
+            mine, seen = send.ours(self.project, None, values), {}
+            windows = dict((n, i) for i, n in self.mod.tmux.list_windows(session))
+            self.assertEqual(watch.deliveries(state, session, windows, seen, mine), [])  # tracked from here
+            self.show(self.IDLE)
+            wakes = watch.deliveries(state, session, windows, seen, mine)
+        self.assertEqual([(w["id"], w["action"]) for w in wakes], [(msg_id, "nudge")])
+        # 3. recorded, nudge not yet logged: the retry nudges the same id
+        r = self.send(*self.REFS)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("sent %s to ben-7 (pending id kept)" % msg_id, r.stdout)
+        self.assertEqual([m["id"] for m in self.inbox()], [msg_id])
+        self.assertEqual(self.delivery(msg_id)[1]["delivery"], "submitted")
 
     def test_interrupted_send_resumes_its_recorded_id(self):
         self.assertEqual(self.send(*self.REFS).returncode, 0)

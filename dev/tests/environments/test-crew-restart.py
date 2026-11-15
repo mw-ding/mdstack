@@ -6,7 +6,9 @@ keeping unlanded work), a finished run refused, a builder after `done:` restarts
 pass (fresh or in place), an in-place relaunch accepts a Claude Code pane whose command reads as
 its version (#286), a dead train worker respawns with --train and keeps the pending train record (#1391), a dead
 reflection run rechecks its posted report and refuses, else respawns with the same request (#1520), and the coordinator's window relaunches in place with the current
-sandbox_env and --resume, refused while the land lock is held or from window 0 itself (#1544). Run in CI.
+sandbox_env and --resume, refused while the land lock is held or from window 0 itself (#1544); a dead worker's
+unacked inbox messages keep their ids through the one restart, fresh or in place, re-recorded for the successor, which
+gets one nudge of the same id, and a second restart is refused with the id still pending (#1850, D2.3). Run in CI.
 """
 import fcntl
 import json
@@ -14,7 +16,7 @@ import os
 import unittest
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # dev/tests/: crew_testlib
-from crew_testlib import HEAD, LivenessBase
+from crew_testlib import DeliveryBase, HEAD, LivenessBase
 
 
 class Restart(LivenessBase):
@@ -417,6 +419,57 @@ class Restart(LivenessBase):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("crew: restarted ben-8 (window 11) in its worktree", r.stdout)
         self.assertEqual(self.record("ben-8")["restarts"], 1)
+
+
+class RestartKeepsPendingDelivery(DeliveryBase):  # #1850 D2.3: the prescribed restart discards no pending id
+    def test_pending_id_survives_the_one_restart_fresh_or_in_place(self):
+        for unlanded in (False, True):
+            with self.subTest(unlanded=unlanded):
+                if unlanded:  # a second builder whose worktree holds work: relaunched in place
+                    self.assertEqual(self.spawn("builder", "--issue", "8").returncode, 0)
+                window, index = ("ben-8", 11) if unlanded else ("ben-7", 10)
+                wt = self.record(window)["worktree"]
+                if unlanded:
+                    with open(os.path.join(wt, "notes.txt"), "w") as f:
+                        f.write("draft\n")
+                self.set_pane(index, command=self.record(window)["harness"], screen=self.BUSY)
+                send = lambda *refs: self.crew("send", window, "fix", *refs, "--project", self.project)
+                self.assertEqual(send("#12", "a" * 40).returncode, 0)
+                self.assertEqual(send("#13", "b" * 40).returncode, 0)
+                done, pending = [m["id"] for m in self.inbox_of(window)]
+                with open(os.path.join(self.state, "status", window + ".status"), "a") as f:
+                    f.write("ack: %s\n" % done)
+                self.set_pane(index, command=self.record(window)["harness"], screen=self.BUSY, dead="1")
+                self.assertEqual(self.read(window, pending)["action"], "restart")
+                r = self.crew("restart", window, "--project", self.project, "--timeout", "1")
+                self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+                ids = [m["id"] for m in self.inbox_of(window)]
+                self.assertEqual(ids, [done, pending] if unlanded else [pending])  # the unacked id is kept
+                if not unlanded:
+                    self.assertIn("kept 1 pending inbox message(s) for %s: %s" % (window, pending), r.stdout)
+                self.set_pane(index, command=self.record(window)["harness"], screen=self.IDLE)
+                d = self.read(window, pending)
+                self.assertEqual([d["delivery"], d["worker"], d["action"], d["nudges"], d["restarts"]],
+                                 ["recorded", "idle", "nudge", 0, 1])
+                r = send("#13", "b" * 40)  # the successor gets the same id once; no second message
+                self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+                self.assertIn("sent %s to %s (pending id kept)" % (pending, window), r.stdout)
+                self.assertEqual([m["id"] for m in self.inbox_of(window)].count(pending), 1)
+                self.set_pane(index, command=self.record(window)["harness"], screen=self.IDLE, dead="1")
+                self.assertEqual(self.read(window, pending)["action"], "escalate")
+                r = self.crew("restart", window, "--project", self.project, "--timeout", "1")
+                self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+                self.assertIn("already restarted once", r.stdout)
+                self.assertIn(pending, [m["id"] for m in self.inbox_of(window)])
+
+    def inbox_of(self, window):
+        with open(os.path.join(self.state, "inbox", window + ".jsonl")) as f:
+            return [json.loads(line) for line in f]
+
+    def read(self, window, msg_id):
+        r = self.crew("acked", window, msg_id, "--delivery", "--project", self.project)
+        self.assertIn(r.returncode, (0, 3), r.stdout + r.stderr)
+        return json.loads(r.stdout)
 
 
 if __name__ == "__main__":
