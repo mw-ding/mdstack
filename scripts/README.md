@@ -520,6 +520,25 @@ python3 scripts/triage-clusters.py --items .crew/triage-open.json --sweep 202611
 python3 dev/tests/scripts/test-triage-clusters.py   # offline, no gh
 ```
 
+## Triage apply
+
+`triage-apply.py` is the one entry point for a triage sweep's tracker writes
+([write allowlist](../docs/triage.md#write-allowlist), #753). It reads a
+requests file (`{"sweep", "signature", "requests"}`) and checks every request
+against the allowlist, the profile's `triage.mode` and `triage.repos`, and
+the issue's own `pass=triage` record from this sweep, posted in the same
+batch or by the researcher's login, before it writes anything. One refused
+request refuses the batch: each reason on stderr, exit 1, no write.
+Otherwise it writes through `gh`, skips a write already in effect and lists
+both on stdout. Exit 2 is unreadable input or a non-GitHub tracker (no apply
+binding); exit 3 is a forge command that failed mid-batch, and a rerun skips
+the writes already made. Python 3 standard library and `gh` only.
+
+```sh
+python3 scripts/triage-apply.py --project "$CREW_PROJECT" --requests .crew/triage-requests.json
+python3 dev/tests/scripts/test-triage-apply.py   # offline, fake forge and fake gh
+```
+
 ## Profile validator
 
 `crew-config.py validate <file>` checks one install-time profile

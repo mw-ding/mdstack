@@ -752,7 +752,8 @@ a change, from an [always-on triage](triage.md) sweep. It carries no `sha=`,
 
 `decision` is the [outcome](triage.md#outcomes) slug (for example
 `classify`, `duplicate`, `place`, `propose-close`, `needs-owner`,
-`owner-accepted`, `owner-rejected`, `owner-adjusted`); `sweep` is the sweep's UTC start,
+`owner-accepted`, `owner-rejected`, `owner-adjusted`, and `refused` with
+`priority=P3` for a [provider refusal](triage.md#autonomy)); `sweep` is the sweep's UTC start,
 `YYYYMMDDTHHMMZ`. A sweep writes a new record only when the item or an owner
 reply changed since the newest one, so repeated sweeps are idempotent, and
 `mdstack poll` skips an item whose newest record has no later
@@ -771,8 +772,10 @@ a verdict, gate input or permission. **Triage labels**, set
 only by the sweep and never state tags: `triage:proposed` (a proposal awaits
 the owner), `triage:duplicate` (an exact duplicate, linked), `triage:card-extracted`
 (the sweep posted the card fields), `triage:log` (a daily log issue, skipped
-by every sweep), `cluster:<slug>` (a cluster member, `apply` mode only) and the
-priority bands `P0`–`P3`.
+by every sweep), `cluster:<slug>` (a cluster member, `apply` mode only), the
+priority bands `P0`–`P3` and the scope labels `scope:repo` and `scope:crew`.
+Every sweep write goes through the triage
+[write allowlist](triage.md#write-allowlist).
 
 The researcher's **reflection record** (`pass=reflection`) ends each
 `[<ResearcherBot>/reflection] <window-id>` report on the tracker's reflection

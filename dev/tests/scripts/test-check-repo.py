@@ -1171,15 +1171,25 @@ for label, mutate in [
 REPO = os.path.dirname(SCRIPTS)
 rc, out = run(REPO, "--only", "lessons")
 expect("lessons: X1.7 the migrated tree passes", rc == 0, out)
+# Issue #1948: lesson PRs leave the committed index stale until a bookend --fix,
+# so test idempotence on a copy of the live tree, not equality with its index.
+with tempfile.TemporaryDirectory() as d:
+    shutil.copytree(os.path.join(REPO, LS_DIR), os.path.join(d, LS_DIR))
+    rc, out = run(d, "--only", "lessons", "--fix")
+    first = sc_read(d, LS_DOC)
+    rc2, out2 = run(d, "--only", "lessons", "--fix")
+    rows = [l for l in first.splitlines() if l.startswith("| [")]
+    names = sorted(n for n in os.listdir(os.path.join(d, LS_DIR)) if n != "README.md")
+    expect("lessons: X1.7 a second --fix on the migrated tree is a no-op with exactly one row per lesson",
+           rc == 0 and rc2 == 0 and sc_read(d, LS_DOC) == first and len(rows) == len(names)
+           and all(sum(("| [%s](%s) |" % (n, n)) in r for r in rows) == 1 for n in names), out + out2)
 with tempfile.TemporaryDirectory() as d:
     shutil.copytree(os.path.join(REPO, LS_DIR), os.path.join(d, LS_DIR))
     before = sc_read(d, LS_DOC)
-    rc, out = run(d, "--only", "lessons", "--fix")
-    rows = [l for l in before.splitlines() if l.startswith("| [")]
-    names = sorted(n for n in os.listdir(os.path.join(d, LS_DIR)) if n != "README.md")
-    expect("lessons: X1.7 regenerating the migrated tree is a no-op with exactly one row per lesson",
-           rc == 0 and sc_read(d, LS_DOC) == before and len(rows) == len(names)
-           and all(sum(("| [%s](%s) |" % (n, n)) in r for r in rows) == 1 for n in names), out)
+    write(d, LS_DIR + "/2099-01-01-pending.md", lesson_file("Pending lesson", "2099-01-01", "open"))
+    rc, out = run(d, "--only", "lessons")
+    expect("lessons: X1.7 the migrated tree plus a valid lesson with no row passes unchanged",
+           rc == 0 and sc_read(d, LS_DOC) == before, out)
 
 # X1.8: two lesson PRs branched from one base each add only their file and land
 # in turn by squash on the updated default branch; an index-editing control conflicts.
