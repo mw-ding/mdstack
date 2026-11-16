@@ -451,6 +451,23 @@ class TmuxBriefs(unittest.TestCase):
                         self.assertIn("render baseline %s" % ("`%s`" % scope if runtime == "tmux" else scope), scoped)
                         self.assertIn("`make test-changed`" if extra else "test command `n/a`", scoped)
 
+    def test_every_verdict_and_gate_status_brief_prints_the_summary_card(self):  # #1947
+        briefs = {"tmux": ("reviewer.md", "synthesizer.md"), "session": ("reviewer.md", "synthesizer.md"),
+                  "grok-bot": ("reviewer-v2-watch.md", "synthesizer.md")}
+        with tempfile.TemporaryDirectory() as tmp:
+            for runtime, names in briefs.items():
+                project, out = os.path.join(tmp, "crew.toml"), os.path.join(tmp, runtime)
+                with open(project, "w") as f:
+                    f.write('[runtime]\nname = "%s"\n' % runtime)
+                with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                    self.assertEqual(cr.main(["--project", project, "--out", out]), 0)
+                got = tree(os.path.join(out, "runtime"))
+                for name in names:
+                    with self.subTest(runtime=runtime, brief=name):
+                        text = " ".join(got[name].split())
+                        self.assertIn("summary card", text)
+                        self.assertIn("/core/summary-card.py", text)
+
     def test_selfgate_engine_fills_tmux_builder_loop(self):  # #671
         with tempfile.TemporaryDirectory() as tmp:
             for setting, mode in (("", "different"), ('[flavor]\nselfgate_engine = "same"\n', "same")):

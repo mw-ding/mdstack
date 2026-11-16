@@ -161,7 +161,8 @@ always produces REQUEST_CHANGES (followed by the escalation below at effective c
 never an APPROVE: you may not override it. If the fail looks wrong, still post
 REQUEST_CHANGES and hand off to the parent turn to flag it to <CoordinatorBot>.
 The body starts "<title:reviewer/verdict> · round <k>" (rounds counted from the
-latest cutover or resume marker), holds the review section and the validation section (or
+latest cutover or resume marker), then the section 4 summary card printed by
+`<mdstack>/core/summary-card.py`, then the review section and the validation section (or
 "skipped: review failed"), each with its own crew:v1 marker, and ends with:
 <!-- crew:v1 role=reviewer-validator pass=verdict pr=<n> sha=<head-sha> base=<reviewed-base-sha> round=<k> verdict=<pass|changes> -->
 Cite file:line in the body. Never post plain PR comments or inline comments,
