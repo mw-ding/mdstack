@@ -28,6 +28,11 @@ M59's native `mdstack start` (PR #1930) is built in source.
 evidence. It landed after the 7.14.0 cut and is in no release; this binding
 claims no installed crew or live terminal adoption.
 
+M60's bare `mdstack attach` (PR #1954) is built in source.
+[M60 status](../specs/portable.md#m60-outcome-and-lessons) records the
+evidence. It landed after the 7.15.0 cut and is in no release; this binding
+claims no installed crew or live terminal adoption.
+
 ## Decisions
 
 | #110 question | Decision | Section |
