@@ -3020,7 +3020,7 @@ boundary, release status and lessons are in
 | A1 | #1946 | Added at the owner's word ([decision](https://github.com/mw-ding/mdstack/issues/985#issuecomment-6904159153)): bracket-free, emoji-led post titles from `core/post-title.py` and the `<title:<role>/<pass>>` placeholder (PR #1951) | code + docs | Owner decision | deep | done |
 | A2 | #1947 | Added at the owner's word (same decision): verdict and gate-status summary card, `core/summary-card.py` (PR #1953) | code + docs | #1946 | standard | done |
 | A3 | #1942 | Added at the owner's word ([decision](https://github.com/mw-ding/mdstack/issues/985#issuecomment-6909830418)): bare `mdstack attach` reaches the installed team's coordinator, starting the team if down (PR #1954) | code + docs | #1919's start path | default | done |
-| S1 | #1937 | Status, settled choices, lesson links, index regeneration and tracker reconciliation (PR TBD) | 40–80 docs | Every admitted member done | default | done |
+| S1 | #1937 | Status, settled choices, lesson links, index regeneration and tracker reconciliation (PR #1955) | 40–80 docs | Every admitted member done | default | done |
 
 **Target environment: N/A**: X1 and T1 acceptance uses disposable
 repositories, fake forges and fixtures; C1 runs on the crew host's own

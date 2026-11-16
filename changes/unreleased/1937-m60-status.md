@@ -1,7 +1,7 @@
 ---
 type: changed
 issue: 1937
-pr: TBD
+pr: 1955
 date: 2026-11-16
 box-skill: none
 ---
