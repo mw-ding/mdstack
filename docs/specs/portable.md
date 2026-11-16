@@ -3003,14 +3003,24 @@ lands, because it uses #1929's lesson format; S1 last. One issue → one PR,
 except #1166, a post-merge run request with no PR (its ACs). Sizes are
 non-test lines, planning ranges, not limits.
 
+Statuses below are synced by #1937: every admitted member landed or closed
+with the PR or report shown, and four items added after S0 (X2, A1–A3) are
+recorded as one-row amendments. M60 is built in source only; outcome, proof
+boundary, release status and lessons are in
+[M60 outcome and lessons](#m60-outcome-and-lessons).
+
 | ID | Issue | Scope / named paths | Size | Depends on | Tier | Status |
 |---|---|---|---|---|---|---|
 | S0 | #1938 | This section (PR #1940) | 120–180 docs | Signed M60 approval | default | done |
-| X1 | #1929 | Generated lessons index: file-level metadata on every `docs/lessons/*.md`, a generator and checks in `scripts/check-repo.py`, `docs/lessons/README.md` markers and procedure text, `CONTRIBUTING.md`; tests in `dev/tests/scripts/test-check-repo.py` | 250–450 incl. migration | #1938 | deep | open |
-| L1 | #1933 | Published-head readback lesson for #1923, in X1's format | 40–80 docs | #1929 landed | default | open |
-| T1 | #753 | Bounded apply-mode triage hardening: one write allowlist enforced at one apply entry point, the sweep brief and skill, `docs/triage.md` Known risks; tests | 150–300 + docs | #1938 | deep | open |
-| C1 | #1166 | Fresh orphan worktree inventory, keep/delete per row, owner-approved deletions only; no PR | report only | #1938; owner's per-row approval | default | open |
-| S1 | #1937 | Status, settled choices, lesson links, index regeneration and tracker reconciliation | 40–80 docs | Every admitted member done | default | open |
+| X1 | #1929 | Generated lessons index: file-level metadata on every `docs/lessons/*.md`, a generator and checks in `scripts/check-repo.py`, `docs/lessons/README.md` markers and procedure text, `CONTRIBUTING.md`; tests in `dev/tests/scripts/test-check-repo.py` (PR #1943) | 250–450 incl. migration | #1938 | deep | done |
+| L1 | #1933 | Published-head readback lesson for #1923, in X1's format (PR #1945) | 40–80 docs | #1929 landed | default | done |
+| X2 | #1948 | Added after S0 (escaped from PR #1943): X1.7's test checks `--fix` idempotence on a copied tree, not equality with the committed index, so a lesson-only PR passes CI (PR #1949) | test only | #1929 landed | default | done |
+| T1 | #753 | Bounded apply-mode triage hardening: one write allowlist enforced at one apply entry point, the sweep brief and skill, `docs/triage.md` Known risks; tests; `scripts/triage-apply.py` (PR #1944) | 150–300 + docs | #1938 | deep | done |
+| C1 | #1166 | Fresh orphan worktree inventory, keep/delete per row, owner-approved deletions only; no PR ([report](https://github.com/mw-ding/mdstack/issues/1166#issuecomment-6903026083): 0 orphans) | report only | #1938; owner's per-row approval | default | done |
+| A1 | #1946 | Added at the owner's word ([decision](https://github.com/mw-ding/mdstack/issues/985#issuecomment-6904159153)): bracket-free, emoji-led post titles from `core/post-title.py` and the `<title:<role>/<pass>>` placeholder (PR #1951) | code + docs | Owner decision | deep | done |
+| A2 | #1947 | Added at the owner's word (same decision): verdict and gate-status summary card, `core/summary-card.py` (PR #1953) | code + docs | #1946 | standard | done |
+| A3 | #1942 | Added at the owner's word ([decision](https://github.com/mw-ding/mdstack/issues/985#issuecomment-6909830418)): bare `mdstack attach` reaches the installed team's coordinator, starting the team if down (PR #1954) | code + docs | #1919's start path | default | done |
+| S1 | #1937 | Status, settled choices, lesson links, index regeneration and tracker reconciliation (PR TBD) | 40–80 docs | Every admitted member done | default | done |
 
 **Target environment: N/A**: X1 and T1 acceptance uses disposable
 repositories, fake forges and fixtures; C1 runs on the crew host's own
@@ -3068,14 +3078,14 @@ unchanged. A valid control passes beside every failing row.
 
 | Row | Input | Outcome | Status |
 |---|---|---|---|
-| X1.1 | Each key (`title`, `date`, `status`, `source`) × missing / empty / wrong (bad date form, date ≠ filename, unknown status, a pipe in title, multi-line) / duplicate | Fails with the file path; `--fix` leaves the index unchanged | open |
-| X1.2 | No front matter, unclosed block, unknown key | Fails with the file path | open |
-| X1.3 | `mixed` on a single-entry file; a multi-entry file with `mixed` | Fails; the multi-entry control passes | open |
-| X1.4 | Committed row stale, hand-edited, duplicated or out of order | Fails at the README line; `--fix` regenerates when sources are valid | open |
-| X1.5 | Valid new file with no committed row | Passes (pending); `--fix` adds exactly its row | open |
-| X1.6 | Missing, duplicated or reversed region markers | Fails; `--fix` writes nothing | open |
-| X1.7 | Regeneration of the migrated tree | Every existing lesson keeps its row; prose before and after the region is unchanged; a second run is a no-op | open |
-| X1.8 | Two lesson PRs branched from one base | In a disposable repository, each adds only its file and lands in turn on the updated default branch, the way squash merge applies it: no conflict, `check-repo.py` passes at each published revision, and a later bookend `--fix` adds both rows | open |
+| X1.1 | Each key (`title`, `date`, `status`, `source`) × missing / empty / wrong (bad date form, date ≠ filename, unknown status, a pipe in title, multi-line) / duplicate | Fails with the file path; `--fix` leaves the index unchanged | done |
+| X1.2 | No front matter, unclosed block, unknown key | Fails with the file path | done |
+| X1.3 | `mixed` on a single-entry file; a multi-entry file with `mixed` | Fails; the multi-entry control passes | done |
+| X1.4 | Committed row stale, hand-edited, duplicated or out of order | Fails at the README line; `--fix` regenerates when sources are valid | done |
+| X1.5 | Valid new file with no committed row | Passes (pending); `--fix` adds exactly its row | done |
+| X1.6 | Missing, duplicated or reversed region markers | Fails; `--fix` writes nothing | done |
+| X1.7 | Regeneration of the migrated tree | Every existing lesson keeps its row; prose before and after the region is unchanged; a second run is a no-op | done |
+| X1.8 | Two lesson PRs branched from one base | In a disposable repository, each adds only its file and lands in turn on the updated default branch, the way squash merge applies it: no conflict, `check-repo.py` passes at each published revision, and a later bookend `--fix` adds both rows | done |
 
 #### T1: triage hardening (#753)
 
@@ -3107,12 +3117,12 @@ gap is enforcement of what apply mode may write (`docs/triage.md:238`,
 
 | Row | Request | Outcome | Status |
 |---|---|---|---|
-| T1.1 | Each allowlisted write (valid control per row) | Applied once through the entry point | open |
-| T1.2 | A close, `crew:ready`/`crew:hold`/`crew:sensitive`, an unlisted label, a milestone create, a body edit, a repository or owner-config write | Refused, nonzero exit, zero writes | open |
-| T1.3 | Malformed or unknown request kind, unknown issue | Refused, nonzero exit, zero writes | open |
-| T1.4 | Issue text phrased as an instruction to write | No write beyond the allowlisted outcome for its classification | open |
-| T1.5 | Provider safety refusal | One refusal record, no retry, skipped on the next sweep | open |
-| T1.6 | Mode `shadow` | Proposals and records only, as today | open |
+| T1.1 | Each allowlisted write (valid control per row) | Applied once through the entry point | done |
+| T1.2 | A close, `crew:ready`/`crew:hold`/`crew:sensitive`, an unlisted label, a milestone create, a body edit, a repository or owner-config write | Refused, nonzero exit, zero writes | done |
+| T1.3 | Malformed or unknown request kind, unknown issue | Refused, nonzero exit, zero writes | done |
+| T1.4 | Issue text phrased as an instruction to write | No write beyond the allowlisted outcome for its classification | done |
+| T1.5 | Provider safety refusal | One refusal record, no retry, skipped on the next sweep | done |
+| T1.6 | Mode `shadow` | Proposals and records only, as today | done |
 
 #### C1: orphan cleanup (#1166)
 
@@ -3137,9 +3147,9 @@ command output or exit is **major** and is replanned before review.
 
 | Unit | Affected local tests (refine against the actual diff) | Status |
 |---|---|---|
-| S0/S1, L1, C1 | Required checks only | open |
-| X1 | `test-check-repo.py`, `test-check-markdown.py`; X1.8 through a disposable git repository | open |
-| T1 | The entry point's own test; `test-crew-render.py`, `test-render-parity.py`, `test-tmux-briefs.py` if the researcher template changes | open |
+| S0/S1, L1, C1 | Required checks only | done |
+| X1 | `test-check-repo.py`, `test-check-markdown.py`; X1.8 through a disposable git repository | done |
+| T1 | The entry point's own test; `test-crew-render.py`, `test-render-parity.py`, `test-tmux-briefs.py` if the researcher template changes | done |
 
 Every PR runs `python3 scripts/check-repo.py` and
 `python3 scripts/check-changelog-pr.py --base origin/main --pr N`, with
@@ -3156,6 +3166,53 @@ landed member is closed. Merge permission is the owner's M60 approval
 ([c6902560439](https://github.com/mw-ding/mdstack/issues/985#issuecomment-6902560439)),
 recorded per PR at each actual head; it supplies no approval, CI waiver, hold
 clearance, sensitive reason or missing AC proof.
+
+#### M60 outcome and lessons
+
+**Tracker.** S0 (#1938, PR #1940) and every admitted member landed or
+closed: X1 #1929 (PR #1943), L1 #1933 (PR #1945), T1 #753 (PR #1944) and
+C1 #1166 (no PR; the fresh inventory found 0 orphan folders, so no per-row
+owner answer was needed and nothing was deleted). Four items were added after S0
+and are recorded as rows: X2 #1948 (PR #1949), escaped from PR #1943, and, at
+the owner's word, A1 #1946 (PR #1951), A2 #1947 (PR #1953) and A3 #1942
+(PR #1954). Each issue is closed. #1937 closes on this change's merge,
+then #1936 and M60 close.
+
+**Applied decisions.** X1 was built on X1.a–X1.f as settled: four-key front
+matter on every lesson, `status: mixed` on the three multi-entry files,
+byte-identical migrated rows, and one region between the `lessons:begin` and
+`lessons:end` markers in `docs/lessons/README.md`, generated by
+`python3 scripts/check-repo.py --fix`; a lesson PR adds only its own file.
+X1.7's first test compared the live index with a regeneration, which forced
+lesson PRs to edit the index (#1945's CI); X2 made it an idempotence check on
+a copied tree, keeping the row's intent. This change ran `--fix` and added
+L1's pending row. T1 was built on T1.a–T1.d: one
+[write allowlist](../triage.md#write-allowlist) enforced by
+`scripts/triage-apply.py`, which refuses any unlisted write with exit 1 and
+no write; the provider refusal is recorded once and never retried; shadow
+mode is unchanged. Rounds: X1, L1 and A3 passed in round 1; T1, X2, A1 and A2
+in round 2. No round-cap extension was used. All X1 and T1 matrix rows are
+`done`.
+
+**Proof boundary.** X1 and X2 acceptance runs on disposable trees and git
+repositories (`dev/tests/scripts/test-check-repo.py`, X1.8 included); T1 on a
+fake forge (`dev/tests/scripts/test-triage-apply.py`); A1–A3 on fixtures and
+fake tmux. C1 ran on the crew host's own folders. **Source delivery:** every
+unit is on `main`. **Release:** none is in a release; v7.15.0
+(2026-11-15T23:04Z) predates all of them, and their fragments wait in
+`changes/unreleased/`. **Installation:** nothing here claims an installed
+crew, a live apply-mode sweep or a terminal adoption of bare
+`mdstack attach`.
+
+**Lessons.** The learning capture:
+[published-head readback](../lessons/2026-11-15-published-head-readback.md)
+(L1). From the milestone itself:
+
+- A generated artifact needs its tests to check the generator, not the
+  committed output: X1.7 as first built re-created the very conflict X1
+  removed, and the first lesson-only PR exposed it.
+- Owner-added items fit the bookends as one-row amendments recorded in the
+  closing sync; none waited on S0.
 
 ## 6. Decisions
 

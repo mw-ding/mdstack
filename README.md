@@ -239,6 +239,17 @@ lands ([M59 outcome](docs/specs/portable.md#m59-outcome-and-lessons)). None
 of it is in a release: v7.14.0 predates every unit. Installation is a
 separate step; no terminal adoption is claimed.
 
+M60 lessons indexing, triage hardening and cleanup is built in source: a
+lessons index generated from each lesson's metadata (PRs #1943 and #1949),
+one triage write allowlist at one apply entry point (PR #1944), readable
+emoji-led post titles (PR #1951), a verdict summary card (PR #1953) and a
+bare `mdstack attach` (PR #1954), on the opening spec (PR #1940), plus one
+lesson; the orphan inventory found nothing to delete. All member issues are
+closed; M60 closes after status sync #1937 lands
+([M60 outcome](docs/specs/portable.md#m60-outcome-and-lessons)). None of it
+is in a release: v7.15.0 predates every unit. Installation is a separate
+step; no live apply-mode sweep or terminal adoption is claimed.
+
 Content is built by the crew itself through the normal PR pipeline; every
 change is recorded in `CHANGELOG.md`.
 
