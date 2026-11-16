@@ -14,7 +14,7 @@ Status maps the caller's state; landing risk comes from one rule over facts alre
 - 🟡 medium: sensitive, gate-contract/protocol paths, runtime code, CI pending, or the round cap reached.
 - 🟢 low: none of the above (docs only, CI green, no open blocking finding, round below cap).
 
-CLI: summary-card.py --state S [--verdict V] [--ci C] [--sensitive yes|no] [--round K] [--cap N] [--paths -]
+Usage: summary-card.py --state S [--verdict V] [--ci C] [--sensitive yes|no] [--round K] [--cap N] [--paths -]
 [--no-emoji]; `--paths -` reads changed paths, one per line, from stdin. Python 3 stdlib only.
 """
 import argparse
@@ -60,7 +60,7 @@ def card(state, emoji=True, **inputs):
 
 
 def main(argv=None):
-    p = argparse.ArgumentParser(description="Print the advisory review summary card (protocol §4).")
+    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--state", required=True, choices=sorted(STATUS))
     p.add_argument("--verdict", choices=["pass", "changes"])
     p.add_argument("--ci", choices=["green", "red", "pending"])
