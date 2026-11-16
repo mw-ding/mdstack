@@ -17,6 +17,7 @@ from crew_shared import commands, crew_render, git, load, post_title, profile, r
 posts = load("crew_verdict_posts", "environments/terminal/crew.d/_helper-posts.py")
 item_flavor = load("crew_verdict_flavor", "scripts/item-flavor.py")
 precheck = load("crew_verdict_precheck", "scripts/crew-precheck.py")
+summary = load("crew_verdict_summary", "core/summary-card.py")
 
 
 def register(sub):
@@ -138,7 +139,16 @@ def validate(args, values, state, rec, result, skipped, text, pr):
         raise ValueError("ineligible or unjustified validation skip")
     if args.round > knobs["caps"][0]:
         raise ValueError("round cap exhausted")
-    return knobs
+    return knobs, paths
+
+
+def summary_card(values, pr, result, round_, cap, paths):
+    """The advisory summary card (protocol §4, #1947) from facts already bound to this verdict; no gate reads it."""
+    ci = {"passed": "green", "failed": "red", "infra": "red", "pending": "pending"}[commands()["poll"].pr_snapshot(pr)["ci"]]
+    state = "passed" if result == "pass" else "escalated" if round_ == cap else "changes"
+    sensitive = "crew:sensitive" in {l["name"] for l in pr["labels"]}
+    return summary.card(state, emoji=values.get("report.emoji", True), verdict=result, ci=ci,
+                        sensitive=sensitive, round=round_, cap=cap, paths=paths)
 
 
 def tags(args, values, state, result, cap):
@@ -174,11 +184,13 @@ def run(args):
         rec = posts.actor(args, values, state, "reviewer")
         text, result, skipped = sections(args, state, rec)
         check = lambda pr: validate(args, values, state, rec, result, skipped, text, pr)
-        knobs = check(posts.view(values, args.pr))
+        pr = posts.view(values, args.pr)
+        knobs, paths = check(pr)
+        card = summary_card(values, pr, result, args.round, knobs["caps"][0], paths)
         status = ("✅ pass" if result == "pass" else "🔁 changes") if values.get("report.emoji", True) else result
         escalation = "\nRound cap reached; open blockers need coordinator escalation.\n" if result == "changes" and args.round == knobs["caps"][0] else ""
-        body = "%s\n\nTL;DR: %s.\n\n%s\n\nEffective knobs: %s\n%s\nNext: %s.\n\nEngine: %s %s %s\n\n%s\n<!-- crew:v1 role=reviewer-validator pass=verdict pr=%s sha=%s base=%s round=%s verdict=%s -->\n%s\n" % (
-            post_title(values, "reviewer", "verdict", "round %s @ %s" % (args.round, args.head[:7]), status), result, text, knobs, escalation,
+        body = "%s\n\n%s\n\nTL;DR: %s.\n\n%s\n\nEffective knobs: %s\n%s\nNext: %s.\n\nEngine: %s %s %s\n\n%s\n<!-- crew:v1 role=reviewer-validator pass=verdict pr=%s sha=%s base=%s round=%s verdict=%s -->\n%s\n" % (
+            post_title(values, "reviewer", "verdict", "round %s @ %s" % (args.round, args.head[:7]), status), card, result, text, knobs, escalation,
             "synthesizer checks merge gates" if result == "pass" else "coordinator routes findings", rec["engine"], rec["model"], rec["effort"],
             posts.usage(state, args.actor, rec), args.pr, args.head, args.base, args.round, result, rec["signature"])
         if len(body) >= 60000:
