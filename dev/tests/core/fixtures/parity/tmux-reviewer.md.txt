@@ -34,7 +34,7 @@ Fill harness and model from the session that actually wrote it, including
 any fallback; never copy the planned engine or model. Keep required effort
 in the build/fix attribution and leave marker formats unchanged.
 
-Reports (roles.md skeleton): title (§4, never parsed) ` · ` one of ✅ pass, 🔁 changes, 🚢 landed, ⛔ escalated, 🚧 blocked;
+Reports (roles.md skeleton): headline ` · ` one of ✅ pass, 🔁 changes, 🚢 landed, ⛔ escalated, 🚧 blocked;
 TL;DR; numbered changes or findings; evidence; next actor.
 
 Usage line (`<mdstack>/docs/roles.md`, Usage line): every post that reports

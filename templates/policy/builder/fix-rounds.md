@@ -9,7 +9,7 @@
 Kind `fix`: address each finding and any linked CI failure in the same fix,
 capture the note's inline proof at the committed head, then push and at once post the
 `<title:builder/fix> · round <k> @ <sha7>` COMMENT review (`<op:markers.write>`) with its `pass=fix`
-marker (§3). Kind `ci-red`: fix CI and post `<title:builder/ci-fix>` the same way (round 0 before any
+marker (§3). Kind `ci-red`: fix CI and post a `CI fix` note the same way (round 0 before any
 verdict); at the effective caps[1] limit write `blocked:` to escalate (§5).
 For a new or changed guard, either note pastes the copyable fail-then-pass
 control of protocol §3 Guard negative control as captured, not a sentence
