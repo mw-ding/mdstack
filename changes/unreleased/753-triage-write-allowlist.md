@@ -1,7 +1,7 @@
 ---
 type: security
 issue: 753
-pr: TBD
+pr: 1944
 date: 2026-11-15
 box-skill: none
 ---
