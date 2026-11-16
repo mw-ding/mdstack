@@ -27,8 +27,13 @@ source: Lesson change #1923 (closes #1915), its round-0 ci-fix note and merge-up
   head. The builder's merge-up note corrected the note and `done:` before
   merge and named it a stale head readback. Whether the readback ran before
   the push landed, read a cached value, or reused the opened-head read is
-  not established: no fresh reproduction, worker status file or provider
-  response was checked.
+  not established: no worker status file or provider response was checked.
+  One later observation, on this lesson's own PR #1945: a PR head read
+  (`gh pr view --json headRefOid`) right after a push returned the previous
+  head, and a re-read seconds later from four sources (that command, the
+  branch ref, `git ls-remote` and the pull request record) returned the
+  pushed commit. That fits a readback taken before the forge reflects the
+  push, but it is one observation, not a confirmed cause.
 - **Impact:** One wrong SHA in one note's marker and one `done:` line, both
   corrected by the next signed note about 25 min later. Nothing wrong
   merged: the correction preceded the merge (19:49:09Z), and no review or
@@ -45,4 +50,4 @@ source: Lesson change #1923 (closes #1915), its round-0 ci-fix note and merge-up
 - **Status:** open: the readback rule was already in
   `templates/policy/builder/build-pass.md` step 4 on `main` and did not
   prevent this; the cause is unconfirmed, so no fix is applied or encoded.
-- **Linked issue/PR:** #1933, #1923, #1915
+- **Linked issue/PR:** #1933, #1923, #1915, #1945
