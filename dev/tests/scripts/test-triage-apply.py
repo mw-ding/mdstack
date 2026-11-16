@@ -330,6 +330,34 @@ class ProviderRefusal(Harness):
                           sweep=NEXT_SWEEP)
 
 
+class RefusalBypass(Harness):
+    """T1.5 review r1: a refusal reserves its item across the whole batch, and parking covers indirect writes."""
+
+    def test_refused_item_takes_no_other_write_in_its_batch(self):
+        refusal = {"kind": "refusal", "issue": 3}
+        for other in ({"kind": "record", "issue": 3, "body": rec(3)}, {"kind": "label", "issue": 3, "label": "P2"},
+                      {"kind": "card", "issue": 3, "body": "**Source:** x\n**Failure class:** y"}):
+            with self.subTest(request=other):
+                self.refused([refusal, {"kind": "record", "issue": 3, "body": rec(3)}, other],
+                             "acme/widgets#3 is parked after a provider refusal until the owner acts")
+        self.refused([refusal, refusal], "one refusal per item: acme/widgets#3 is refused twice in this batch")
+        self.refused([{"kind": "record", "issue": 4, "body": rec(4, decision="duplicate")},
+                      {"kind": "duplicate", "issue": 4, "of": 3, "evidence": "repro"}, refusal],
+                     "refused: request 1 (duplicate): acme/widgets#3 is parked")
+        self.applies_once([refusal], [("comment", 3, Allowlisted.refusal(None, 3))])  # valid control
+
+    def test_parked_duplicate_destination_refused(self):
+        self.assertEqual(self.run_batch([{"kind": "refusal", "issue": 3}])[0], 0)
+        dup = [{"kind": "record", "issue": 4, "body": rec(4, decision="duplicate")},
+               {"kind": "duplicate", "issue": 4, "of": 3, "evidence": "New repro."}]
+        self.refused(dup, "refused: request 1 (duplicate): acme/widgets#3 is parked after a provider refusal")
+        self.forge.issues_[REPO, 3]["comments"].append(say("acme-owner", "triage: adjust priority=P1"))
+        writes = list(self.forge.writes)
+        self.applies_once(dup, writes + [("comment", 4, rec(4, decision="duplicate")), ("label", 4, "triage:duplicate"),
+                                         ("comment", 4, "Duplicate of #3\n\n" + SIG),
+                                         ("comment", 3, "Evidence moved from #4:\n\nNew repro.\n\n" + SIG)])
+
+
 class Shadow(Harness):
     """T1.6: mode shadow writes records and proposals only, as today."""
     mode = "shadow"
@@ -427,6 +455,24 @@ class Cli(unittest.TestCase):
                                                   "(already in effect)\nskipped: label acme/widgets 3 P2 (already in "
                                                   "effect)\nskipped: milestone acme/widgets 3 M2 (already in effect)\n",
                                                ""))
+
+    def test_refusal_bypasses_refused_through_the_cli(self):  # review r1 findings 1 and 2
+        self.assertEqual(self.cli([{"kind": "refusal", "issue": 3}, {"kind": "record", "issue": 3, "body": rec(3)},
+                                   {"kind": "label", "issue": 3, "label": "P2"}]),
+                         (1, "", "refused: request 1 (record): acme/widgets#3 is parked after a provider refusal "
+                                 "until the owner acts\nrefused: request 2 (label): acme/widgets#3 is parked after a "
+                                 "provider refusal until the owner acts\ntriage-apply: refused 2 request(s); nothing "
+                                 "written\n", ""))
+        self.assertEqual(self.cli([{"kind": "refusal", "issue": 3}, {"kind": "refusal", "issue": 3}])[::2],
+                         (1, "refused: request 0 (refusal): one refusal per item: acme/widgets#3 is refused twice in "
+                             "this batch\nrefused: request 1 (refusal): one refusal per item: acme/widgets#3 is refused "
+                             "twice in this batch\ntriage-apply: refused 2 request(s); nothing written\n"))
+        self.assertEqual(self.cli([{"kind": "refusal", "issue": 4}])[0], 0)
+        self.assertEqual(self.cli([{"kind": "record", "issue": 3, "body": rec(3, decision="duplicate")},
+                                   {"kind": "duplicate", "issue": 3, "of": 4, "evidence": "New repro."}]),
+                         (1, "", "refused: request 1 (duplicate): acme/widgets#4 is parked after a provider refusal "
+                                 "until the owner acts\ntriage-apply: refused 1 request(s); nothing written\n",
+                          "issue comment 4\n"))  # only the refusal record from the earlier batch
 
     def test_refused_batch_writes_nothing(self):
         self.assertEqual(self.cli([{"kind": "record", "issue": 3, "body": rec(3)},

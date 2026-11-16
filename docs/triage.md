@@ -290,12 +290,14 @@ rerun applies nothing twice.
 | `card` | The extracted card comment and `triage:card-extracted` | both | The intake card's Source and Failure class fields; no card yet |
 | `refusal` | The provider refusal record (`decision=refused priority=P3`); the entry point writes its text | both | Not parked already |
 | `log`, `cluster-record` | A `pass=triage-log` or `pass=triage-cluster` comment on today's `Triage log` issue, created with `triage:log` when missing; older open log issues are closed | both | One marker of that pass with this sweep id |
-| `intake-card` | A milestone-close card: no milestone, Decision `pending` | both | Trigger `milestone-close`; a title starting `intake: `, not filed yet |
-| `intake-evidence` | New evidence on an existing card | both | An `intake: ` issue |
+| `intake-card` | A milestone-close card: no milestone, Decision `pending` | both | Trigger `milestone-close`; a title starting `intake:`, not filed yet |
+| `intake-evidence` | New evidence on an existing card | both | An `intake:` issue |
 
 Only record, flavor, log and cluster bodies carry a `crew:v1` marker, one
-each; every other body carries none. A parked item takes no write until an
-owner comment follows its refusal record. The entry point needs a GitHub
+each; every other body carries none. A parked item takes no write, through
+any kind or as a duplicate's evidence destination, until an owner comment
+follows its refusal record; an item refused in a batch takes no other write
+in that batch, and one refusal per item. The entry point needs a GitHub
 tracker: on another tracker backend it refuses every write, since it has no
 apply binding there yet.
 

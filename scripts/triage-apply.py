@@ -143,7 +143,7 @@ class Batch:
             self.flavors[name] = dict(self.flavors[knobs["base"]], **{k: v for k, v in knobs.items() if k != "base"})
         self.flavors.pop("express", None)
         self.project_flavor = values.get("flavor.name", config.UNSET_FLAVOR)
-        self.cache, self.records, self.clusters = {}, {}, {}
+        self.cache, self.records, self.clusters, self.refusing = {}, {}, {}, []
 
     def item(self, repo, n):
         if (repo, n) not in self.cache:
@@ -184,6 +184,8 @@ class Batch:
                 if isinstance(r, dict) and r.get("kind") == "record":
                     repo, n = self.target(r)
                     self.records[repo, n] = one_marker(r.get("body"), role="researcher", pass_="triage")
+                elif isinstance(r, dict) and r.get("kind") == "refusal":
+                    self.refusing.append(self.target(r))
                 elif isinstance(r, dict) and r.get("kind") == "cluster-record":
                     f = one_marker(r.get("body"), role="researcher", pass_="triage-cluster")
                     self.clusters[f.get("cluster")] = r.get("body")
@@ -198,6 +200,8 @@ class Batch:
                 if kind in APPLY_ONLY and self.mode != "apply":
                     raise Refused("mode %s: %s is apply mode only (propose it)" % (self.mode, kind))
                 out = check(r)
+                if kind not in ("refusal", "log", "cluster-record"):  # log bodies land on the log issue
+                    self.guard(out)
                 (log if kind in ("log", "cluster-record") else writes).extend(out)
             except Refused as e:
                 refusals.append((i, kind, str(e)))
@@ -219,10 +223,20 @@ class Batch:
 
     def issue_of(self, r):
         repo, n = self.target(r)
-        item = self.item(repo, n)
-        if self.parked(item):
+        self.unparked(repo, n)
+        return repo, n, self.item(repo, n)
+
+    def unparked(self, repo, n):
+        """Refuse a write on an issue parked by a refusal record without a later owner comment, or refused in this
+        same batch."""
+        if (repo, n) in self.refusing or self.parked(self.item(repo, n)):
             raise Refused("%s#%d is parked after a provider refusal until the owner acts" % (repo, n))
-        return repo, n, item
+
+    def guard(self, writes):
+        """Every issue a write lands on, an indirect one such as a duplicate's evidence destination included."""
+        for op, args, _ in writes:
+            if op in ("label", "unlabel", "milestone", "comment", "cluster-link"):
+                self.unparked(args[0], args[1])
 
     def comment(self, repo, n, item, body):
         return [("comment", (repo, n, body), self.has_comment(item, body))]
@@ -242,6 +256,8 @@ class Batch:
                 "reframed.\n<!-- crew:v1 role=researcher pass=triage issue=%d decision=refused priority=P3 mode=%s "
                 "sweep=%s -->\n%s" % (self.values.get("identities.researcher.name", "Researcher"), n, n, self.mode,
                                       self.sweep, self.sig))
+        if self.refusing.count((repo, n)) > 1:
+            raise Refused("one refusal per item: %s#%d is refused twice in this batch" % (repo, n))
         if not self.has_comment(item, body) and self.parked(item):
             raise Refused("%s#%d is parked after a provider refusal until the owner acts" % (repo, n))
         return self.comment(repo, n, item, body)
