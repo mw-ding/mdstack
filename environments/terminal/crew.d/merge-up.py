@@ -10,7 +10,7 @@ import re
 import shlex
 import subprocess
 import sys
-from crew_shared import (checkout, commands, copy_claim, fetch, git, HERE, load, profile, refuse_paused,
+from crew_shared import (checkout, commands, copy_claim, fetch, git, HERE, load, post_title, profile, refuse_paused,
                          require_ownership, runs)
 
 posts = load("crew_merge_posts", "environments/terminal/crew.d/_helper-posts.py")
@@ -64,13 +64,13 @@ def copy(args, values, state, rec):
 def note(args, values, state, rec, base, updated, head, paths, unions, identical, checks):
     content = "content=identical" if identical else "content=different; differing patch requires delta review"
     status = "✅ pass" if values.get("report.emoji", True) else "pass"
-    return ("[%s/merge-up] @ %s · %s\n\nTL;DR: Default branch merged and published; approval carry stays with the synthesizer.\n\n"
+    return ("%s\n\nTL;DR: Default branch merged and published; approval carry stays with the synthesizer.\n\n"
             "1. B=%s\n   H=%s\n   U=%s\n   new-head=%s\n"
             "2. Merge paths: %s\n   Configured union paths: %s\n3. Strict B/H versus U/new-head comparison: %s.\n\n"
             "Evidence: targeted checks before push:\n\n%s\n\nNext: synthesizer or delta reviewer.\n\n"
             "Engine: %s %s %s\n\n%s\n"
             "<!-- crew:v1 role=builder pass=merge-up pr=%d sha=%s round=n/a verdict=n/a -->\n%s\n") % (
-                values["identities.builder.name"], head[:7], status, base, args.head, updated, head,
+                post_title(values, "builder", "merge-up", "@ " + head[:7], status), base, args.head, updated, head,
                 ", ".join(paths) or "none", ", ".join(unions) or "none", content, "\n".join(checks),
                 rec["engine"], rec["model"], rec["effort"], posts.usage(state, args.actor, rec), args.pr, head, rec["signature"])
 

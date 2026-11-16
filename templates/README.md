@@ -119,6 +119,10 @@ item counts) or unset, respectively.
 A line exactly `<include:policy/<dir>/<name>.md>` is replaced by that
 [policy fragment](policy/README.md), whose lines then render like the
 including file's, so a role's shared policy is authored once (#1184).
+A title placeholder `<title:<role>/<pass>>` renders the head of that role's
+post title, `<emoji> <name> · <Pass>`, from the role's `identities` name and
+emoji (no emoji with `report.emoji = false`), through the one canonical
+format in `core/post-title.py` ([protocol §4](../docs/protocol.md#4-marker-conventions), #1946).
 
 | Placeholder | Meaning | Profile key |
 |---|---|---|

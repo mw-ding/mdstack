@@ -42,7 +42,7 @@ import shutil
 import time
 from crew_shared import (
     BANDS, brief_src, checkout, commands, copy_claim, crew_render, ENGINE_CMD, fetch, git, harness, harnesses, identity, kill_run, LAUNCH, NAMES, over_cap, PASSES, POINTER,
-    load, profile, public_repo, queue_lock, remote_run, repo_id, role_notes, ROLES, runs, show_icon, team_module, team_name, tmux,
+    load, post_title, profile, public_repo, queue_lock, remote_run, repo_id, role_notes, ROLES, runs, show_icon, team_module, team_name, tmux,
     wait_harness, window_env, open_trains, synthesizer_work, work_context)
 
 placement = load("crew_placement", "environments/terminal/crew.d/_placement.py")
@@ -125,8 +125,8 @@ def host_facts(args, values, session, state):
 
 def post_override(values, args, name, host, reason):
     """Post the override reason on the PR (narrative post) or issue before the spawn; False if it was not posted."""
-    body = "[%s/placement] %s placed on %s by override\n\nReason: %s" % (
-        values.get("identities.coordinator.name", "Ash"), name, host, reason)
+    body = "%s\n\nReason: %s" % (
+        post_title(values, "coordinator", "placement", "%s placed on %s by override" % (name, host)), reason)
     cmd = ["pr", "review", str(args.pr), "--comment"] if args.pr else ["issue", "comment", str(args.issue)] \
         if args.issue else None
     try:

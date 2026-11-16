@@ -547,12 +547,15 @@ def triage_rules(path):
 
 
 def triage_feedback(comment, owners, coordinator):
-    """An owner's `triage: accept|reject|adjust` reply, or a coordinator `[<Name>/decision]` relaying the owner."""
+    """An owner's `triage: accept|reject|adjust` reply, or a coordinator decision relaying the owner: its
+    `pass=steer cmd=decision` marker, or an old `[<Name>/decision]` title (#1946)."""
     login, body = (comment.get("author") or {}).get("login"), (comment.get("body") or "").lstrip()
     if login in owners and TRIAGE_FEEDBACK.search(body):
         return True
-    return bool(coordinator and coordinator[1]) and login in owners | {coordinator[0]} and body.startswith(
-        "[%s/decision]" % coordinator[1])
+    decision = any("role=coordinator" in line.split() and "pass=steer" in line.split() and "cmd=decision" in line.split()
+                   for line in CREW_LINE.findall(body))
+    return bool(coordinator and coordinator[1]) and login in owners | {coordinator[0]} and (
+        decision or body.startswith("[%s/decision]" % coordinator[1]))
 
 
 def triage_scan(repo, open_items, closed_items, rules, owners, fields, coordinator=None):

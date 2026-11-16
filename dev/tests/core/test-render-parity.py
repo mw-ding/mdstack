@@ -71,6 +71,7 @@ EXAMPLE_VALUES = dict(DEFAULT_VALUES, **{
     "ReviewerSignature": "— 🔎 Vera (Reviewer-validator)", "SynthesizerSignature": "— 🔀 Sam (Synthesizer)",
 })
 TOKEN = re.compile(r"<([^<>\s!/=-][^<>\n]*)>")
+TITLE_EMOJI = re.compile(r"(?:🔥|🛠️|🔎|🔀|🔬) (?=\S+ · [A-Z])")  # a role post title's emoji, dropped by report.emoji = false
 
 
 def normalize(text):
@@ -172,7 +173,7 @@ class Parity(unittest.TestCase):
                      '"## This run" block from mdstack brief with Item, Pass and Base filled',
                      "Read-only on code: never push, build, review, validate or land", "You hold no gate.",
                      "newest signed Ash request comment on the source issue", "Post exactly one finding",
-                     "[Riley/research] #<n>",
+                     "🔬 Riley · Research · #<n>",
                      "<!-- crew:v1 role=researcher pass=research issue=<n> engine=<engine> model=<model> effort=<effort> -->",
                      "— 🔬 Riley (Researcher) · <harness> · <model>", "from the session that actually ran",
                      "never copy the planned engine", 'return "done: #<n> research <url>" to the parent turn',
@@ -182,7 +183,7 @@ class Parity(unittest.TestCase):
         for rule in ("### 2e. Researcher handoff", "Post one signed `Ash` request comment on the source issue",
                      "Start one fresh read-only worker from [researcher.md](researcher.md)",
                      'mdstack brief --item "issue #<n>" --pass research', '--engine "<engine> <model> <effort>"',
-                     "naming the engine it will actually run", "one signed `[Riley/research] #<n>` finding",
+                     "naming the engine it will actually run", "one signed `🔬 Riley · Research · #<n>` finding",
                      "Verify the URL", "Then relay its TL;DR to the owner",
                      "No listener, routine, research gate or tmux command is involved"):
             with self.subTest(wiring=rule):
@@ -426,7 +427,7 @@ class Parity(unittest.TestCase):
         with open(os.path.join(ROOT, "docs", "protocol.md"), encoding="utf-8") as f:
             protocol = f.read()
         gate = protocol[protocol.index("**Plan gate (#444, #396).**"):protocol.index("**Metrics gate.**")]
-        self.assertIn("`[<CoordinatorBot>/steer] plan approved: <plan>`", gate)
+        self.assertIn("`<CoordinatorEmoji> <CoordinatorBot> · Steer · plan approved: <plan>`", gate)
         self.assertIn("`<!-- crew:v1 role=coordinator pass=steer cmd=plan-ok plan=<milestone-or-project-id> "
                       "cmd-id=<source-id> sha=<default-branch-head> round=n/a verdict=n/a -->`", gate)
         flat = " ".join(gate.split())
@@ -541,7 +542,7 @@ class Parity(unittest.TestCase):
                         self.assertEqual(marker.findall(text["custom"]), marker.findall(text["plain"]))
                         self.assertEqual(marker.findall(text["status"]), marker.findall(text["plain"]))
                         for plain, custom in zip(text["plain"].splitlines(), text["custom"].splitlines()):
-                            if plain != custom:
+                            if plain != custom and TITLE_EMOJI.sub("", plain) != custom:  # emoji-off titles (#1946)
                                 self.assertRegex(plain, r"^`?— \S+ \S+ \([^)]*\) · <harness>|✅ pass|🚢 landed or", (plain, custom))
                                 self.assertRegex(custom, r"^`?— \S+ \([^)]*\) · md · <harness>|(^| )pass, changes|[ (]landed or", (plain, custom))
 
@@ -630,6 +631,8 @@ class Parity(unittest.TestCase):
                         self.assertIn(token, ("control-item:set", "control-item:none", "control-item:end"))
                     elif token.startswith("session-backend:"):  # a block marker line, not a placeholder (#1052)
                         self.assertIn(token, ("session-backend:hosted", "session-backend:local", "session-backend:end"))
+                    elif token.startswith("title:"):  # a role post title head (#1946)
+                        self.assertRegex(token, r"^title:(coordinator|builder|reviewer|synthesizer|researcher)/[a-z-]+$")
                     elif not token.startswith("op:"):
                         used.add(token)
         self.assertEqual(sorted(used - set(rows)), [])

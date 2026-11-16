@@ -442,15 +442,15 @@ class ReviewerIntakeAck(unittest.TestCase):
 
     def test_ack_is_posted_once_by_the_round_one_review_pass(self):
         step = self.step
-        self.assertEqual(self.text.count("[Vera/ack] intake @ <sha7>"), 1)
+        self.assertEqual(self.text.count("🔎 Vera · Ack · intake @ <sha7>"), 1)
         self.assertIn("on a `review` pass for round `<k>` = 1 only (never the `validate` pass or a later round)", step)
-        self.assertIn("post one COMMENT review `[Vera/ack] intake @ <sha7>`", step)
+        self.assertIn("post one COMMENT review `🔎 Vera · Ack · intake @ <sha7>`", step)
         self.assertIn("<!-- crew:v1 role=reviewer-validator pass=ack pr=<n> sha=<head-sha> round=n/a verdict=n/a -->",
                       step)
 
     def test_ack_skips_a_draft_and_a_head_that_already_has_one(self):
-        self.assertIn("unless the PR is a draft or the live PR already has a `pass=ack` post at this head headed "
-                      "`[Vera/ack] intake`", self.step)
+        self.assertIn("unless the PR is a draft or the live PR already has a `pass=ack` marker at this head, "
+                      "whatever its title", self.step)  # the marker dedupes, never the title (#1946)
 
     def test_ack_comes_after_the_guards_and_before_the_pass_work(self):
         order = [self.text.index(s) for s in ("1. Re-read the PR live", "2. Your engine must differ",
@@ -563,7 +563,7 @@ class TriageSweepBrief(unittest.TestCase):
                      "Name the criterion that set the band", "move up a P2 or P3 item with recurring occurrences",
                      "**Similar issues:**", "name the survivor", "`consolidated into #<n>`",
                      "count toward the survivor's band", "every close in every mode",
-                     "`[Ash/recalibrate]` comment on today's log issue with no `pass=triage-log` comment after it",
+                     "`🔥 Ash · Recalibrate` comment on today's log issue with no `pass=triage-log` comment after it",
                      "without the noise cap or the record skip rule", "`triage-metrics.py sample --sweep <sweep-id>`"):
             self.assertIn(rule, self.text)
         with open(os.path.join(ROOT, "docs", "triage.md"), encoding="utf-8") as f:
@@ -584,7 +584,8 @@ class TriageSweepBrief(unittest.TestCase):
     def test_owner_feedback_rules(self):  # #835: feedback on any record, relayed answers, apply-mode spot checks
         for rule in ("owner feedback (below), placed or not", "one form for any triage record, shadow or applied",
                      "`triage: accept`, `triage: reject <reason>` or `triage: adjust` with fields",
-                     "A signed `[Ash/decision]` that quotes the owner's words and time counts the same",
+                     "A signed coordinator decision (`pass=steer cmd=decision`, or an older `[Ash/decision]` title) that quotes the "
+                     "owner's words and time counts the same",
                      "`decision=owner-accepted`, `owner-rejected` (with the reason) or `owner-adjusted`",
                      "a reject reverts that record's reversible label, duplicate-link and placement changes",
                      "The reason feeds the cooldown", "relayed ones, older ones and those on closed issues in the dump included",
@@ -653,7 +654,7 @@ class DocsPassBrief(unittest.TestCase):
     def test_review_stages_citations_and_re_proposal(self):
         for rule in ("run stages 2–4 of `<mdstack>/docs/project-docs.md` (Docs pass)", "Cite findings `path:line` at the "
                      "head", "never re-propose a draft the log shows rejected until its cited text changed",
-                     "A quiet pass posts nothing.", "[Riley/docs-pass] <owner>/<repo> @ <sha7>", "done: docs-pass quiet"):
+                     "A quiet pass posts nothing.", "🔬 Riley · Docs pass · <owner>/<repo> @ <sha7>", "done: docs-pass quiet"):
             self.assertIn(rule, self.text)
         with open(os.path.join(ROOT, "docs", "project-docs.md"), encoding="utf-8") as f:
             design = " ".join(f.read().split())

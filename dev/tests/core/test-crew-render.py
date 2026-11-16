@@ -463,7 +463,7 @@ class TmuxBriefs(unittest.TestCase):
                     got = tree(os.path.join(out, "runtime"))
                     brief = " ".join((got["builder.md"] + got["builder-fix.md"]).split())
                     self.assertIn("`selfgate_engine` (profile `%s`)" % mode, brief)
-                    self.assertIn("`[Builder/selfgate] <pass|changes> @ <sha7>` COMMENT review", brief)
+                    self.assertIn("`🛠️ Builder · Selfgate · <pass|changes> @ <sha7>` COMMENT review", brief)
                     self.assertNotIn("selfgate", got["solo.md"])
 
     def test_unknown_flavor_preset_fails_closed(self):
@@ -1100,14 +1100,14 @@ class PackOverlay(unittest.TestCase):
         self.assertEqual(renders["stack"][1], renders["bare"][1])  # tmux: no stack land, trains unchanged
         self.assertNotIn("land stack", renders["tested"][1]["runtime/synthesizer.md"])
         synth = stack["runtime/synthesizer.md"]
-        self.assertEqual(synth.replace(synth[synth.index("\n\nStack land"):synth.index("\n\nEach `[")], ""),
+        self.assertEqual(synth.replace(synth[synth.index("\n\nStack land"):synth.index("\n\nEach `🔀 ")], ""),
                          bare["runtime/synthesizer.md"])  # the recipe is the only addition
         flat = " ".join(synth.split())
         for rule in ("Stack land (`land.stack`, protocol §7): when two or more ready PRs form one linear",
                      "for every member at that member's own live head",
                      'run `$CREW_BIN land stack --project "$CREW_PROJECT" --stack <n>:<head-sha>,...`',
                      "sends `ex land-stack <stack>` once, only when `ex stack-status <stack>` reads `none` for every member",
-                     "post one `[Sam/merge]` per member", "that member's printed `record:` line",
+                     "post one `🔀 Sam · Merge` per member", "that member's printed `record:` line",
                      'mkdir "$CREW_STATE/locks/merge.lock.d"', "Tested with the default branch must hold for every member",
                      "`Land rule: stack of <k>`.", 'run `$CREW_BIN land resume --project "$CREW_PROJECT"`; it never requests.'):
             self.assertIn(rule, flat)

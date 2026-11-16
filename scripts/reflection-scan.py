@@ -8,12 +8,12 @@ findings buffer (`docs/findings/buffer.md`) at a named `--sha` of the `--root` g
 (`--observations`, JSON lines `{"at", "ref", "kind", "note"}`). Python 3 standard library only; no network, no gh;
 git only reads objects. It writes nothing but stdout and --out, and prints evidence, never a conclusion.
 
-Selection: every issue or pull request opened, closed or corrected (a signed `[<Bot>/<kind>] correction` comment)
-in [--since, --until), whatever its state, milestone or labels; `triage:log` issues are skipped. Lessons and
-findings entries dated in the window are selected; older ones that name a selected incident or item stay as
-`context`. A missing `docs/lessons/` at the SHA is missing, not an empty store.
+Selection: every issue or pull request opened, closed or corrected (a signed comment whose title details start
+`correction`, in either title form) in [--since, --until), whatever its state, milestone or labels; `triage:log`
+issues are skipped. Lessons and findings entries dated in the window are selected; older ones that name a selected
+incident or item stay as `context`. A missing `docs/lessons/` at the SHA is missing, not an empty store.
 
-Incidents: a card (an item with a Failure class) and its fix chain (a `[<Bot>/triage] ... accepted -> #n` comment, a
+Incidents: a card (an item with a Failure class) and its fix chain (a triage title `... accepted -> #n`, a
 `Closes #n` in a body, a `(#n)` in a title) are one incident. A card's sites are its Source and the refs its Summary
 names: cards of one class on one site are one incident however many report it, and a card naming two or more sites
 reports one incident per site. A site is listed, never merged, so distinct failures on one PR stay distinct. Keys
@@ -45,7 +45,13 @@ spec = importlib.util.spec_from_file_location(
 tc = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(tc)
 
-SIGNED = re.compile(r"\[([^]/\s]+)/([\w-]+)\]\s*(.*)")
+
+def signed(body):
+    """A signed post's title as (None, name, pass, details), indexable like a match, in either title form (#1946)."""
+    title = tc.post_title.parse(body)
+    return (None,) + title if title else None
+
+
 REF = re.compile(r"(?:([\w.-]+/[\w.-]+)(?:/issues/|/pull/|#)|(?<![\w/&])#)(\d+)\b")
 ARROW = re.compile(r"(?:→|->)\s*((?:[\w.-]+/[\w.-]+)?#\d+)")
 CLOSES = re.compile(r"(?i)\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+((?:[\w.-]+/[\w.-]+)?#\d+)")
@@ -71,7 +77,7 @@ def fixes(item, repo):
     """Refs in this item's fix chain: a triage acceptance, a closing ref in the body, a `(#n)` in the title."""
     out = set()
     for c in item.get("comments") or []:
-        m = SIGNED.match(c.get("body") or "")
+        m = signed(c.get("body"))
         if m and m[2] == "triage" and "accepted" in m[3]:
             out |= {x for a in ARROW.findall(m[3]) for x in refs(a, repo)}
     for x in CLOSES.findall(item.get("body") or "") + re.findall(r"\((#\d+)\)", item.get("title") or ""):
@@ -96,7 +102,7 @@ def evidence(item):
     rows = [{"ref": tc.ref(item).lower(), "kind": "card" if tc.card(item, "Failure class") else "body",
              "state": "reported", "at": item.get("createdAt"), "url": item.get("url")}]
     for c in sorted(item.get("comments") or [], key=lambda c: c.get("createdAt") or ""):
-        m = SIGNED.match(c.get("body") or "")
+        m = signed(c.get("body"))
         corr = correction(m)
         if not m or m[2] not in ("research", "triage", "note") and not corr:
             continue
@@ -161,7 +167,7 @@ def scan(a):
 
     why = {}
     for r, i in by_ref.items():
-        corrected = any(correction(SIGNED.match(c.get("body") or "")) and inside(c.get("createdAt"))
+        corrected = any(correction(signed(c.get("body"))) and inside(c.get("createdAt"))
                         for c in i.get("comments") or [])
         tags = [t for t, ok in (("opened", inside(i.get("createdAt"))), ("closed", inside(i.get("closedAt"))),
                                 ("corrected", corrected)) if ok]

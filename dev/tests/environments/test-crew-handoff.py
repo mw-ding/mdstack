@@ -164,7 +164,7 @@ class Handoff(Fixture):
         pr = data["sets"][1]["items"][1]
         self.assertEqual((pr["stage"], pr["head"], pr["runs"]), ("changes", OLD, [
             {"role": "builder", "pass": "fix", "end": "kept", "worktree": "21-fix"}]))
-        self.assertIn("[Ash/handoff] offered tmux@local → tmux@box (20261101-abcdef)", r.stdout)
+        self.assertIn("🔥 Ash · Handoff · offered tmux@local → tmux@box (20261101-abcdef)", r.stdout)
         self.assertIn("|---|---|---|---|\n| s1 | #10 #11 #12 | in-review none in-review | - - aaaaaaa |\n"
                       "| s2 | #20 #21 | changes changes | - aaaaaaa |\n\n", r.stdout)
         self.assertIn("state=offered from=tmux@local to=tmux@box cmd-id=n/a sha=%s" % SHA, r.stdout)
@@ -259,7 +259,7 @@ class Resume(Fixture):
         r = self.handoff("ack", "--rules-confirmed", "--signature", self.SIGN)  # first POST fails, the retry posts
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         [post] = self.states("acked")
-        self.assertIn("[Ash/handoff] acked tmux@local → tmux@box (20261101-abcdef)", post)
+        self.assertIn("🔥 Ash · Handoff · acked tmux@local → tmux@box (20261101-abcdef)", post)
         self.assertIn("Reconciled against live state: s1 adopt #10 #11 #12; s2 adopt #20 #21; rerun #21", post)
         self.assertTrue(post.rstrip().endswith(self.SIGN))
         r = self.handoff("ack", "--rules-confirmed", "--signature", self.SIGN)
@@ -375,7 +375,7 @@ class Commands(Fixture):
         r = self.command("to", "grok-bot@box", "--deadline", "45", record=[marker("claimed", "none", "tmux@local")])
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         [post] = self.posts()
-        self.assertRegex(post, r"\[Ash/handoff\] draining tmux@local → grok-bot@box \(\d{8}-[0-9a-f]{6}\)\n"
+        self.assertRegex(post, r"🔥 Ash · Handoff · draining tmux@local → grok-bot@box \(\d{8}-[0-9a-f]{6}\)\n"
                                r"Owner command \(chat\): handoff to grok-bot@box, mode drain, deadline 45 min")
         self.assertIn("state=draining from=tmux@local to=grok-bot@box cmd-id=chat sha=" + SHA, post)
         self.assertTrue(post.rstrip().endswith(self.SIGN))

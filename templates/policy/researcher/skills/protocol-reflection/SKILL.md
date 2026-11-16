@@ -68,7 +68,7 @@ template edit, no verdict or gate marker, and no message.
    - an owner decision settles it: follow and cite the decision, no
      proposal against it.
 8. **Cooldown.** A proposal ID the coordinator rejected (a `reject` line
-   in a `[<CoordinatorBot>/reflection-decision]` comment on the log issue)
+   in a `<title:coordinator/reflection-decision>` comment on the log issue)
    stays out until
    its reason's cooldown ends (triage rules `[cooldowns]`, default 30 days
    for a duplicate, 14 otherwise), unless a confirmed incident arrived after
@@ -127,7 +127,7 @@ duration, a counted rerun) or `unknown`; never an estimate presented as
 measured. A quiet window posts the report with `proposals=0`.
 
 ```text
-[<ResearcherBot>/reflection] <id>
+<title:researcher/reflection> · <id>
 
 Window: START to END. Input SHA: the full <head-sha>. Index: the inputs counts.
 

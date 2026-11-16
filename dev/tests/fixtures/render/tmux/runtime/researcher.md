@@ -55,7 +55,7 @@ instead. Reflection: follow
 Post one finding on the source issue (`gh issue comment <n> --body-file <file>`):
 
 ```text
-[Riley/research] #<n>
+🔬 Riley · Research · #<n>
 
 TL;DR: the answer in two or three sentences.
 
@@ -93,7 +93,7 @@ quiet pass posts nothing. Else post one comment per repo on its log issue
 (`gh issue comment <n> -R <owner>/<repo> --body-file <file>`):
 
 ```text
-[Riley/docs-pass] <owner>/<repo> @ <sha7>
+🔬 Riley · Docs pass · <owner>/<repo> @ <sha7>
 Findings by class with citations, then numbered draft issues.
 <!-- crew:v1 role=researcher pass=docs-pass repo=<owner>/<repo> sha=<head-sha> findings=<n> drafts=<n> -->
 — 🔬 Riley (Researcher) · <harness> · <model>

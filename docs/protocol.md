@@ -590,7 +590,7 @@ N/A with a stated reason.
 
 **Fix-round note (builder, after each push).** A
 [narrative post](concepts.md#narrative-post) headed
-`[<BuilderBot>/fix] round <k> @ <sha7>`: each finding → what changed (commit) → proof.
+`<BuilderEmoji> <BuilderBot> · Fix · round <k> @ <sha7>`: each finding → what changed (commit) → proof.
 The note names the engine, model and effort that actually wrote the round, and
 every commit of the round carries an `Engine: <engine> <model> <effort>` trailer.
 The note's hidden line carries the engine too (same for `pass=ci-fix`):
@@ -606,7 +606,7 @@ uses `round=0`. See [Actual builder engine](roles.md#actual-builder-engine).
 **Selfgate record (builder).** For an express change, after the
 [self-gate loop](express-lane.md#self-gate-loop) passes or hits `caps[0]`, the
 builder posts a narrative post headed
-`[<BuilderBot>/selfgate] <pass|changes> @ <sha7>`: mode, builder and reviewer
+`<BuilderEmoji> <BuilderBot> · Selfgate · <pass|changes> @ <sha7>`: mode, builder and reviewer
 engine and model, code-review skill, effective knobs, a checks table (check,
 command, result) and a findings table (rank, `file:line`, resolution: fixed in
 a commit, rejected with a reason, or a follow-up issue). Hidden line:
@@ -678,14 +678,34 @@ Which events each GitHub review type and comment fires, and so why bots
 never post plain or inline comments: see the
 [GitHub backend](backends/github.md#review-types-and-the-events-they-fire).
 
-Every bot-authored post body starts with a visible signed header and has a
-hidden machine line:
+Every bot-authored post body starts with a visible title and has a hidden
+machine line:
 
 ```text
-[<BotName>/<pass>] <short status>
+<RoleEmoji> <BotName> · <Pass> · <details> · <status>
 ...
 <!-- crew:v1 role=<role> pass=<pass> pr=<n> sha=<40-char head sha> round=<k> verdict=<pass|changes|n/a> -->
 ```
+
+**Post titles** (#1946) have one readable form with no square brackets,
+defined once in `core/post-title.py` and rendered into every role template by
+the `<title:<role>/<pass>>` placeholder ([templates](../templates/README.md#placeholders)):
+
+- `<RoleEmoji>` is the role's [identity](profile.md#identities) emoji; it is
+  dropped with `report.emoji = false`. `<BotName>` is the identity name.
+- `<Pass>` is the pass slug as a word: first letter upper case, hyphens as
+  spaces, a leading `ci` as `CI` (`Review`, `Merge up`, `CI fix`).
+- `<details>` are the item, round, head and any other parts each form gives,
+  each one ` · `-separated item that reads naturally (`#1946`,
+  `round 2 @ <sha7>`, `stack 4/12`); then the [report](roles.md#report-skeleton-every-role)
+  status, for example `🔎 Vera · Verdict · round 1 @ abc1234 · 🔁 changes` or
+  `🛠️ Ben · Fix · round 2 @ abc1234 · ✅ pass`.
+
+The title is for people only. Routing, polling, dedupe and gates read only
+the hidden `crew:v1` marker, never the title. Posts written before #1946 keep
+the old `[<BotName>/<pass>] <details>` title; their markers still decide, and
+tooling that reads a title without a marker (reports, historical-source
+checks) accepts both forms.
 
 In **every** marker, `sha=` is the full 40-character change head SHA, never an
 abbreviation. `<sha7>` is for human-readable names only (claim files, worktree
@@ -778,7 +798,7 @@ Every sweep write goes through the triage
 [write allowlist](triage.md#write-allowlist).
 
 The researcher's **reflection record** (`pass=reflection`) ends each
-`[<ResearcherBot>/reflection] <window-id>` report on the tracker's reflection
+`<ResearcherEmoji> <ResearcherBot> · Reflection · <window-id>` report on the tracker's reflection
 log issue ([reflection](self-improve.md#reflection)). It carries no
 `issue=`, `pr=`, `round=` or `verdict=`:
 
@@ -794,7 +814,7 @@ The record marks the window's run complete; it is a note, never a verdict,
 gate input or permission.
 
 The researcher's **docs-pass record** (`pass=docs-pass`) ends each
-`[<ResearcherBot>/docs-pass] <owner>/<repo> @ <sha7>` comment a
+`<ResearcherEmoji> <ResearcherBot> · Docs pass · <owner>/<repo> @ <sha7>` comment a
 [docs pass](project-docs.md#docs-pass) posts on that repo's log issue. It
 carries no `issue=`, `pr=`, `round=` or `verdict=`:
 
@@ -839,7 +859,7 @@ and writes; they never reset a PR's rounds. A post has this signed header
 and marker (full default-branch SHA):
 
 ```text
-[<CoordinatorBot>/handoff] <state> <from> → <to> (<handoff-id>)
+<CoordinatorEmoji> <CoordinatorBot> · Handoff · <state> <from> → <to> (<handoff-id>)
 <!-- crew:v1 role=coordinator pass=handoff handoff=<handoff-id> state=<state> from=<runtime-id> to=<runtime-id> cmd-id=chat sha=<default-branch-head-sha> round=n/a verdict=n/a -->
 ```
 
@@ -879,7 +899,7 @@ item or no marker preserves legacy operation. Owner commands are in
   from memory.
 - At the effective `caps[0]` (default 3), a changes-requested verdict (`REQUEST_CHANGES`) (a failed
   validation pass counts as one, never as an `APPROVE`) → the
-  reviewer-validator adds `crew:escalated`, posts a `[<ReviewerBot>/escalation]` narrative post (open
+  reviewer-validator adds `crew:escalated`, posts a `<ReviewerEmoji> <ReviewerBot> · Escalation` narrative post (open
   blockers, what was tried, decision needed) and messages the coordinator, who
   brings it to the user over the [owner channel](concepts.md#owner-channel).
 - A merge-up push uses no round. A merge-up re-approve keeps the round number
@@ -988,7 +1008,7 @@ parallel we can start" is a request to propose a plan, never approval.
   settled decisions.
 - **Approval record.** The owner's OK is recorded once, as a signed comment
   on the milestone's or project's tracking issue: a first line
-  `[<CoordinatorBot>/steer] plan approved: <plan>`, a link to (or exact quote
+  `<CoordinatorEmoji> <CoordinatorBot> · Steer · plan approved: <plan>`, a link to (or exact quote
   and time of) the owner's message, a link to the approved plan text, then
   the marker
   `<!-- crew:v1 role=coordinator pass=steer cmd=plan-ok plan=<milestone-or-project-id> cmd-id=<source-id> sha=<default-branch-head> round=n/a verdict=n/a -->`
@@ -1297,7 +1317,7 @@ Role specifics:
     failures remain findings. CI green at head stays a §7 merge gate.
     - **Intentional verdict hold.** If the verdict must wait for a user
       decision, add `crew:needs-md` and post a narrative post headed
-      `[<ReviewerBot>/hold] @ <sha7>` naming the open item and decision needed,
+      `<ReviewerEmoji> <ReviewerBot> · Hold · @ <sha7>` naming the open item and decision needed,
       with marker
       `<!-- crew:v1 role=reviewer-validator pass=hold pr=<n> sha=<full-40-char-head-sha> round=n/a verdict=n/a -->`.
       This is neither a verdict nor a round. Route the ask via the coordinator
@@ -1906,7 +1926,7 @@ default-branch CI is green. This fix-forward path grants no merge permission or 
 On tmux they are the [profile options](profile.md)
 `runtime.options.train_min` and `runtime.options.train_window`. Nothing waits
 past the window, so a runtime with no timer wake for the synthesizer does not wait (Grok Bot today). Each
-`[<SynthesizerBot>/merge]` record names its rule in one line, for example
+`<SynthesizerEmoji> <SynthesizerBot> · Merge` record names its rule in one line, for example
 `Land rule: train of 3 (ready at once)`, `Land rule: alone, urgent (release
 blocker)` or `Land rule: waited 6 min to batch with #A and #B`.
 
@@ -2004,7 +2024,7 @@ Rules:
   the commenter).
 - Unknown command, wrong commenter, or non-command comment: no-op, no reply.
 - **Ack.** The dispatcher posts a COMMENT review
-  `[<CoordinatorBot>/steer] ack <cmd> @ <sha7>` with marker
+  `<CoordinatorEmoji> <CoordinatorBot> · Steer · ack <cmd> @ <sha7>` with marker
   `pass=steer cmd=<cmd> cmd-id=<comment id>`. A `cmd-id` already acked is never
   re-run; edited comments are ignored.
 - Commands respect `crew:hold` except `resume`, `escalate`, `merge-ok`, `stop-landing` and `resume-landing`.

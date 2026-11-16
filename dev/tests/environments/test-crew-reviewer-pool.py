@@ -342,7 +342,7 @@ class ReviewerPool(route_tests.Route):
         clean = note.replace("The merge hit two text conflicts and one semantic conflict, and all three are resolved.",
                              "The merge was clean; no conflicts.")
         for body in (clean, note.replace(self.sha, "f" * 40), note.replace("Ben (Builder)", "Bo (Builder)"),
-                     note.split("\n— ")[0], note.replace("[Ben/merge-up]", "[Ben/status]")):
+                     note.split("\n— ")[0], note.replace("pass=merge-up", "pass=status")):  # the marker decides (#1946)
             self.live["reviews"] = verdicts + [dict(body=body)]
             self.assertFalse(route.merge_up_delta(self.live, self.sha, "Ben"))
         self.live["reviews"] = verdicts + [dict(body=clean)]

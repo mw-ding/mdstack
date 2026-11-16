@@ -14,7 +14,7 @@
     "post no verdict",
     "recheck escalate",
     "`pass=review` and `pass=validate` markers",
-    "[Vera/verdict] round <k> (merge-up re-approve)",
+    "🔎 Vera · Verdict · round <k> (merge-up re-approve)",
     "pass=verdict pr=<n> sha=<head-sha> base=<reviewed-base-sha> round=<k> verdict=<pass|changes>",
     "no separate validation session runs",
     "Every \u00a77 merge gate still applies"

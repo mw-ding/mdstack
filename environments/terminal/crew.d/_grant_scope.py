@@ -86,7 +86,8 @@ def classify(value, values):
                     raise ValueError("source attribution/locator unreadable: " + link)
                 row["links"].append(link)
                 row["sources"].append(hashlib.sha256(json.dumps(source, sort_keys=True).encode()).hexdigest())
-                if re.search(r"\[[^]]+/(?:grant-prune|note)\].*archive", source["body"], re.I):
+                if re.search(r"\[[^]]+/(?:grant-prune|note)\].*archive|· (?:grant prune|note) · .*archive",
+                             source["body"], re.I):  # either title form (#1946)
                     finished = False
                     facts.append("historical source")
             for name in milestones:

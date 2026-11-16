@@ -64,7 +64,7 @@ the synthesizer for §7 patch identity and live-CI checks, then stop. No new
 reviewer session, merge-up re-approve or round is required for identical content.
 Conflicts or differing patches go through the builder and delta re-review.
 For a clean update whose last verdict requested changes (crew:changes), post
-one COMMENT review "[<ReviewerBot>/ack] merge-up @ <sha7>, verdict pending fix":
+one COMMENT review "<title:reviewer/ack> · merge-up @ <sha7>, verdict pending fix":
 <!-- crew:v1 role=reviewer-validator pass=ack pr=<n> sha=<head-sha> round=n/a verdict=n/a -->
 Then stop: no round, verdict or label change; this ack never supplies approval.
 
@@ -134,7 +134,7 @@ synthesizer merge gate (docs/protocol.md §7).
 
 If the verdict must wait for a user decision (and validation has not failed),
 add crew:needs-md and post one COMMENT review headed
-"[<ReviewerBot>/hold] @ <sha7>" naming the open item and decision needed, with:
+"<title:reviewer/hold> · @ <sha7>" naming the open item and decision needed, with:
 <!-- crew:v1 role=reviewer-validator pass=hold pr=<n> sha=<full-40-char-head-sha> round=n/a verdict=n/a -->
 This is neither a verdict nor a round. Hand off to the parent turn to route the
 ask via the coordinator under docs/protocol.md §6's owner SLA. Delete the claim
@@ -160,7 +160,7 @@ and validation both passed, otherwise REQUEST_CHANGES. A failed validation pass
 always produces REQUEST_CHANGES (followed by the escalation below at effective caps[0]),
 never an APPROVE: you may not override it. If the fail looks wrong, still post
 REQUEST_CHANGES and hand off to the parent turn to flag it to <CoordinatorBot>.
-The body starts "[<ReviewerBot>/verdict] round <k>" (rounds counted from the
+The body starts "<title:reviewer/verdict> · round <k>" (rounds counted from the
 latest cutover or resume marker), holds the review section and the validation section (or
 "skipped: review failed"), each with its own crew:v1 marker, and ends with:
 <!-- crew:v1 role=reviewer-validator pass=verdict pr=<n> sha=<head-sha> base=<reviewed-base-sha> round=<k> verdict=<pass|changes> -->
@@ -200,7 +200,7 @@ Afterwards, in one label step set crew:approved or crew:changes and remove the
 other plus crew:in-review (crew:needs-mirror was already added before the
 verdict; it blocks the merge until the box skill is mirrored). Delete the claim file and your own worktrees. If
 the effective caps[0] round ends in REQUEST_CHANGES, add crew:escalated, post a
-"[<ReviewerBot>/escalation]" COMMENT review (open blockers, what was tried,
+"<title:reviewer/escalation>" COMMENT review (open blockers, what was tried,
 decision needed) and hand off to the parent turn to message <CoordinatorBot>.
 
 pr-merged or pr-closed: do nothing. This PR-scoped watch deletes itself after

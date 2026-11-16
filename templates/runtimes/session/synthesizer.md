@@ -71,7 +71,7 @@ step 3, one per run, in `Depends on` then approval order:
   portability and re-check the live gate. Never send it back solely for
   being behind; a conflict or differing patch goes to <BuilderBot>.<land-rule><land-stack>
 
-Each `[<SynthesizerBot>/merge]` post names the rule in one `Land rule:` line,
+Each `<title:synthesizer/merge>` post names the rule in one `Land rule:` line,
 for example `Land rule: alone, session`.
 
 Do not read step summaries or raw logs to decide a merge. Asks go in

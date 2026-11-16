@@ -76,6 +76,7 @@ conflicts on ([#325](https://github.com/mw-ding/eng-crew/issues/325)).
 | `core/crew-routines.py` | Deliverable | all | Install CLI: validate role routines (schedule, skill, generic actions, miss policy) and decide when one is due ([#1247](https://github.com/mw-ding/eng-crew/issues/1247)) |
 | `core/markdown-scan.py` | Deliverable | all | Shared module: markdown fence, code-span, comment and link scanning for `docs-scan.py` and the repo guard ([#281](https://github.com/mw-ding/eng-crew/issues/281)) |
 | `core/path-glob.py` | Deliverable | all | Shared module: path glob matching for `crew-config.py` and the repo guard ([#281](https://github.com/mw-ding/eng-crew/issues/281)) |
+| `core/post-title.py` | Deliverable | all | Shared module: the one role post title format (protocol §4) for `crew-render.py`, crew.d posters and report scripts ([#1946](https://github.com/mw-ding/mdstack/issues/1946)) |
 | `core/secret-patterns.py` | Deliverable | all | Shared module: secret-scan patterns for `crew-config.py` and the repo guard ([#281](https://github.com/mw-ding/eng-crew/issues/281)) |
 | `core/status-record.py` | Deliverable | all | Shared module: shared-status record S v1 schema, slot body and content identity for `crew-config.py` and the status commands ([#1313](https://github.com/mw-ding/mdstack/issues/1313)) |
 | `dev/**` | Internal | n/a | Guards and tests: tests per module, shared test helpers and fixtures (dev/tests/), run by CI and release validation, not installed |

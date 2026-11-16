@@ -20,7 +20,7 @@ Fill harness and model from the session that actually wrote it, including
 any fallback; never copy the planned engine or model. Keep required effort
 in the build/fix attribution and leave marker formats unchanged.
 
-Reports (roles.md skeleton): headline ` · ` one of ✅ pass, 🔁 changes, 🚢 landed, ⛔ escalated, 🚧 blocked;
+Reports (roles.md skeleton): title (§4, never parsed) ` · ` one of ✅ pass, 🔁 changes, 🚢 landed, ⛔ escalated, 🚧 blocked;
 TL;DR; numbered changes or findings; evidence; next actor.
 
 Usage line (`<mdstack>/docs/roles.md`, Usage line): every post that reports
@@ -107,7 +107,7 @@ Build pass:
    edited; label it `crew:in-review`.
    Right after opening, before `done:`, set the fragment's `pr:` to the PR
    number, pass `scripts/check-changelog-pr.py --base origin/main --pr <pr>`,
-   push and post a round-0 `[Ben/ci-fix]` note at the new head; review
+   push and post a round-0 `🛠️ Ben · CI fix` note at the new head; review
    waits for it. CI on the opened head may still fail on `TBD`, written
    before the number existed (#1844).
    After each push, read the head back (`gh pr view <n> --json headRefOid -q .headRefOid`); use that

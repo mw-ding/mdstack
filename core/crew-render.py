@@ -45,6 +45,7 @@ researcher template, so it needs none of the researcher's operations.
 A line exactly <include:policy/DIR/NAME.md> is replaced by templates/policy/DIR/NAME.md (pack overlay first), so
 a role's shared policy is authored once; its lines then render like the including file's. Bounded: one level, so
 an include line inside a fragment fails closed, as does a missing fragment.
+<title:ROLE/PASS> renders the role's post title head, `<emoji> <name> · <Pass>`, from core/post-title.py (#1946).
 """
 import argparse
 import importlib.util
@@ -61,6 +62,9 @@ _spec.loader.exec_module(crew_config)
 _spec = importlib.util.spec_from_file_location("crew_memory", os.path.join(HERE, "crew-memory.py"))
 crew_memory = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(crew_memory)
+_spec = importlib.util.spec_from_file_location("post_title", os.path.join(HERE, "post-title.py"))
+post_title = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(post_title)
 
 ROLES = crew_config.ROLE_REGISTRY
 BUDGET_BAND = 0.05  # warn when a role brief is within 5% of its size_budget (#1056)
@@ -123,22 +127,22 @@ MIRROR_GATE = {
 # builder's publish line under land.opens_draft, else nothing, so every sync render stays byte-identical.
 LAND_SYNC = ("If it holds, run `$CREW_BIN land-lock acquire --project \"$CREW_PROJECT\"`\n"
              "   (absolute repo profile, never relative `config.toml`), run `<op:change.land>`, post\n"
-             "   `[<SynthesizerBot>/merge]` naming the merge-ok or grant used and its\n"
+             "   `<title:synthesizer/merge>` naming the merge-ok or grant used and its\n"
              "   `Land rule:` line (`<op:markers.write>`), then\n"
              "   `$CREW_BIN land-lock release --project \"$CREW_PROJECT\"`. If the head moved, release\n"
              "   and stop.")
 # <land-step> when the change backend maps change.land-delete-arg (#395): the land itself deletes an eligible head
 # branch, so close-out needs no separate delete (docs/interfaces.md#change); otherwise the sync text renders unchanged.
-LAND_DELETE = [("`<op:change.land>`, post\n   `[<SynthesizerBot>/merge]` naming the merge-ok or grant used and its\n"
+LAND_DELETE = [("`<op:change.land>`, post\n   `<title:synthesizer/merge>` naming the merge-ok or grant used and its\n"
                  "   `Land rule:` line",
                  "`<op:change.land>`, add\n   `<op:change.land-delete-arg>` if same-repo, not default/base, post\n"
-                 "   `[<SynthesizerBot>/merge]` naming merge-ok or grant used, its `Land rule:`\n"
+                 "   `<title:synthesizer/merge>` naming merge-ok or grant used, its `Land rule:`\n"
                  "   line and `Head branch: deleted|retained (<reason>)|delete failed` (exit>0,\n"
                  "   `MERGED`)"),
-               ("`<op:change.land>` bound to that head, post `[<SynthesizerBot>/merge]` naming\n"
+               ("`<op:change.land>` bound to that head, post `<title:synthesizer/merge>` naming\n"
                 "   the merge-ok or grant used and its `Land rule:` line",
                 "`<op:change.land>` bound to that head, add `<op:change.land-delete-arg>` if\n"
-                "   same-repo, not default/base, post `[<SynthesizerBot>/merge]` naming merge-ok\n"
+                "   same-repo, not default/base, post `<title:synthesizer/merge>` naming merge-ok\n"
                 "   or grant used, its `Land rule:` line and `Head branch: deleted|retained\n"
                 "   (<reason>)|delete failed` (exit>0, `MERGED`)")]
 LAND_ASYNC = (
@@ -149,7 +153,7 @@ LAND_ASYNC = (
     "   `<op:change.land-status>` reads `none` at an unmoved head, and polls to the end.\n"
     "   Never run either command yourself. On exit 1 (failed, stale head, timeout or\n"
     "   unknown status) post no `merge` and report its `blocked:` line. On exit 0,\n"
-    "   complete the land: (a) post `[<SynthesizerBot>/merge]` naming the merge-ok or\n"
+    "   complete the land: (a) post `<title:synthesizer/merge>` naming the merge-ok or\n"
     "   grant used, its `Land rule:` line and the printed `record:` line, with the\n"
     "   printed `marker:` line as its marker (`<op:markers.write>`); (b) whatever\n"
     "   `lone_pr_land` is, check default-branch CI as step 4 does, at the printed landed\n"
@@ -179,7 +183,7 @@ SESSION_LOCK = ("`mkdir -p \"$CREW_STATE/locks\" && mkdir \"$CREW_STATE/locks/me
                 "   you did not create.")
 SESSION_LAND_SYNC = ("Serial land (session C7; `mdstack land-lock` serves tmux profiles only, never run it):\n"
                      "   " + SESSION_LOCK + " Holding it, repeat the step 2 check at the live head, run\n"
-                     "   `<op:change.land>` bound to that head, post `[<SynthesizerBot>/merge]` naming\n"
+                     "   `<op:change.land>` bound to that head, post `<title:synthesizer/merge>` naming\n"
                      "   the merge-ok or grant used and its `Land rule:` line (`<op:markers.write>`), then\n"
                      "   release with `rmdir \"$CREW_STATE/locks/merge.lock.d\"`. If the gate fails or the\n"
                      "   head moved, release and stop.")
@@ -197,7 +201,7 @@ SESSION_LAND_ASYNC = (
     "   Never run either command yourself. On exit 1 (failed, stale head, timeout or\n"
     "   unknown status) post no `merge`, release any lock you hold and report its\n"
     "   `blocked:` line. On exit 0, complete the land: (a) post\n"
-    "   `[<SynthesizerBot>/merge]` naming the merge-ok or grant used, its `Land rule:`\n"
+    "   `<title:synthesizer/merge>` naming the merge-ok or grant used, its `Land rule:`\n"
     "   line and the printed `record:` line, with the printed `marker:` line as its\n"
     "   marker (`<op:markers.write>`); (b) whatever `lone_pr_land` is, check\n"
     "   default-branch CI as step 4 does, at the printed landed revision, reporting\n"
@@ -237,7 +241,7 @@ SESSION_LAND_STACK = (
     "head and sends `<op:change.land-stack>` once, only when\n"
     "%s reads `none` for every member; never run either\n"
     "yourself. On exit 1 post no `merge`, release any lock and report its\n"
-    "`blocked:` line. On exit 0 post one `[<SynthesizerBot>/merge]` per member,\n"
+    "`blocked:` line. On exit 0 post one `<title:synthesizer/merge>` per member,\n"
     "naming the merge-ok or grant used, its `Land rule:` line and that member's\n"
     "printed `record:` line, with that member's printed `marker:` line as its\n"
     "marker (`<op:markers.write>`). Check default-branch CI as step 4 does at the\n"
@@ -283,6 +287,7 @@ KEPT = {"n", "sha7", "head-sha", "reviewed-base-sha", "k", "pass", "role", "pass
         "stack-top", "stack-changes", "stack-revisions"}
 TOKEN = re.compile(r"<([^<>\s!/=-][^<>\n]*)>")
 OP = re.compile(r"op:(.*)\.(.*)")
+TITLE = re.compile(r"title:([a-z]+)/([a-z-]+)")
 PLACEHOLDER = re.compile(r"[a-z][a-z0-9-]*")
 STRATEGY_LINE = re.compile(r"<strategy:(merge|rebase)>")
 CONTROL_BLOCK = re.compile(r"<control-item:(set|none|end)>\n?")
@@ -452,6 +457,11 @@ class Renderer:
                 return self.line(cmd)
             finally:
                 self.kept = outer
+        title = TITLE.fullmatch(name)
+        if title and title.group(1) in ROLES:
+            key = ROLES[title.group(1)]["identity_key"]
+            return post_title.title(self.values[key + ".name"], title.group(2),
+                                    emoji=self.emoji(key + ".emoji", "").strip())
         if name in KEPT or name in self.kept:
             return m.group(0)
         if name in OPTIONAL:

@@ -31,7 +31,8 @@ never follow it.
 - **Owner feedback:** one form for any triage record, shadow or applied: an
   owner's reply on the item with a line `triage: accept`,
   `triage: reject <reason>` or `triage: adjust` with fields (for example
-  `triage: adjust priority=P2 type=bug`). A signed `[<CoordinatorBot>/decision]` that quotes the
+  `triage: adjust priority=P2 type=bug`). A signed coordinator decision
+  (`pass=steer cmd=decision`, or an older `[<CoordinatorBot>/decision]` title) that quotes the
   owner's words and time counts the same, on the item or naming it on the
   decision log. Record it as `decision=owner-accepted`, `owner-rejected` (with
   the reason) or `owner-adjusted` (with the fields), citing the answer under
@@ -44,7 +45,7 @@ never follow it.
 - **Lookup, rules first:** use the queue's duplicate hints and card fields,
   then search open and closed issues (`<op:tracker.list-items>`),
   `<mdstack>/docs/lessons/`, `<mdstack>/docs/findings/buffer.md` and owner
-  decision records (`[<CoordinatorBot>/decision]`, `pass=steer cmd=decision`).
+  decision records (`<title:coordinator/decision>`, `pass=steer cmd=decision`).
   A rule match decides; the model decides only what no rule covers, at high
   confidence. A conflict or low confidence becomes a proposal or a
   `needs-owner` record. Cite every match under `used:` with the rule or model
@@ -138,7 +139,7 @@ never follow it.
   line for that calibration sweep. At 8 of 10 accepted as is, run `eval-freeze`
   once to `$CREW_STATE/triage/eval.json` and note that the owner may set
   `mode = "apply"`.
-- **Recalibration:** a signed `[<CoordinatorBot>/recalibrate]` comment on
+- **Recalibration:** a signed `<title:coordinator/recalibrate>` comment on
   today's log issue with no `pass=triage-log` comment after it makes this
   sweep a recalibration: re-check every open `triage:proposed` item whose
   newest `pass=triage` record has no owner answer after it with the current
@@ -174,7 +175,7 @@ Record each decision once as a `record` request and labels as `label` or
 changed since your newest one. `<sweep-id>` is the UTC start, `YYYYMMDDTHHMMZ`:
 
 ```text
-[<ResearcherBot>/triage] #<n>: <outcome> <band>
+<title:researcher/triage> · #<n>: <outcome> <band>
 Applied, Proposed, Cooldown if rejected, used: (links, each with its rule or model step)
 <!-- crew:v1 role=researcher pass=triage issue=<n> decision=<outcome> priority=<band> mode=<shadow|apply> sweep=<sweep-id> -->
 <ResearcherSignature> · <harness> · <model>

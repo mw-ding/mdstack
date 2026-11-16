@@ -1206,6 +1206,8 @@ class Land(TrainBase):
         cases = [("[Ash/hold] hold-until-#77", "OPEN", "open coordinator hold-until-#77"),
                  (marker, "OPEN", "open coordinator hold-until-#77"),
                  ("[Ash/hold] hold-until-#77", "CLOSED", None),
+                 ("🔥 Ash · Hold · hold-until-#77\n<!-- crew:v1 role=coordinator pass=steer cmd=hold -->", "OPEN",
+                  "open coordinator hold-until-#77"),  # new title: its marker decides (#1946)
                  (marker, "MERGED", None),
                  (marker, None, "unresolved coordinator hold-until-#77: dependency missing or lookup failed")]
         for n, (body, state, reason) in enumerate(cases, 1):
@@ -1227,7 +1229,7 @@ class Land(TrainBase):
                     self.assertIn("crew: refusing train land: %s; nothing written" % reason, result.stdout)
                     self.assertFalse(self.record(n).get("closed", False))
                 self.assertNotIn("Traceback", result.stdout + result.stderr)
-        self.assertEqual([c["args"][2] for c in self.gh_calls("pr", "merge")], ["3", "4"])
+        self.assertEqual([c["args"][2] for c in self.gh_calls("pr", "merge")], ["3", "5"])
 
     def test_land_in_order_with_records_then_close_and_delete(self):
         heads = self.built(1, 2, 3)
@@ -1255,7 +1257,7 @@ class Land(TrainBase):
         self.assertEqual([p[2] for p in posts], ["1", "2", "3"])
         for (n, head), post in zip(zip((1, 2, 3), heads), posts):
             body = post[post.index("--body") + 1]
-            self.assertTrue(body.startswith("[Sam/merge] squashed @ %s" % head[:7]), body)
+            self.assertTrue(body.startswith("🔀 Sam · Merge · squashed @ %s" % head[:7]), body)
             for text in ["Land rule: train of 3 (ready together).", "`crew/train-1` @ " + rec["sha"], LINK, "train PR #900", 'Permission: merge_grant = "test grant"',
                          "Mirror deferral used: none",
                          "<!-- crew:v1 role=synthesizer pass=merge pr=%d sha=%s round=n/a verdict=n/a content=identical carried-from=%s -->" % (n, head, head)]:

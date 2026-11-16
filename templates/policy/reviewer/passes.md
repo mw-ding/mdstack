@@ -24,9 +24,9 @@
    exit.
 3. Intake ack, on a `review` pass for round `<k>` = 1 only (never the
    `validate` pass or a later round). After steps 1 and 2, and unless the PR is
-   a draft or the live PR already has a `pass=ack` post at this head headed
-   `[<ReviewerBot>/ack] intake` (so a respawned pass posts nothing), post one
-   COMMENT review `[<ReviewerBot>/ack] intake @ <sha7>` (`<op:markers.write>`)
+   a draft or the live PR already has a `pass=ack` marker at this head, whatever
+   its title (so a respawned pass posts nothing), post one
+   COMMENT review `<title:reviewer/ack> · intake @ <sha7>` (`<op:markers.write>`)
    saying review has started at this head, with the marker
    `<!-- crew:v1 role=reviewer-validator pass=ack pr=<n> sha=<head-sha> round=n/a verdict=n/a -->`
    (the `pr-opened` ack, §6). Post it before the review work, so the PR shows
@@ -51,7 +51,7 @@
    produce `verdict=changes`, and a pass requires both sections to pass.
    Save both sections to the `recheck` verdict file (step 5), re-read live
    state and ownership before posting, and post one COMMENT review
-   `[<ReviewerBot>/verdict] round <k> (merge-up re-approve)` (`<op:markers.write>`)
+   `<title:reviewer/verdict> · round <k> (merge-up re-approve)` (`<op:markers.write>`)
    with both sections and the final `pass=verdict` marker from step 6 at Base.
    For failed acceptance checks use the normal changes verdict header instead.
    Set the state tags as in step 6, then append

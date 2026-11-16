@@ -47,7 +47,7 @@
    edited; label it `crew:in-review`.<land-publish>
    Right after opening, before `done:`, set the fragment's `pr:` to the PR
    number, pass `scripts/check-changelog-pr.py --base origin/<default-branch> --pr <pr>`,
-   push and post a round-0 `[<BuilderBot>/ci-fix]` note at the new head; review
+   push and post a round-0 `<title:builder/ci-fix>` note at the new head; review
    waits for it. CI on the opened head may still fail on `TBD`, written
    before the number existed (#1844).
    After each push, read the head back (`<op:change.read-head>`); use that

@@ -112,7 +112,7 @@ Merge gate, all at the CURRENT head SHA, re-checked right before merging:
   (section 6: only docs, no code, .github/, templates/ or
   docs/protocol.md; no B2 or watch marker). Judge lane
   membership from the full diff at head. A cutover PR is subject to
-  the gate again as soon as its builder posts its [<BuilderBot>/watch] review or
+  the gate again as soon as its builder posts its `<title:builder/watch>` review or
   any builder crew:v1 marker after the cutover (by post time), whatever commit
   it sits on; this includes attaching B2 at the unchanged cutover SHA, which
   needs no new commit. That trigger does not depend on the pass=watch marker. From
@@ -162,7 +162,7 @@ Gate-status reporting (diagnostic only; changes no gate or exemption):
   applicable section 7 items, including blocking holds, before returning blocked.
   Stop without posting for a closed/merged PR or a stale event SHA.
 - Maintain one COMMENT review per PR, headed
-  "[<SynthesizerBot>/gate-status] @ <sha7>", with the full current head marker
+  "<title:synthesizer/gate-status> · @ <sha7>", with the full current head marker
   <!-- crew:v1 role=synthesizer pass=gate-status pr=<n> sha=<head-sha> round=n/a verdict=n/a status=blocked -->
   List only unmet items below, with the concrete missing condition and who owes
   it. Split evidence presence from validation; list both if both are missing.
@@ -213,7 +213,7 @@ To merge alone, if the gate holds: take
 <state-dir>/<owner>__<repo>/locks/merge.lock (flock, serial merges) and run
   gh pr merge <n> --squash --match-head-commit <head-sha>
 with GH_TOKEN=$(gh auth token --user <author-login>). If the head moved, stop.
-Post "[<SynthesizerBot>/merge]" as a COMMENT review with one "Land rule:" line
+Post "<title:synthesizer/merge>" as a COMMENT review with one "Land rule:" line
 (e.g. "Land rule: alone, none close"), release the lock.
 
 To train: push crew/train-<n> (next unused n): <default-branch> plus each

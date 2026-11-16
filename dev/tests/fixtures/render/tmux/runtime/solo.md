@@ -91,9 +91,9 @@ protocol §3.
 
 ### Fix note (crew and solo builders)
 
-After addressing findings and linked CI, push, then post a COMMENT review:
-`[<BuilderBot>/fix] round <k> @ <sha7>`. For a CI-only fix use
-`[<BuilderBot>/ci-fix]` and `pass=ci-fix`; before any verdict, its round is 0.
+After addressing findings and linked CI, push, then post a COMMENT review
+titled `… · Fix · round <k> @ <sha7>` (§4). For a CI-only fix use `CI fix` and
+`pass=ci-fix`; before any verdict, its round is 0.
 List findings addressed, commands and inline proof, unresolved risks, and the
 actual engine/model/effort. Keep the body of the original PR unchanged.
 

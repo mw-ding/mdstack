@@ -17,6 +17,7 @@ import argparse
 import importlib.util
 import json
 import os
+import re
 import statistics
 import sys
 from datetime import datetime, timezone
@@ -56,10 +57,17 @@ def capture(repo, milestone, since, until, log):
     decisions = [{"at": c["created_at"], "url": c["html_url"]}
                  for c in mr.gh_json("repos/%s/issues/%d/comments" % (repo, log), "since=%sT00:00:00Z" % since,
                                      "per_page=100")
-                 if c["body"].startswith("[Ash/decision]") and since <= c["created_at"][:10] <= until]
+                 if decision(c["body"]) and since <= c["created_at"][:10] <= until]
     return {"repo": repo, "milestone": milestone, "since": since, "until": until, "decision_log": log,
             "captured": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "prs": sorted(prs, key=lambda r: r["pr"]), "decisions": decisions}
+
+
+def decision(body):
+    """A coordinator decision record: its `pass=steer cmd=decision` marker, or the old `[Ash/decision]` title (#1946)."""
+    return body.startswith("[Ash/decision]") or any(
+        {"role=coordinator", "pass=steer", "cmd=decision"} <= set(m.split())
+        for m in re.findall(r"<!-- crew:v1 ([^>]*?) -->", body))
 
 
 def median(values):

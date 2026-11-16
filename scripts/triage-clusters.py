@@ -5,7 +5,7 @@ Reads the JSON that `gh issue list --state all --json number,url,state,title,bod
 (repos concatenated). Pure computation: no network, no gh, no writes except --out. Python 3 standard library only.
 
 Deterministic keys first, per open issue (pull requests and `triage:log` issues skipped):
-  class:<slug>       the intake card's Failure class, first word (body, else a `[<Bot>/card-extracted]` comment)
+  class:<slug>       the intake card's Failure class, first word (body, else a card-extracted comment, either title form)
   source:<o/r#n>     the card's Source issue, when it is not the issue itself
   depends:<o/r#n>    a `Depends on #n` target; the open target itself carries the key too
   component:<a/b>    the first two segments of each named path
@@ -23,9 +23,16 @@ Usage: triage-clusters.py --items FILE --sweep ID [--prior FILE] [--model FILE] 
 Exit codes: 0 OK, 2 usage or input error.
 """
 import argparse
+import importlib.util
 import json
+import os
 import re
 import sys
+
+_spec = importlib.util.spec_from_file_location(
+    "post_title", os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "core", "post-title.py"))
+post_title = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(post_title)
 
 PATH = re.compile(r"(?<![\w/.])(?:[\w.-]+/)+[\w-]+\.\w+\b")
 SOURCE = re.compile(r"([\w.-]+/[\w.-]+)(?:#|/issues/)(\d+)")
@@ -45,7 +52,7 @@ def ref(item):
 def card(item, name):
     pattern = r"^(?:\*\*)?%s:(?:\*\*)?[ \t]*(.+?)[ \t]*$" % re.escape(name)
     texts = [item.get("body") or ""] + [c.get("body") or "" for c in item.get("comments") or []
-                                        if re.match(r"\[[^]/]+/card-extracted\]", c.get("body") or "")]
+                                        if (post_title.parse(c.get("body")) or ("", ""))[1] == "card-extracted"]
     for text in texts:
         m = re.search(pattern, text, re.M)
         if m and m[1].strip("*` ").lower() not in ("", "unknown", "none", "n/a"):

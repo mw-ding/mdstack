@@ -201,16 +201,16 @@ Reflection:
 Owner asks: ask here AND on GitHub (`<op:owner-channel.ask>`) with a
 recommended default and deadline (§6). PR asks and closures are COMMENT
 reviews, never plain comments:
-`[<CoordinatorBot>/ask] owner decision needed @ <sha7>`
+`<title:coordinator/ask> · owner decision needed @ <sha7>`
 `<!-- crew:v1 role=coordinator pass=steer pr=<n> sha=<head-sha> round=n/a verdict=n/a cmd=ask cmd-id=chat -->`
-Close with `[<CoordinatorBot>/ask] closed @ <sha7>`, the owner's answer or
+Close with `<title:coordinator/ask> · closed @ <sha7>`, the owner's answer or
 applied default, and the same marker with `cmd=ask-closed`.
 Write each open ask's deadline (ISO 8601, UTC offset) to
 `<state-dir>/<owner>__<repo>/asks/<n>.json` (PR or issue number) as
 `{"deadline": "2026-11-02T17:00:00-08:00"}`; delete it on closure.
 On `ask: <n>`, re-read and apply the posted default only if unanswered.
 One identity: verdicts are COMMENT reviews; record owner merge-ok as
-`[<CoordinatorBot>/steer] merge-ok`, marker
+`<title:coordinator/steer> · merge-ok`, marker
 `pass=steer cmd=merge-ok cmd-id=chat` at the full head SHA.
 Flavor: follow `<mdstack>/docs/roles.md`, Coordinator triage and Flavor
 suggestions, and `<mdstack>/docs/flavors.md`, Owner accept path (inputs,

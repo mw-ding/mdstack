@@ -61,7 +61,7 @@ import os
 import re
 import subprocess
 from urllib.parse import quote
-from crew_shared import (canonical_labels, commands, crew_render, heartbeat, profile, queue_lock, refuse_paused,
+from crew_shared import (canonical_labels, commands, crew_render, heartbeat, post_title, profile, queue_lock, refuse_paused,
                          require_ownership, ROLES, runs, synthesizer_work, open_trains, tracker_labels, work_context)
 
 
@@ -247,11 +247,12 @@ def merge_up_delta(pr, head, builder):
     delta review.
 
     builder: the builder's display name; the signature may carry any emoji, none, or a team (#431, #1291).
-    The published merge-up form (`[Ben/merge-up]`, `pass=merge-up`, "conflicts ... are resolved") counts (#1682)."""
+    The published merge-up form (`pass=merge-up`, "conflicts ... are resolved") counts (#1682). The builder marker
+    decides, never the visible title, in either title form (#1946)."""
     sign = re.compile(r"^— (?:.* )?%s \(" % re.escape(builder), re.M)
     for review in pr["reviews"]:
         body = review["body"]
-        if not re.search(r"^\[[^]\n]+/(?:fix|ci-fix|merge-up)\]", body) or not sign.search(body):
+        if not sign.search(body):
             continue
         if not any(m.get("role") == "builder" and m.get("pass") in ("fix", "ci-fix", "merge-up") and
                    m.get("pr") == str(pr["number"]) and m.get("sha") == head for m in markers(body)):
@@ -545,8 +546,8 @@ def close_out(args, values, state, pr):
         # GitHub's auto-close can miss (train lands, #846); a reopened issue stays open on purpose (#917)
         if issue["state"] == "OPEN" and issue.get("stateReason") != "REOPENED":
             gh("issue", "close", str(n), "-R", repo, "--comment",
-               "[%s/close-out] #%d merged and closes this issue, but GitHub left it open; closed by close-out." % (
-                   values.get("identities.coordinator.name", "Ash"), pr["number"]))
+               post_title(values, "coordinator", "close-out", "#%d merged and closes this issue, but GitHub left it "
+                          "open; closed by close-out." % pr["number"]))
     default = gh("repo", "view", repo, "--json", "defaultBranchRef")["defaultBranchRef"]["name"]
     branch = pr["headRefName"]
     if not branch_retained(values, pr, default):

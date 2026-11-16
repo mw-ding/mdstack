@@ -42,7 +42,7 @@ import sys
 import time
 from argparse import Namespace
 
-from crew_shared import CREW_BIN, HERE, commands, crew_render, ownership_module, profile, runs, tmux
+from crew_shared import CREW_BIN, HERE, commands, crew_render, ownership_module, post_title, profile, runs, tmux
 
 LIMIT = 65536  # GitHub's comment size
 LINKS = r"(?i:\b(?:depends on|closes|fixes|resolves)) (?:#(?P<n>\d+)%s)"
@@ -302,7 +302,8 @@ def manifest(values, state, opened, mode, signature):
                 "from": opened["from"], "to": opened["to"], "items": str(sum(map(len, sets))),
                 "sets": str(len(sets)), "mode": mode, "backlog": str(len(backlog)),
                 "default-branch-head-sha": sha, "manifest": json.dumps(data, indent=1), "signature": signature}
-        post = re.sub(r"<([A-Za-z-]+)>", lambda m: fill.get(m.group(1), m.group(0)), template)
+        post = re.sub(r"<([A-Za-z-]+)>", lambda m: fill.get(m.group(1), m.group(0)), template.replace(
+            "<title:coordinator/handoff>", post_title(values, "coordinator", "handoff")))
         if len(post) <= LIMIT:
             break
     else:
@@ -432,10 +433,14 @@ def post(values, body, args):
     return not error
 
 
+def handoff_title(values, st, frm, to, hid):
+    return post_title(values, "coordinator", "handoff", "%s %s → %s (%s)" % (st, frm, to, hid))
+
+
 def state_post(values, st, opened, reason, signature, sha, extra=""):
-    return "[%s/handoff] %s %s → %s (%s)\n%s\n%s\n<!-- crew:v1 role=coordinator pass=handoff handoff=%s state=%s " \
+    return "%s\n%s\n%s\n<!-- crew:v1 role=coordinator pass=handoff handoff=%s state=%s " \
         "from=%s to=%s cmd-id=n/a sha=%s round=n/a verdict=n/a -->\n%s\n" % (
-            values["identities.coordinator.name"], st, opened["from"], opened["to"], opened["handoff"], reason, extra,
+            handoff_title(values, st, opened["from"], opened["to"], opened["handoff"]), reason, extra,
             opened["handoff"], st, opened["from"], opened["to"], sha, signature)
 
 
@@ -582,9 +587,9 @@ def command(values, state, me, args):
         return 1
     st, hid, frm, to, reason, until = result
     sha = branch_head(values)
-    body = "[%s/handoff] %s %s → %s (%s)\n%s\n\n<!-- crew:v1 role=coordinator pass=handoff handoff=%s state=%s " \
+    body = "%s\n%s\n\n<!-- crew:v1 role=coordinator pass=handoff handoff=%s state=%s " \
         "from=%s to=%s cmd-id=chat sha=%s round=n/a verdict=n/a -->\n%s\n" % (
-            values["identities.coordinator.name"], st, frm, to, hid, reason, hid, st, frm, to, sha, args.signature)
+            handoff_title(values, st, frm, to, hid), reason, hid, st, frm, to, sha, args.signature)
     if args.dry_run:
         print(body, end="")
         return 0

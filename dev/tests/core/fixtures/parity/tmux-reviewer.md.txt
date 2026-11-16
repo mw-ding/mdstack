@@ -34,7 +34,7 @@ Fill harness and model from the session that actually wrote it, including
 any fallback; never copy the planned engine or model. Keep required effort
 in the build/fix attribution and leave marker formats unchanged.
 
-Reports (roles.md skeleton): headline ` · ` one of ✅ pass, 🔁 changes, 🚢 landed, ⛔ escalated, 🚧 blocked;
+Reports (roles.md skeleton): title (§4, never parsed) ` · ` one of ✅ pass, 🔁 changes, 🚢 landed, ⛔ escalated, 🚧 blocked;
 TL;DR; numbered changes or findings; evidence; next actor.
 
 Usage line (`<mdstack>/docs/roles.md`, Usage line): every post that reports
@@ -112,9 +112,9 @@ synthesizer's portability check with no new reviewer session.
    exit.
 3. Intake ack, on a `review` pass for round `<k>` = 1 only (never the
    `validate` pass or a later round). After steps 1 and 2, and unless the PR is
-   a draft or the live PR already has a `pass=ack` post at this head headed
-   `[<ReviewerBot>/ack] intake` (so a respawned pass posts nothing), post one
-   COMMENT review `[<ReviewerBot>/ack] intake @ <sha7>` (`gh pr review <n> --comment --body-file <file>`)
+   a draft or the live PR already has a `pass=ack` marker at this head, whatever
+   its title (so a respawned pass posts nothing), post one
+   COMMENT review `🔎 <ReviewerBot> · Ack · intake @ <sha7>` (`gh pr review <n> --comment --body-file <file>`)
    saying review has started at this head, with the marker
    `<!-- crew:v1 role=reviewer-validator pass=ack pr=<n> sha=<head-sha> round=n/a verdict=n/a -->`
    (the `pr-opened` ack, §6). Post it before the review work, so the PR shows
@@ -139,7 +139,7 @@ synthesizer's portability check with no new reviewer session.
    produce `verdict=changes`, and a pass requires both sections to pass.
    Save both sections to the `recheck` verdict file (step 5), re-read live
    state and ownership before posting, and post one COMMENT review
-   `[<ReviewerBot>/verdict] round <k> (merge-up re-approve)` (`gh pr review <n> --comment --body-file <file>`)
+   `🔎 <ReviewerBot> · Verdict · round <k> (merge-up re-approve)` (`gh pr review <n> --comment --body-file <file>`)
    with both sections and the final `pass=verdict` marker from step 6 at Base.
    For failed acceptance checks use the normal changes verdict header instead.
    Set the state tags as in step 6, then append
@@ -201,7 +201,7 @@ synthesizer's portability check with no new reviewer session.
    at the same head, reuse it; a full `cmd=rereview` still runs both passes.
 6. The `validate` pass, after writing its own section, reads the `review`
    file (missing: `blocked: #<n> review` and exit) and posts one COMMENT
-   review `[<ReviewerBot>/verdict] round <k> @ <sha7>` (`gh pr review <n> --comment --body-file <file>`)
+   review `🔎 <ReviewerBot> · Verdict · round <k> @ <sha7>` (`gh pr review <n> --comment --body-file <file>`)
    with both sections and a final marker
    `<!-- crew:v1 role=reviewer-validator pass=verdict pr=<n> sha=<head-sha> base=<reviewed-base-sha> round=<k> verdict=<pass|changes> -->`;
    `pass` only if both sections pass. A `review` pass that says `changes`

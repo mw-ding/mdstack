@@ -151,6 +151,16 @@ def team_name(values, name):
     return "%s-%s" % (name, team_module.tag(repo_id(values))) if values.get("team.name") else name
 
 
+def post_title(values, role, pass_, *details):
+    """A role post's title line (docs/protocol.md §4, #1946): profile emoji (none with report.emoji = false), name,
+    pass label and details. Display only; readers parse the crew:v1 marker."""
+    identity = crew_render.ROLES[role]
+    key = identity["identity_key"]
+    emoji = values.get(key + ".emoji", identity["identity_defaults"]["emoji"])
+    return crew_render.post_title.title(values.get(key + ".name", identity["identity_defaults"]["name"]), pass_,
+                                        *details, emoji="" if values.get("report.emoji") is False else emoji)
+
+
 def tracker_labels(values):
     """Canonical state tag -> this project's tracker label (repo.labels), the tag itself when unmapped."""
     return {tag: values.get("repo.labels." + tag, tag) for tag in crew_render.crew_config.STATE_TAGS}
@@ -258,8 +268,9 @@ def unlanded(values, rec, wt):
 def record_discard(values, rec, name, reason, items):
     """Post the owner's discard reason on the run's PR (narrative post) or issue; False if it was not posted."""
     pr, issue = re.search(r"PR #(\d+)", rec.get("item", "")), re.search(r"issue #(\d+)", rec.get("item", ""))
-    body = "[%s/kill] discarded unlanded work in %s\n\nReason: %s\n\n%s" % (
-        values.get("identities.coordinator.name", "Ash"), name, reason, "\n".join("- `%s`" % i for i in items))
+    body = "%s\n\nReason: %s\n\n%s" % (
+        post_title(values, "coordinator", "kill", "discarded unlanded work in " + name), reason,
+        "\n".join("- `%s`" % i for i in items))
     repo = "%s/%s" % (values["repo.owner"], values["repo.name"])
     cmd = (["gh", "pr", "review", pr.group(1), "--comment", "-R", repo] if pr else
            ["gh", "issue", "comment", issue.group(1), "-R", repo] if issue else None)

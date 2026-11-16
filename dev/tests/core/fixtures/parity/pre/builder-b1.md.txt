@@ -43,7 +43,7 @@ Fill harness and model from the session that actually wrote it, including
 any fallback; never copy the planned engine or model. Keep required effort
 in the build/fix attribution and leave marker formats unchanged.
 
-Reports (roles.md skeleton): headline ` · ` one of <report-status>;
+Reports (roles.md skeleton): title (§4, never parsed) ` · ` one of <report-status>;
 TL;DR; numbered changes or findings; evidence; next actor.
 
 Guard first: re-read live issue state. Stop on crew:hold or crew:escalated.
@@ -129,7 +129,7 @@ sends REQUEST_CHANGES with PR, head SHA and findings link; the coordinator or
 sweeper sends red CI; <CoordinatorBot> sends merge/close cleanup. Treat these
 as the corresponding B2 events, following builder-b2.md's guards, claims,
 fix/CI-fix limits and escalation rules. Fix rounds still post the
-"[<BuilderBot>/fix]" or "[<BuilderBot>/ci-fix]" COMMENT review with evidence and
+"<BuilderEmoji> <BuilderBot> · Fix" or "<BuilderEmoji> <BuilderBot> · CI fix" COMMENT review with evidence and
 engine markers. On merge/close, delete this PR's worktrees and build output.
 After a fix, re-check the full diff at head: touching code, .github/,
 templates/ or docs/protocol.md leaves the lane and requires the verified B2

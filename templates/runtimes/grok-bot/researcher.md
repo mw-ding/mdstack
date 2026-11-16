@@ -32,7 +32,7 @@ Report headlines (roles.md skeleton) end ` · ` one of <report-status>.
 Post exactly one finding, as <author-login>, with
 gh issue comment <n> --repo <owner>/<repo> --body-file <file>:
 
-[<ResearcherBot>/research] #<n>
+<title:researcher/research> · #<n>
 TL;DR: the answer in two or three sentences.
 ## Findings / ## Options and recommendation / ## Not checked / follow-ups
 <!-- crew:v1 role=researcher pass=research issue=<n> engine=<engine> model=<model> effort=<effort> -->
