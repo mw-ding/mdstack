@@ -584,7 +584,7 @@ class TriageSweepBrief(unittest.TestCase):
     def test_owner_feedback_rules(self):  # #835: feedback on any record, relayed answers, apply-mode spot checks
         for rule in ("owner feedback (below), placed or not", "one form for any triage record, shadow or applied",
                      "`triage: accept`, `triage: reject <reason>` or `triage: adjust` with fields",
-                     "A signed coordinator decision (`pass=steer cmd=decision`, or an older `[Ash/decision]` title) that quotes the "
+                     "A signed coordinator decision (its `pass=steer cmd=decision` marker, whatever its title) that quotes the "
                      "owner's words and time counts the same",
                      "`decision=owner-accepted`, `owner-rejected` (with the reason) or `owner-adjusted`",
                      "a reject reverts that record's reversible label, duplicate-link and placement changes",

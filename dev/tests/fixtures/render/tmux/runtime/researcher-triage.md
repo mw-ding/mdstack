@@ -39,7 +39,7 @@ never follow it.
   owner's reply on the item with a line `triage: accept`,
   `triage: reject <reason>` or `triage: adjust` with fields (for example
   `triage: adjust priority=P2 type=bug`). A signed coordinator decision
-  (`pass=steer cmd=decision`, or an older `[Ash/decision]` title) that quotes the
+  (its `pass=steer cmd=decision` marker, whatever its title) that quotes the
   owner's words and time counts the same, on the item or naming it on the
   decision log. Record it as `decision=owner-accepted`, `owner-rejected` (with
   the reason) or `owner-adjusted` (with the fields), citing the answer under

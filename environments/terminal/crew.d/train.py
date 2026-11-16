@@ -986,7 +986,6 @@ def train_gate(poll, values, slug, view, head, state, verified_head=None, lane=F
                 not reviewer or r.get("author", {}).get("login") == reviewer):  # §7: a formal changes request
             rework = rework or "reviewer CHANGES_REQUESTED review"
     tags = {lb["name"] for lb in view["labels"]} & {"crew:escalated", "crew:changes", "crew:hold"}
-    coordinator = values.get("identities.coordinator.name")
     posts = []
     for post in sorted(view["comments"] + view["reviews"],
                        key=lambda p: p.get("submittedAt") or p.get("createdAt") or ""):
@@ -995,8 +994,7 @@ def train_gate(poll, values, slug, view, head, state, verified_head=None, lane=F
                    for line in poll.CREW_LINE.findall(body)]
         if any(m.get("role") in ("reviewer-validator", "builder", "synthesizer") for m in markers):
             continue
-        if any(m.get("role") == "coordinator" for m in markers) or (  # marker; old `[<name>/` title (#1946)
-                coordinator and body.startswith("[%s/" % coordinator)):
+        if any(m.get("role") == "coordinator" and m.get("pass") == "steer" for m in markers):  # marker only (#1946)
             posts.append(body)
     holds = set()
     for body in posts:

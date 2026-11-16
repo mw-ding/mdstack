@@ -79,9 +79,9 @@ class Capture(unittest.TestCase):
                 {"number": 4, "body": "<!-- crew:v1 role=builder -->", "labels": []}]
         pr = {"number": 1, "created_at": "2026-11-04T10:00:00Z", "merged_at": "2026-11-04T11:00:00Z",
               "head": {"sha": "a" * 40}, "labels": [{"name": "crew:express"}], "body": hits[0]["body"]}
-        comments = [{"created_at": "2026-11-05T00:00:00Z", "html_url": "u1", "body": "[Ash/decision] go\nmore"},
-                    {"created_at": "2026-11-05T00:01:00Z", "html_url": "u2", "body": "[Ash/status] busy"},
-                    {"created_at": "2026-11-09T00:00:00Z", "html_url": "u3", "body": "[Ash/decision] late"}]
+        comments = [{"created_at": "2026-11-05T00:00:00Z", "html_url": "u1", "body": "🔥 Ash · Decision · go\nmore\n<!-- crew:v1 role=coordinator pass=steer cmd=decision -->"},
+                    {"created_at": "2026-11-05T00:01:00Z", "html_url": "u2", "body": "[Ash/decision] busy, no marker"},
+                    {"created_at": "2026-11-09T00:00:00Z", "html_url": "u3", "body": "[Ash/decision] late\n<!-- crew:v1 role=coordinator pass=steer cmd=decision -->"}]
         answers = {"search/issues": hits, "repos/o/r/issues/10": {"milestone": {"number": 38}},
                    "repos/o/r/issues/11": {"milestone": {"number": 39}}, "repos/o/r/pulls/1": pr,
                    "repos/o/r/issues/985/comments": comments}

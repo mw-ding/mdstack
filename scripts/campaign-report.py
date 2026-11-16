@@ -64,8 +64,8 @@ def capture(repo, milestone, since, until, log):
 
 
 def decision(body):
-    """A coordinator decision record: its `pass=steer cmd=decision` marker, or the old `[Ash/decision]` title (#1946)."""
-    return body.startswith("[Ash/decision]") or any(
+    """A coordinator decision record: its `pass=steer cmd=decision` marker decides, whatever the title (#1946)."""
+    return any(
         {"role=coordinator", "pass=steer", "cmd=decision"} <= set(m.split())
         for m in re.findall(r"<!-- crew:v1 ([^>]*?) -->", body))
 

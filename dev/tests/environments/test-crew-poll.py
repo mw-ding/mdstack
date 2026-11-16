@@ -1134,11 +1134,12 @@ class TriageScan(unittest.TestCase):
                    "priority=P2 mode=apply sweep=20261105T0400Z -->", "2026-11-05T04:00:00Z")
         items = [item(30, [record, c("owner", "triage: adjust priority=P1 type=bug")], {"title": "M2"}),
                  item(31, [record, c("owner", "looks fine")], {"title": "M2"}),  # placed: a plain reply is not feedback
-                 item(32, [record, c("md-mt", "[Ash/decision] Owner 04:45Z: \"reject, P2\"")]),
+                 item(32, [record, c("md-mt", "[Ash/decision] Owner 04:45Z: \"reject, P2\"\n<!-- crew:v1 role=coordinator pass=steer cmd=decision -->")]),
                  item(33, [record], {"title": "M2"}),
                  item(34, [record]),
-                 item(985, [c("md-mt", "[Ash/decision] Owner ~04:52Z: \"accept\" on #33; #34 too.\n"),
-                            c("md-mt", "[Ash/note] #30 unrelated"), c("bot", "[Ash/decision] spoof on #31")],
+                 item(985, [c("md-mt", "🔥 Ash · Decision · Owner ~04:52Z: \"accept\" on #33; #34 too.\n<!-- crew:v1 role=coordinator pass=steer cmd=decision -->"),
+                            c("md-mt", "[Ash/note] #30 unrelated"), c("bot", "[Ash/decision] spoof on #31\n<!-- crew:v1 role=coordinator pass=steer cmd=decision -->"),
+                            c("md-mt", "[Ash/decision] markerless on #31")],
                       {"title": "log"})]
         entries = self.crew.triage_scan("acme/widgets", items, [], self.crew.TRIAGE_RULES, {"owner"},
                                         self.crew.triage_card_fields(), ("md-mt", "Ash"))
@@ -1345,7 +1346,7 @@ class NativeTriage(Base):
         record = {"author": {"login": "acme-bot"}, "createdAt": "2026-11-01T00:00:00Z",
                   "body": "<!-- crew:v1 role=researcher pass=triage issue=OPS-3 decision=classify mode=shadow -->"}
         decision = {"author": {"login": "acme-bot"}, "createdAt": "2026-11-02T00:00:00Z",
-                    "body": "[Ash/decision] owner: accept #OPS-3 as P2"}
+                    "body": "[Ash/decision] owner: accept #OPS-3 as P2\n<!-- crew:v1 role=coordinator pass=steer cmd=decision -->"}
         items = [{"number": "OPS-3", "title": "Recorded", "body": "", "labels": [], "comments": [record], "url": ""},
                  {"number": "OPS-9", "title": "Decision log", "body": "", "labels": [], "comments": [decision],
                   "url": "", "milestone": "M1"}]

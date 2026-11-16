@@ -703,9 +703,10 @@ the `<title:<role>/<pass>>` placeholder ([templates](../templates/README.md#plac
 
 The title is for people only. Routing, polling, dedupe and gates read only
 the hidden `crew:v1` marker, never the title. Posts written before #1946 keep
-the old `[<BotName>/<pass>] <details>` title; their markers still decide, and
-tooling that reads a title without a marker (reports, historical-source
-checks) accepts both forms.
+the old `[<BotName>/<pass>] <details>` title; their markers still decide. A
+title over a missing or unrelated marker never counts. Only tooling that reads
+posts which carry no marker (reports, historical-source checks) parses the
+title, in both forms.
 
 In **every** marker, `sha=` is the full 40-character change head SHA, never an
 abbreviation. `<sha7>` is for human-readable names only (claim files, worktree

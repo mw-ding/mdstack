@@ -95,7 +95,7 @@ One sweep reads, per tracker repo in `[triage] repos` (per tracker id in
 | Item | Live title, body, labels, milestone, comments | Skip the item; log it as `skipped: unreadable` |
 | Intake card fields | Rules parse `templates/intake-candidate.md` fields; otherwise the model extracts them and posts the extracted card as a comment labelled `triage:card-extracted` | Treat the item as a plain issue; nothing is gated on format |
 | Owner replies | [Owner feedback](#owner-feedback) after the newest triage record, placed or not; on an unplaced issue, any owner comment, label or milestone change after it | Leave the proposal open |
-| Owner decisions | Coordinator decision records (`pass=steer cmd=decision`; older posts titled `[Ash/decision]` count too) on the project's decision-log issue (the tracking issue that `away-control.json` names, [§6 Owner away mode](protocol.md#owner-away-mode)) and on the item | Fail closed: propose instead of applying |
+| Owner decisions | Coordinator decision records (their `pass=steer cmd=decision` marker, whatever the title) on the project's decision-log issue (the tracking issue that `away-control.json` names, [§6 Owner away mode](protocol.md#owner-away-mode)) and on the item | Fail closed: propose instead of applying |
 | Prior learnings | [Lessons](lessons/README.md), the [findings buffer](findings/buffer.md), [metrics](metrics/README.md) (escaped defects, flavor columns) | Lookup proceeds without that store; the record says so |
 | Class rules | The owner's rules file named by `[triage] rules` (label maps, P0 signals, cooldowns); editable config Riley never writes | Use the built-in defaults; the record says so |
 | Milestones | Open milestones in order and `max_active_milestones` (#566) | Place nothing; propose |
@@ -420,7 +420,7 @@ One form works on any triage record, shadow or applied (#835). Owner how-to:
 > `triage: adjust priority=P2 type=bug`. The next sweep applies it.
 
 Only `[identities] owners` count. A signed coordinator decision (its
-`pass=steer cmd=decision` marker, or an older `[Ash/decision]` title) that quotes the
+`pass=steer cmd=decision` marker, whatever its title) that quotes the
 owner's words and time counts as the owner's answer, on the item or naming
 it on the decision-log issue ([Inputs](#inputs)). `mdstack poll` queues the item for any of these, placed
 or not, and the sweep records each as an `owner-accepted`, `owner-rejected`

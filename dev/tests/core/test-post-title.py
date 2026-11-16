@@ -93,7 +93,8 @@ class Render(unittest.TestCase):
 
 
 class Readers(unittest.TestCase):
-    """Old and new titles over the same marker read the same; a title alone never counts."""
+    """Old and new titles over the same marker read the same; a title over a missing or unrelated marker never
+    counts (#1951 round 1)."""
 
     def setUp(self):
         self.poll, self.route = crew.commands()["poll"], crew.commands()["route"]
@@ -101,11 +102,14 @@ class Readers(unittest.TestCase):
     def test_decision_relay_reads_the_marker(self):
         coordinator, owners = ("md-mt", "Ash"), {"owner"}
         steer = marker("coordinator", "steer", cmd="decision", **{"cmd-id": "chat"})
-        for body, want in (("[Ash/decision] owner: accept #3\n", True),  # old title, no marker: still accepted
-                           ("🔥 Ash · Decision · owner: accept #3\n\n" + steer, True),
-                           ("Ash · Decision · owner: accept #3\n\n" + steer, True),  # emoji off
-                           ("🔥 Ash · Decision · owner: accept #3\n", False),  # title without its marker
-                           ("[Ash/note] owner: accept #3\n\n" + marker("coordinator", "flavor"), False)):
+        unrelated = marker("coordinator", "flavor")
+        rows = []
+        for title in ("[Ash/decision] owner: accept #3", "🔥 Ash · Decision · owner: accept #3",
+                      "Ash · Decision · owner: accept #3"):  # old, new, new with emoji off
+            rows += [(title + "\n\n" + steer, True),  # a valid decision marker decides
+                     (title + "\n", False),  # missing marker: the title alone never qualifies
+                     (title + "\n\n" + unrelated, False)]  # unrelated marker: neither
+        for body, want in rows:
             with self.subTest(body=body):
                 comment = {"author": {"login": "md-mt"}, "body": body}
                 self.assertEqual(self.poll.triage_feedback(comment, owners, coordinator), want)
@@ -113,12 +117,17 @@ class Readers(unittest.TestCase):
 
     def test_merge_up_delta_reads_the_marker(self):
         note = "\nThe conflicts are resolved.\n\n%s\n— 🛠️ Ben (Builder) · h · m\n" % marker("builder", "merge-up")
-        for title, body_marker, want in (("[Ben/merge-up] @ aaaaaaa", True, True),
-                                         ("🛠️ Ben · Merge up · @ aaaaaaa", True, True),
-                                         ("[Ben/status] @ aaaaaaa", True, True),  # the marker decides, not the title
-                                         ("🛠️ Ben · Merge up · @ aaaaaaa", False, False)):
+        other = marker("builder", "status")
+        for title, body_marker, want in (("[Ben/merge-up] @ aaaaaaa", "valid", True),
+                                         ("🛠️ Ben · Merge up · @ aaaaaaa", "valid", True),
+                                         ("[Ben/status] @ aaaaaaa", "valid", True),  # the marker decides
+                                         ("[Ben/merge-up] @ aaaaaaa", "missing", False),
+                                         ("🛠️ Ben · Merge up · @ aaaaaaa", "missing", False),
+                                         ("[Ben/merge-up] @ aaaaaaa", "unrelated", False),
+                                         ("🛠️ Ben · Merge up · @ aaaaaaa", "unrelated", False)):
             with self.subTest(title=title, marker=body_marker):
-                body = title + (note if body_marker else note.replace(marker("builder", "merge-up"), ""))
+                body = title + note.replace(marker("builder", "merge-up"),
+                                            {"valid": marker("builder", "merge-up"), "missing": "", "unrelated": other}[body_marker])
                 pr = {"number": 12, "reviews": [{"body": body}]}
                 self.assertEqual(self.route.merge_up_delta(pr, SHA, "Ben"), want)
 
