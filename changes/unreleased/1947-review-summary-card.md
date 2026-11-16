@@ -1,7 +1,7 @@
 ---
 type: added
 issue: 1947
-pr: TBD
+pr: 1953
 date: 2026-11-16
 box-skill: none
 ---
