@@ -22,6 +22,7 @@ core/crew-render.py	D4	reads a backend's connectors/<backend>/manifest.toml for 
 core/crew-render.py	D5	renders the terminal's variables into briefs
 core/crew-render.py	D9	brief templates include docs/protocol.md and other docs
 core/crew-roles.py	D5	validates the per-runtime passes and templates of role definitions
+core/summary-card.py	D9	the landing-risk rule names docs/protocol.md and docs/specs/ as gate-contract paths
 environments/terminal/crew.d/_bootstrap_uninstall.py	D6	calls gh directly instead of through the github connector's concerns
 environments/terminal/crew.d/_ownership.py	D6	calls gh directly instead of through the github connector's concerns
 environments/terminal/crew.d/_shared.py	D6	calls gh directly instead of through the github connector's concerns

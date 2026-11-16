@@ -69,6 +69,8 @@ class Verdict(ack.Ack):
         self.assertIn('commit_id=' + self.head, review['argv'])
         body = review['body']
         self.assertEqual(body.count('<!-- crew:v1'), 3)
+        self.assertEqual(body.split('\n\n')[1:3], ['**Status:** 🟢 passed\n**Landing risk:** 🟡 medium · runtime code changed; CI pending',
+                                                 'TL;DR: pass.'])
         self.assertIn('pass=verdict pr=9 sha=%s base=%s round=1 verdict=pass' % (self.head, self.base), body)
         self.assertTrue(body.endswith('— 🔎 Vera (Reviewer-validator) · claude-code · sonnet\n'))
         self.assertIn('Run:', body)
@@ -245,6 +247,21 @@ class Verdict(ack.Ack):
         r = self.verdict()
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn('crew:escalated', self.effects()[1]['argv'])
+        self.assertIn('\n\n**Status:** 🔴 escalated\n**Landing risk:** 🔴 high · open blocking findings; round cap reached\n\nTL;DR: changes.',
+                      self.effects()[0]['body'])
+
+    def test_summary_card_is_advisory_and_reads_label_paths_and_ci(self):
+        self.data['pr']['labels'].append({'name': 'crew:sensitive'})
+        self.data['pr']['statusCheckRollup'] = [{'__typename': 'CheckRun', 'status': 'COMPLETED', 'conclusion': 'SUCCESS'}]
+        self.data['files'] = [{'filename': 'docs/guide.md', 'status': 'modified'}]
+        self.save()
+        r = self.verdict()
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        review, tags = self.effects()
+        self.assertIn('\n\n**Status:** 🟢 passed\n**Landing risk:** 🟡 medium · crew:sensitive\n\nTL;DR: pass.', review['body'])
+        self.assertIn('<!-- crew:v1 role=reviewer-validator pass=verdict pr=9 sha=%s base=%s round=1 verdict=pass -->' % (self.head, self.base),
+                      review['body'])
+        self.assertIn('crew:approved', tags['argv'])
 
     def test_cli_negative_controls_report_no_effect(self):
         self.review_file.write_text(self.review_file.read_text().replace('round=1', 'round=2'))

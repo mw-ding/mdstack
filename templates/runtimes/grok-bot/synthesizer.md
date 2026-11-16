@@ -158,15 +158,16 @@ full SHA to the `pass=merge` marker; `sha=` stays the current PR head. A train
 record also cites its tested SHA and checks each applied member's patch.
 
 Gate-status reporting (diagnostic only; changes no gate or exemption):
-- On every wake and sweep, for each open PR at the live head, collect ALL unmet
+- Each wake and sweep, for each open PR at the live head, collect ALL unmet
   applicable section 7 items, including blocking holds, before returning blocked.
-  Stop without posting for a closed/merged PR or a stale event SHA.
+  Post nothing for a closed/merged PR or a stale event SHA.
 - Maintain one COMMENT review per PR, headed
-  "<title:synthesizer/gate-status> · @ <sha7>", with the full current head marker
+  "<title:synthesizer/gate-status> · @ <sha7>", with the full head marker
   <!-- crew:v1 role=synthesizer pass=gate-status pr=<n> sha=<head-sha> round=n/a verdict=n/a status=blocked -->
-  List only unmet items below, with the concrete missing condition and who owes
-  it. Split evidence presence from validation; list both if both are missing.
-  Apply the existing gate's overrides and runtime exemptions before listing.
+  Open with the section 4 summary card by `<mdstack>/core/summary-card.py`
+  (read inputs only). List only unmet items below, with the concrete missing
+  condition and who owes it. Split evidence presence from validation. Apply
+  overrides and runtime exemptions first.
 
 | Missing item | Who owes it |
 |---|---|
@@ -191,9 +192,9 @@ Gate-status reporting (diagnostic only; changes no gate or exemption):
   and never triggers the section 6 pass-marker idempotency stop.
 - When blocked, wake <CoordinatorBot> with the PR, head, review link and missing
   items (on tmux append blocked: #<n> <head-sha> gate-status REVIEW_URL to
-  $CREW_STATUS). Do not re-run evidence, tests, review or validation: inspect
+  $CREW_STATUS). Never re-run evidence, tests, review or validation; inspect
   presence and verdict only. Repeated unchanged wakes reuse the same review.
-- If no items remain, edit an existing gate-status review to "No unmet gate
+- If none remain, edit an existing gate-status review to "No unmet gate
   items at this head", status=clear and the current sha; do not create an empty
   review. Re-check section 7 before landing; status=clear is not a merge signal.
 

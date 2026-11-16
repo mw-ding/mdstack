@@ -708,6 +708,40 @@ title over a missing or unrelated marker never counts. Only tooling that reads
 posts which carry no marker (reports, historical-source checks) parses the
 title, in both forms.
 
+**Summary card** (#1947). Every reviewer verdict and the synthesizer's
+gate-status post opens with two lines between the title and the TL;DR, so
+the post reads together with its title:
+
+```text
+**Status:** 🟢 passed
+**Landing risk:** 🟡 medium · runtime code changed
+```
+
+Status: 🟢 passed (verdict) or ready to land (gate status clear), 🟡 changes
+requested, 🔴 blocked or escalated, ⚪ pending (review, validation or CI still
+running). Landing risk comes from one rule, defined in `core/summary-card.py`
+and printed by it; no role writes the line by hand:
+
+| Input | Read from |
+|---|---|
+| Open blocking findings | Verdict at head: `changes` means open 🔴 findings, `pass` none |
+| Sensitive | `crew:sensitive` on the change |
+| Changed areas | Change paths: gate-contract/protocol (`docs/protocol.md`, `docs/specs/`, `templates/`); runtime code (any non-`.md` path); else docs only |
+| CI | Required checks at head: green, red or pending |
+| Round versus cap | Round `<k>` and effective `caps[0]` |
+
+- 🔴 high: open blocking findings, CI red, a sensitive runtime-code change,
+  or the round cap reached without a pass.
+- 🟡 medium: sensitive, gate-contract/protocol paths, runtime code, CI
+  pending, or the round cap reached.
+- 🟢 low: none of these.
+- ⚪ unknown: any input missing or unreadable (for example no verdict at
+  head yet); never low.
+
+The reason lists every factor at the winning level. The card is advisory
+only: it supplies no approval, permission, verdict, round or gate input, and
+no reader parses it; markers and §7 decide, unchanged.
+
 In **every** marker, `sha=` is the full 40-character change head SHA, never an
 abbreviation. `<sha7>` is for human-readable names only (claim files, worktree
 names, post headers such as `@ <sha7>`); markers always carry the full SHA.

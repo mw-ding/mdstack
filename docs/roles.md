@@ -188,6 +188,8 @@ every role's prose: outcomes first, plain words, exact terms only in markers.
 1. **Headline.** The post title ([protocol §4](protocol.md#4-marker-conventions):
    `<emoji> <name> · <Pass>`, then its item, round and head, as each form
    already gives them), then ` · ` and one status from the fixed set.
+   Reviewer verdicts and the gate-status post follow it with the advisory
+   [summary card](protocol.md#4-marker-conventions) (#1947).
 2. **TL;DR.** One or two plain sentences.
 3. **Changes or findings.** Numbered; each names its location and the exact
    fix or what changed.
@@ -200,8 +202,8 @@ The fixed status set is `pass`, `changes`, `landed`, `escalated` and
 in one short line; synthesizer briefs name the merge statuses (landed or
 blocked) from it. With `report.emoji = false` the status words, titles and
 signatures render without emoji. Apart from the protocol's 🔴 / 🟡 / 🟢 finding
-ranks, emoji appear only in the title, the headline status and the signature,
-never in findings, evidence or markers.
+ranks, emoji appear only in the title, the headline status, the summary card
+and the signature, never in findings, evidence or markers.
 
 The skeleton changes no marker, gate, label or parsed field. Sections a form
 requires (protocol §3 review, validation and evidence sections, `## Risks /

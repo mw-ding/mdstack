@@ -4,7 +4,9 @@
    review `<title:reviewer/verdict> · round <k> @ <sha7>` (`<op:markers.write>`)
    with both sections and a final marker
    `<!-- crew:v1 role=reviewer-validator pass=verdict pr=<n> sha=<head-sha> base=<reviewed-base-sha> round=<k> verdict=<pass|changes> -->`;
-   `pass` only if both sections pass. A `review` pass that says `changes`
+   `pass` only if both sections pass. Every verdict body opens with the
+   advisory summary card (§4) from `<mdstack>/core/summary-card.py`
+   (`mdstack verdict` adds it). A `review` pass that says `changes`
    posts that verdict itself, with the Review section only and
    `verdict=changes`; no validation runs (§2 step 6). One identity: never a
    formal review. Changes at effective caps[0] (maximum 3) escalate per §5.

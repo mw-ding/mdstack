@@ -79,6 +79,7 @@ conflicts on ([#325](https://github.com/mw-ding/eng-crew/issues/325)).
 | `core/post-title.py` | Deliverable | all | Shared module: the one role post title format (protocol §4) for `crew-render.py`, crew.d posters and report scripts ([#1946](https://github.com/mw-ding/mdstack/issues/1946)) |
 | `core/secret-patterns.py` | Deliverable | all | Shared module: secret-scan patterns for `crew-config.py` and the repo guard ([#281](https://github.com/mw-ding/eng-crew/issues/281)) |
 | `core/status-record.py` | Deliverable | all | Shared module: shared-status record S v1 schema, slot body and content identity for `crew-config.py` and the status commands ([#1313](https://github.com/mw-ding/mdstack/issues/1313)) |
+| `core/summary-card.py` | Deliverable | all | Install CLI: the advisory review summary card and its one landing-risk rule (protocol §4) for `mdstack verdict` and the gate-status post ([#1947](https://github.com/mw-ding/mdstack/issues/1947)) |
 | `dev/**` | Internal | n/a | Guards and tests: tests per module, shared test helpers and fixtures (dev/tests/), run by CI and release validation, not installed |
 | `docs/README.md` | Internal | n/a | Maintainer docs: the docs index, not loaded by roles |
 | `docs/architecture.md` | Deliverable | all | Protocol bundle (core): the text roles load and cite |
