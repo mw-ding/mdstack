@@ -60,8 +60,9 @@ synthesizer lands, I5 the tool of record holds the audit trail.
 - **Definition:** the machine-readable identity of a bot post: who wrote it,
   which pass, which change, which head, which round, which verdict.
 - **Invariants:** I1, I3, I5.
-- **Today:** a visible signed header `[<BotName>/<pass>]` plus a hidden
-  `crew:v1` line ([protocol §4](protocol.md#4-marker-conventions)).
+- **Today:** a visible title `<RoleEmoji> <BotName> · <Pass>` for people plus
+  a hidden `crew:v1` line that every reader parses
+  ([protocol §4](protocol.md#4-marker-conventions)).
 
 ### CI signal
 

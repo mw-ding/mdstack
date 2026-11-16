@@ -214,7 +214,7 @@ A narrative post (a COMMENT review) by the builder identity. Its visible
 part:
 
 ```text
-[<BuilderBot>/selfgate] <pass|changes> @ <sha7>
+<BuilderEmoji> <BuilderBot> · Selfgate · <pass|changes> @ <sha7>
 
 Mode: <same|different>. Builder: <engine> <model>. Reviewer: <engine> <model>. Skill: <name|none>.
 Effective knobs: <review, validation, evidence, caps, merge, selfgate_engine>.

@@ -32,7 +32,7 @@ Before the first `crew:ready`, meet the
 milestone with its scope and order in the description (this smoke-test
 issue, executor runtime, trivial tier, no owner prerequisites), propose it to
 the owner, and record the owner's OK as the signed
-`[<CoordinatorBot>/steer] plan approved` comment with its `cmd=plan-ok` marker
+`<CoordinatorEmoji> <CoordinatorBot> · Steer · plan approved` comment with its `cmd=plan-ok` marker
 on the milestone's tracking issue.
 
 ### Template issue
@@ -89,13 +89,13 @@ this table. Bot output is always a review body, never a plain comment.
 | 2 | Handoff | `issue-assigned` | B1 wakes `<BuilderBot>` | Claim file for the issue under `claims/`; the builder checked `crew:ready`, no existing PR or branch |
 | 3 | Build | Worker runs, toolchain pinned, push | `<BuilderBot>` worker | Branch `<role>/<n>-<slug>`; worker never posts to GitHub |
 | 4 | PR | PR opened non-draft | `<BuilderBot>` | Body has `## Context` with `Closes #<n>` (or `Refs`), `## Changes Made`, `## Testing Done`, `## Test Output`, `## Acceptance Evidence`, `## Risks / Not Done`, and the line `<!-- crew:v1 role=builder issue=<n> tier=<tier> engine=<engine> model=<model> -->` before the signature. Label `crew:in-review`. Project item added. `pr-opened` fires |
-| 5 | Intake | `pr-opened` | V1 wakes `<ReviewerBot>` | COMMENT review `[<ReviewerBot>/ack]`, marker `pass=ack`, as `<reviewer-login>`. V1 hands V2 creation to the `<ReviewerBot>` parent turn. B2 is not created at this step: `pr-opened` wakes only the reviewer |
+| 5 | Intake | `pr-opened` | V1 wakes `<ReviewerBot>` | COMMENT review `<ReviewerEmoji> <ReviewerBot> · Ack`, marker `pass=ack`, as `<reviewer-login>`. V1 hands V2 creation to the `<ReviewerBot>` parent turn. B2 is not created at this step: `pr-opened` wakes only the reviewer |
 | 6 | Steering no-op | `pr-comment` from the ack | A2 wakes `<CoordinatorBot>` | Ends at once, posts nothing. One expected extra wake per bot post |
-| 7 | CI | Checks settle | GitHub Actions | `ci-passed` wakes V2. A `ci-failed` instead wakes B2: `[<BuilderBot>/ci-fix]` COMMENT review, at most 3 attempts |
+| 7 | CI | Checks settle | GitHub Actions | `ci-passed` wakes V2. A `ci-failed` instead wakes B2: `<BuilderEmoji> <BuilderBot> · CI fix` COMMENT review, at most 3 attempts |
 | 8 | Review and validation | `ci-passed` | V2 wakes `<ReviewerBot>` | Review engine differs from the builder engine. Claim file `reviewer-validator-pr<n>-<sha7>` taken and deleted. Separate review and validation workers in unique worktrees |
-| 9 | Verdict | Formal review at head | `<ReviewerBot>` as `<reviewer-login>` | One review per head SHA. `[<ReviewerBot>/verdict] round 1`, review and validation sections each with a marker, final line `<!-- crew:v1 role=reviewer-validator pass=verdict pr=<n> sha=<head-sha> round=1 verdict=pass -->`. In one step: `crew:approved` set, `crew:in-review` removed |
-| 9a | Iterate (if changes) | `review-changes-requested` | B2 wakes `<BuilderBot>` | `verdict=changes`, `crew:changes`. Builder pushes and posts `[<BuilderBot>/fix] round 1 @ <sha7>`. CI, then a round-2 verdict. A third `REQUEST_CHANGES` escalates |
-| 10 | Merge | `review-approved` | S1 wakes `<SynthesizerBot>` | Gate re-checked at head. `locks/merge.lock` taken. `gh pr merge <n> --squash --match-head-commit <sha>`. `[<SynthesizerBot>/merge]` COMMENT review, marker `pass=merge`. Branch deleted if configured |
+| 9 | Verdict | Formal review at head | `<ReviewerBot>` as `<reviewer-login>` | One review per head SHA. `<ReviewerEmoji> <ReviewerBot> · Verdict · round 1`, review and validation sections each with a marker, final line `<!-- crew:v1 role=reviewer-validator pass=verdict pr=<n> sha=<head-sha> round=1 verdict=pass -->`. In one step: `crew:approved` set, `crew:in-review` removed |
+| 9a | Iterate (if changes) | `review-changes-requested` | B2 wakes `<BuilderBot>` | `verdict=changes`, `crew:changes`. Builder pushes and posts `<BuilderEmoji> <BuilderBot> · Fix · round 1 @ <sha7>`. CI, then a round-2 verdict. A third `REQUEST_CHANGES` escalates |
+| 10 | Merge | `review-approved` | S1 wakes `<SynthesizerBot>` | Gate re-checked at head. `locks/merge.lock` taken. `gh pr merge <n> --squash --match-head-commit <sha>`. `<SynthesizerEmoji> <SynthesizerBot> · Merge` COMMENT review, marker `pass=merge`. Branch deleted if configured |
 | 11 | Close-out | `pr-merged` | A1 (`<CoordinatorBot>`), B2 (`<BuilderBot>`), V2 (`<ReviewerBot>`) | Issue closed (by `Closes`, or by the coordinator for `Refs`). `crew:ready` removed from the issue, `crew:in-review` gone from the PR. Project item Done. Builder deleted its worktrees and build output. B2 and V2 deleted themselves |
 | 12 | Default-branch CI | Push run on the merge commit | GitHub Actions | Green. A failure fires `ci-failed` on `<default-branch>` and A1 files a fix issue; it does not touch the branch |
 
@@ -109,7 +109,7 @@ timeline in the checklist).
 On the test PR before merge, as one of `<user-logins>`, post a comment whose
 first line is the hold command (the `/crew` prefix plus `hold`; write it in the
 PR comment box, never in a doc or script). Expect: `crew:hold` added and a
-`[<CoordinatorBot>/steer] ack hold` COMMENT review with
+`<CoordinatorEmoji> <CoordinatorBot> · Steer · ack hold` COMMENT review with
 `pass=steer cmd=hold cmd-id=<comment id>`. Repeat with the resume command and
 expect the label removed and a `resume` marker. Do this only if the steering
 dispatcher is live.
@@ -141,11 +141,11 @@ Verify that the V2 and S1 prompts carry the
 | 9 | Routines | For each of B1, V1, S1, A1, A2, A3: routine ID, name, trigger JSON as created; the wiring doc rows showing `live` with a date | Six standing routines; triggers match the templates; no `review-commented` subscription |
 | 10 | Test issue | Issue URL; label list; assignment time; claim file name | `crew:ready` present at assignment; one builder wake |
 | 11 | PR | PR URL; body sections present; the builder marker line; `crew:in-review` time | Non-draft; all sections; engine and model named are the ones actually used |
-| 12 | Intake | `[<ReviewerBot>/ack]` review id and its marker line; the routine folder ids of the B2 and V2 watches | Ack is a COMMENT review as `<reviewer-login>`; both watches exist and were created by parent turns; the B2 marker file `<state-dir>/<owner>__<repo>/watches/pr-<n>.b2` and the builder `pass=watch` marker are present |
+| 12 | Intake | `<ReviewerEmoji> <ReviewerBot> · Ack` review id and its marker line; the routine folder ids of the B2 and V2 watches | Ack is a COMMENT review as `<reviewer-login>`; both watches exist and were created by parent turns; the B2 marker file `<state-dir>/<owner>__<repo>/watches/pr-<n>.b2` and the builder `pass=watch` marker are present |
 | 13 | CI at head | Check runs at the verdict head (names, conclusions) | Every required check green at head |
 | 14 | Verdict | Review id; the `pass=verdict` marker line; review and validation marker lines; builder engine vs reviewer engine | One formal review per head SHA; reviewer engine differs from the builder engine; `round` is correct |
 | 15 | Label hygiene | Labels after the verdict | `crew:approved` set, `crew:in-review` removed in the same step |
-| 16 | Merge | Merge commit SHA; the `[<SynthesizerBot>/merge]` review id and marker; approval-to-merge time | Squash merge at the approved head SHA; merge gate re-checked; branch deleted |
+| 16 | Merge | Merge commit SHA; the `<SynthesizerEmoji> <SynthesizerBot> · Merge` review id and marker; approval-to-merge time | Squash merge at the approved head SHA; merge gate re-checked; branch deleted |
 | 17 | Close-out | Issue state and closing time; labels on issue and PR; Project item status; worktree removal; the B2 and V2 watches gone | Issue closed; `crew:ready` and `crew:in-review` cleared; item Done; both watches deleted themselves |
 | 18 | Default-branch CI after merge | Push run URL for the merge commit | Green, or a filed fix issue |
 | 19 | Comment discipline | The list of bot-authored items on the PR: reviews only | No plain PR comments or inline comments by bots; no line starting with the steering prefix in any bot text or commit message |

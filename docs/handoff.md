@@ -120,7 +120,7 @@ Every state is one coordinator post on the control item, with the signed
 header and hidden line of [§4](protocol.md#4-marker-conventions):
 
 ```text
-[<CoordinatorBot>/handoff] <state> <from> → <to> (<handoff-id>)
+<CoordinatorEmoji> <CoordinatorBot> · Handoff · <state> <from> → <to> (<handoff-id>)
 <the owner's command or the reason, one line>
 <!-- crew:v1 role=coordinator pass=handoff handoff=<handoff-id> state=<state> from=<runtime-id> to=<runtime-id> cmd-id=<cmd-id> sha=<default-branch-head-sha> round=n/a verdict=n/a -->
 ```
@@ -283,7 +283,7 @@ owner asks, milestone and gotchas fields are not generated yet.
 ### Manifest template
 
 ````markdown
-[<CoordinatorBot>/handoff] offered <from> → <to> (<handoff-id>)
+<CoordinatorEmoji> <CoordinatorBot> · Handoff · offered <from> → <to> (<handoff-id>)
 
 **TL;DR:** <n> open items in <k> sets, milestone <milestone>; <a> owner asks pending; mode <mode>; <h> holds added.
 
@@ -566,7 +566,7 @@ or unmapped binding fails closed: the guard is read-only, and
 first, in the backend's post order.
 
 ```json
-[{"author": "acme-bot", "body": "[Ash/handoff] claimed none → tmux@laptop (20261104-a1b2c3) ...",
+[{"author": "acme-bot", "body": "🔥 Ash · Handoff · claimed none → tmux@laptop (20261104-a1b2c3) ...",
   "created": "2026-11-04T17:05:00Z", "id": "10001"}]
 ```
 

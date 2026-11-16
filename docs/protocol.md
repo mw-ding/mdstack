@@ -958,7 +958,7 @@ after each commit, push and post on the backend. The worker owns the write,
 not the role bot; the worker brief must give it the absolute claim-file path
 and write access to that file, since a sandboxed worker (e.g. Codex
 `workspace-write`) cannot write outside its worktree by default. It is a file
-write, not a backend post; its `[<BuilderBot>/<pass>]`
+write, not a backend post; its `<BuilderEmoji> <BuilderBot> · <Pass>`
 [narrative posts](concepts.md#narrative-post) and pushes already count as
 visible activity, and no heartbeat marker is added to changes. **Silence** is
 a heartbeat (or, if the line is missing, the claim file's mtime) older than
