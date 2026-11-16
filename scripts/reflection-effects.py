@@ -7,7 +7,7 @@ the same measure inputs (`--csv`, `--observations`, `--incidents`, `--errors`). 
 network, no writes but stdout. Informational: it recommends keep, revise or revert, claims no cause and reverts
 nothing; the metrics gate (docs/metrics/decisions.md) and its thresholds are unchanged.
 
-Chain: a `- rp-ID: ... accept -> #n` line in a `[<Bot>/reflection-decision]` comment names the issue (a later
+Chain: a `- rp-ID: ... accept -> #n` line in a reflection-decision comment (either title form) names the issue (a later
 decision wins); a merged PR whose body closes it lands it. The measure is the issue's `Effect metric`. Before: that
 measure over the proposal's latest ledger baseline window. After: the same measure over the latest completed window
 of the same length counted from the confirmed activation's `recorded_at` (14 days for a 14-day baseline), so both
@@ -59,7 +59,7 @@ def chain(items):
     accepted = {}
     comments = [(c, i) for i in items for c in i.get("comments") or []]
     for c, item in sorted(comments, key=lambda ci: ci[0].get("createdAt") or ""):
-        m = rs.SIGNED.match(c.get("body") or "")
+        m = rs.signed(c.get("body"))
         if m and m[2] == "reflection-decision":
             for proposal, target in ACCEPT.findall(c["body"]):
                 accepted[proposal] = rs.refs(target, tc.repo_of(item))[0]

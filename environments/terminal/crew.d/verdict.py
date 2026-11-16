@@ -12,7 +12,7 @@ import re
 import shlex
 import subprocess
 import sys
-from crew_shared import commands, crew_render, git, load, profile, refuse_paused, require_ownership, ROOT
+from crew_shared import commands, crew_render, git, load, post_title, profile, refuse_paused, require_ownership, ROOT
 
 posts = load("crew_verdict_posts", "environments/terminal/crew.d/_helper-posts.py")
 item_flavor = load("crew_verdict_flavor", "scripts/item-flavor.py")
@@ -177,8 +177,8 @@ def run(args):
         knobs = check(posts.view(values, args.pr))
         status = ("✅ pass" if result == "pass" else "🔁 changes") if values.get("report.emoji", True) else result
         escalation = "\nRound cap reached; open blockers need coordinator escalation.\n" if result == "changes" and args.round == knobs["caps"][0] else ""
-        body = "[%s/verdict] round %s @ %s · %s\n\nTL;DR: %s.\n\n%s\n\nEffective knobs: %s\n%s\nNext: %s.\n\nEngine: %s %s %s\n\n%s\n<!-- crew:v1 role=reviewer-validator pass=verdict pr=%s sha=%s base=%s round=%s verdict=%s -->\n%s\n" % (
-            values["identities.reviewer.name"], args.round, args.head[:7], status, result, text, knobs, escalation,
+        body = "%s\n\nTL;DR: %s.\n\n%s\n\nEffective knobs: %s\n%s\nNext: %s.\n\nEngine: %s %s %s\n\n%s\n<!-- crew:v1 role=reviewer-validator pass=verdict pr=%s sha=%s base=%s round=%s verdict=%s -->\n%s\n" % (
+            post_title(values, "reviewer", "verdict", "round %s @ %s" % (args.round, args.head[:7]), status), result, text, knobs, escalation,
             "synthesizer checks merge gates" if result == "pass" else "coordinator routes findings", rec["engine"], rec["model"], rec["effort"],
             posts.usage(state, args.actor, rec), args.pr, args.head, args.base, args.round, result, rec["signature"])
         if len(body) >= 60000:

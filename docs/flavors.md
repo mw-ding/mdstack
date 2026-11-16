@@ -241,7 +241,7 @@ Layers: `flavor` and `flavor.custom.*` merge by key; a higher layer replaces
 Item record (18.3), posted on the item:
 
 ```text
-[<CoordinatorBot>/flavor] #<n>: <flavor> (default <default>)
+<CoordinatorEmoji> <CoordinatorBot> · Flavor · #<n>: <flavor> (default <default>)
 Reason: <one line; required when <flavor> is below <default> on any rigor knob>
 <!-- crew:v1 role=coordinator pass=flavor issue=<n> flavor=<flavor> default=<default> -->
 ```

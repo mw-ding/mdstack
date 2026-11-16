@@ -52,7 +52,7 @@ Missing, stale, malformed, other-item or failed results: report to
 Only recorded owner per-change merge-ok at head waives this gate, never a
 standing grant. Re-read when the builder refreshes the marker at head.
 
-Otherwise post a "[<ReviewerBot>/ack]" COMMENT review as <reviewer-login>
+Otherwise post a "<title:reviewer/ack>" COMMENT review as <reviewer-login>
 (skip the ack on drafts) and hand off to the parent turn to create watch V2 for
 the PR; a routine run cannot create routines. If the author is not
 <author-login>, label the PR crew:external and tell <CoordinatorBot> if the

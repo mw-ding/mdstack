@@ -64,7 +64,7 @@ Append its "## This run" block verbatim to the worker prompt; never
 hand-write run parameters. Exit 2 means do not dispatch.
 
 ci-failed: ignore cancelled or superseded runs and runs for an older head. Fix
-real failures on the branch with a worker, then post a "[<BuilderBot>/ci-fix]"
+real failures on the branch with a worker, then post a "<title:builder/ci-fix>"
 COMMENT review naming the engine, model and effort that actually wrote the
 round (every engine that wrote commits in the round, e.g. both if the worker fell back mid-round), with every commit carrying
 an "Engine: <engine> <model> <effort>" trailer and the note's crew:v1 marker
@@ -76,7 +76,7 @@ review-changes-requested from <reviewer-login> on a crew PR (builder marker
 present, not crew:external): relaunch a worker on the same branch with the
 findings, preferably on the same engine. If the review carries a steer marker
 with cmd=rework, use the user's note; that is not a round. After the push post
-"[<BuilderBot>/fix] round <k> @ <sha7>": each finding -> what changed ->
+"<title:builder/fix> · round <k> @ <sha7>": each finding -> what changed ->
 proof. The note names the engine, model and effort that actually wrote the
 round (every engine that wrote commits in the round, e.g. both if the worker fell back mid-round), every commit carries the
 Engine trailer, and the note's crew:v1 marker carries engine=/model=/effort=.
@@ -91,7 +91,7 @@ PR-scoped watch then deletes itself; do not try to delete it.
 Observe (docs/observe.md): fix and CI-fix workers append step lines with
 scripts/step-summary.py to <worktree>/.crew/runs/pr-<n>/<run-id>/summary.md
 (raw logs under steps/, local only). Put the short summary in a "### Run
-summary" section of the "[<BuilderBot>/fix]" or "[<BuilderBot>/ci-fix]"
+summary" section of the "<title:builder/fix>" or "<title:builder/ci-fix>"
 COMMENT review; never paste logs, never post a plain PR comment. Promote
 before the pr-merged cleanup deletes the worktree.
 

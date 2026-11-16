@@ -97,11 +97,11 @@ development.
 ## Markers
 
 Each stage leaves its result as a signed bot post that the next stage reads
-back. A post body opens with a visible signed header and carries one hidden
+back. A post body opens with a visible title and carries one hidden
 `crew:v1` line, for example a builder's fix note:
 
 ```text
-[<BotName>/fix] round <k> @ <sha7>
+<BuilderEmoji> <BuilderBot> · Fix · round <k> @ <sha7>
 ...
 <!-- crew:v1 role=builder pass=fix pr=<n> sha=<40-char head sha> round=<k> verdict=n/a engine=<engine> model=<model> effort=<effort> -->
 ```

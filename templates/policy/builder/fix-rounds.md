@@ -8,8 +8,8 @@
 <strategy:rebase>stay readable, so never push to a ref that drops them.
 Kind `fix`: address each finding and any linked CI failure in the same fix,
 capture the note's inline proof at the committed head, then push and at once post the
-`[<BuilderBot>/fix] round <k> @ <sha7>` COMMENT review (`<op:markers.write>`) with its `pass=fix`
-marker (§3). Kind `ci-red`: fix CI and post `[<BuilderBot>/ci-fix]` the same way (round 0 before any
+`<title:builder/fix> · round <k> @ <sha7>` COMMENT review (`<op:markers.write>`) with its `pass=fix`
+marker (§3). Kind `ci-red`: fix CI and post a `CI fix` note the same way (round 0 before any
 verdict); at the effective caps[1] limit write `blocked:` to escalate (§5).
 For a new or changed guard, either note pastes the copyable fail-then-pass
 control of protocol §3 Guard negative control as captured, not a sentence
@@ -48,7 +48,7 @@ after local checks pass, before the PR opens and after every later push:
 4. Repeat from step 2 in a new sub-session until a review returns `pass`
    with no open 🔴, or effective caps[0] reviews ran at this head. After a
    passing self-gate, a CI-only fix or merge-up reviews only the new hunks.
-5. Record: post the `[<BuilderBot>/selfgate] <pass|changes> @ <sha7>` COMMENT
+5. Record: post the `<title:builder/selfgate> · <pass|changes> @ <sha7>` COMMENT
    review (`<op:markers.write>`) with its `pass=selfgate` line per protocol
    §3 at the full head SHA, keyed `pr=<pr>`, or `issue=<issue#>` in place of
    `pr=` when `ids.marker_key` resolves `item` (protocol id keys). Then check

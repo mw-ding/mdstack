@@ -107,7 +107,7 @@ Build pass:
    edited; label it `crew:in-review`.
    Right after opening, before `done:`, set the fragment's `pr:` to the PR
    number, pass `scripts/check-changelog-pr.py --base origin/main --pr <pr>`,
-   push and post a round-0 `[Ben/ci-fix]` note at the new head; review
+   push and post a round-0 `CI fix` note at the new head; review
    waits for it. CI on the opened head may still fail on `TBD`, written
    before the number existed (#1844).
    After each push, read the head back (`gh pr view <n> --json headRefOid -q .headRefOid`); use that

@@ -1,4 +1,4 @@
-[<CoordinatorBot>/handoff] offered <from> → <to> (<handoff-id>)
+<title:coordinator/handoff> · offered <from> → <to> (<handoff-id>)
 
 **TL;DR:** <items> open items in <sets> sets; mode <mode>; backlog <backlog>.
 

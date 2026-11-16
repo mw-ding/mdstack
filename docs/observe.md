@@ -94,8 +94,8 @@ Local summaries are for the run; the PR is where others read. When the PR
 exists, the builder promotes the short summary, not the logs:
 
 - Include the run's `summary.md` text (steps only, a few lines) as a
-  `### Run summary` section in the `[<BuilderBot>/fix]` or
-  `[<BuilderBot>/ci-fix]` COMMENT review. Builders post only signed COMMENT
+  `### Run summary` section in the `<BuilderEmoji> <BuilderBot> · Fix` or
+  `<BuilderEmoji> <BuilderBot> · CI fix` COMMENT review. Builders post only signed COMMENT
   review bodies and never plain PR conversation comments. The PR body is
   written once and never edited, so the first run summary goes in the first
   builder review or in the PR body at creation, when the run already

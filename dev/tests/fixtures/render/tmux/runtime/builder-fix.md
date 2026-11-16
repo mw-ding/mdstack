@@ -12,8 +12,8 @@ conflict with `merge_up=builder`, or on kind `merge-up`, merge the default branc
 conflict, and use the existing merge-up note and re-check; no rebase or force-push.
 Kind `fix`: address each finding and any linked CI failure in the same fix,
 capture the note's inline proof at the committed head, then push and at once post the
-`[Ben/fix] round <k> @ <sha7>` COMMENT review (`gh pr review <n> --comment --body-file <file>`) with its `pass=fix`
-marker (§3). Kind `ci-red`: fix CI and post `[Ben/ci-fix]` the same way (round 0 before any
+`🛠️ Ben · Fix · round <k> @ <sha7>` COMMENT review (`gh pr review <n> --comment --body-file <file>`) with its `pass=fix`
+marker (§3). Kind `ci-red`: fix CI and post a `CI fix` note the same way (round 0 before any
 verdict); at the effective caps[1] limit write `blocked:` to escalate (§5).
 For a new or changed guard, either note pastes the copyable fail-then-pass
 control of protocol §3 Guard negative control as captured, not a sentence
@@ -52,7 +52,7 @@ after local checks pass, before the PR opens and after every later push:
 4. Repeat from step 2 in a new sub-session until a review returns `pass`
    with no open 🔴, or effective caps[0] reviews ran at this head. After a
    passing self-gate, a CI-only fix or merge-up reviews only the new hunks.
-5. Record: post the `[Ben/selfgate] <pass|changes> @ <sha7>` COMMENT
+5. Record: post the `🛠️ Ben · Selfgate · <pass|changes> @ <sha7>` COMMENT
    review (`gh pr review <n> --comment --body-file <file>`) with its `pass=selfgate` line per protocol
    §3 at the full head SHA, keyed `pr=<pr>`, or `issue=<issue#>` in place of
    `pr=` when `ids.marker_key` resolves `item` (protocol id keys). Then check
@@ -135,9 +135,9 @@ protocol §3.
 
 ### Fix note (crew and solo builders)
 
-After addressing findings and linked CI, push, then post a COMMENT review:
-`[<BuilderBot>/fix] round <k> @ <sha7>`. For a CI-only fix use
-`[<BuilderBot>/ci-fix]` and `pass=ci-fix`; before any verdict, its round is 0.
+After addressing findings and linked CI, push, then post a `… · Fix · round <k>
+@ <sha7>` COMMENT review (§4); a CI-only fix uses `CI fix`, `pass=ci-fix` and
+round 0 before any verdict.
 List findings addressed, commands and inline proof, unresolved risks, and the
 actual engine/model/effort. Keep the body of the original PR unchanged.
 

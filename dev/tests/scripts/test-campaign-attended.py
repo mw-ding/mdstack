@@ -11,6 +11,7 @@ import importlib.util
 import io
 import json
 import os
+import re
 import subprocess
 import tempfile
 import time
@@ -184,7 +185,7 @@ class CampaignAttendedTest(unittest.TestCase):
         self.assertTrue(doc["preserved"])
         self.assertEqual(self.order(), ["baseline", "paused", "resume"])
         with open(self.state + "/gh/api---paginate---slurp.json") as fh:
-            cmds = [c["body"].split()[1] for c in json.load(fh)[0]]
+            cmds = [re.search(r" cmd=(\S+)", c["body"]).group(1) for c in json.load(fh)[0]]  # the marker (#1946)
         self.assertEqual(cmds, ["away", "away-return"])
 
     def test_attended_passes_after_sleep_and_matching_code(self):

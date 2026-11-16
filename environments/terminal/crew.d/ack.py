@@ -8,7 +8,7 @@ Inbox delivery remains `mdstack action ack` / `acked`. No approval, tag change o
 import os
 import re
 import sys
-from crew_shared import commands, git, load, profile, refuse_paused, require_ownership
+from crew_shared import commands, git, load, post_title, profile, refuse_paused, require_ownership
 
 posts = load("crew_helper_posts", "environments/terminal/crew.d/_helper-posts.py")
 precheck = load("crew_ack_precheck", "scripts/crew-precheck.py")
@@ -84,8 +84,7 @@ def validate(args, values, state, rec, pr):
         if route.open_rereview(pr, args.head) or git(wt, "show", "--remerge-diff", "--format=", args.head) or not commands()["content"].identical(wt, *refs, args.head):
             raise ValueError("merge-up content is not a verified clean update")
     return not any(m.get("pass") == "ack" and m.get("sha") == args.head and m.get("pr") == str(args.pr)
-                   and r["body"].startswith("[%s/ack] %s" % (values["identities.reviewer.name"], args.mode))
-                   for r in own for m in route.markers(r["body"]))
+                   for r in own for m in route.markers(r["body"]))  # marker only, never the title (#1946)
 
 
 def run(args):
@@ -102,8 +101,8 @@ def run(args):
         if not check(pr):
             print("crew: ack already posted")
             return 0
-        name = values["identities.%s.name" % role]
-        headline = "[%s/steer] ack %s" % (name, args.command) if args.mode == "steer" else "[%s/ack] %s" % (name, args.mode)
+        headline = (post_title(values, role, "steer", "ack " + args.command) if args.mode == "steer"
+                    else post_title(values, role, "ack", args.mode))
         message = {"intake": "Review has started at this head.", "merge-up": "Clean update verified; unresolved findings remain.",
                    "steer": "Owner source acknowledged; command not executed."}[args.mode]
         marker = "role=%s pass=%s pr=%s sha=%s round=n/a verdict=n/a" % (

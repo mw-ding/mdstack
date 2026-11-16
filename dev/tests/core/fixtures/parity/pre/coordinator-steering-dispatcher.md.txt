@@ -73,7 +73,7 @@ Re-read live PR state (head SHA, labels, reviews, markers). Respect crew:hold
 for every command except resume, escalate, merge-ok, stop-landing and resume-landing.
 Also allow project-scoped away on a held PR; it releases no hold.
 
-Ack with one COMMENT review "[<CoordinatorBot>/steer] ack <cmd> @ <sha7>" and a
+Ack with one COMMENT review "<CoordinatorEmoji> <CoordinatorBot> · Steer · ack <cmd> @ <sha7>" and a
 hidden marker "crew:v1 ... pass=steer cmd=<cmd> cmd-id=<comment id>". Then
 dispatch:
 - hold: add crew:hold.

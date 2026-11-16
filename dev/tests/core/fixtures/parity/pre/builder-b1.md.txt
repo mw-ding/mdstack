@@ -129,7 +129,7 @@ sends REQUEST_CHANGES with PR, head SHA and findings link; the coordinator or
 sweeper sends red CI; <CoordinatorBot> sends merge/close cleanup. Treat these
 as the corresponding B2 events, following builder-b2.md's guards, claims,
 fix/CI-fix limits and escalation rules. Fix rounds still post the
-"[<BuilderBot>/fix]" or "[<BuilderBot>/ci-fix]" COMMENT review with evidence and
+"<BuilderEmoji> <BuilderBot> · Fix" or "<BuilderEmoji> <BuilderBot> · CI fix" COMMENT review with evidence and
 engine markers. On merge/close, delete this PR's worktrees and build output.
 After a fix, re-check the full diff at head: touching code, .github/,
 templates/ or docs/protocol.md leaves the lane and requires the verified B2

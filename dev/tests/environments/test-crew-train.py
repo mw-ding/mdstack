@@ -1166,7 +1166,7 @@ class Land(TrainBase):
             view = json.load(f)
         view["reviews"].append({"body": "<!-- crew:v1 role=coordinator pass=steer cmd=hold-release --> hold-until-#77",
                                 "submittedAt": "2026-11-01T01:00:00Z"})
-        view["comments"].append({"body": "[Ash/hold] hold-until-#77", "createdAt": "2026-11-01T02:00:00Z"})
+        view["comments"].append({"body": "[Ash/hold] hold-until-#77\n<!-- crew:v1 role=coordinator pass=steer cmd=hold -->", "createdAt": "2026-11-01T02:00:00Z"})
         with open(path, "w") as f:
             json.dump(view, f)
         result = self.train("land", "1", "1")
@@ -1203,9 +1203,16 @@ class Land(TrainBase):
 
     def test_coordinator_holds_block_only_open_or_unresolved_dependencies(self):
         marker = "<!-- crew:v1 role=coordinator pass=steer --> hold-until-#77"
-        cases = [("[Ash/hold] hold-until-#77", "OPEN", "open coordinator hold-until-#77"),
+        steer = "\n<!-- crew:v1 role=coordinator pass=steer cmd=hold -->"
+        flavor = "\n<!-- crew:v1 role=coordinator pass=flavor issue=7 flavor=standard -->"
+        cases = [("[Ash/hold] hold-until-#77" + steer, "OPEN", "open coordinator hold-until-#77"),
                  (marker, "OPEN", "open coordinator hold-until-#77"),
-                 ("[Ash/hold] hold-until-#77", "CLOSED", None),
+                 ("[Ash/hold] hold-until-#77" + steer, "CLOSED", None),
+                 ("🔥 Ash · Hold · hold-until-#77" + steer, "OPEN", "open coordinator hold-until-#77"),
+                 # the marker decides, never the title, old or new (#1946)
+                 ("[Ash/hold] hold-until-#77", "OPEN", None), ("🔥 Ash · Hold · hold-until-#77", "OPEN", None),
+                 ("[Ash/hold] hold-until-#77" + flavor, "OPEN", None),
+                 ("🔥 Ash · Hold · hold-until-#77" + flavor, "OPEN", None),
                  (marker, "MERGED", None),
                  (marker, None, "unresolved coordinator hold-until-#77: dependency missing or lookup failed")]
         for n, (body, state, reason) in enumerate(cases, 1):
@@ -1227,7 +1234,7 @@ class Land(TrainBase):
                     self.assertIn("crew: refusing train land: %s; nothing written" % reason, result.stdout)
                     self.assertFalse(self.record(n).get("closed", False))
                 self.assertNotIn("Traceback", result.stdout + result.stderr)
-        self.assertEqual([c["args"][2] for c in self.gh_calls("pr", "merge")], ["3", "4"])
+        self.assertEqual([c["args"][2] for c in self.gh_calls("pr", "merge")], ["3", "5", "6", "7", "8", "9"])
 
     def test_land_in_order_with_records_then_close_and_delete(self):
         heads = self.built(1, 2, 3)
@@ -1255,7 +1262,7 @@ class Land(TrainBase):
         self.assertEqual([p[2] for p in posts], ["1", "2", "3"])
         for (n, head), post in zip(zip((1, 2, 3), heads), posts):
             body = post[post.index("--body") + 1]
-            self.assertTrue(body.startswith("[Sam/merge] squashed @ %s" % head[:7]), body)
+            self.assertTrue(body.startswith("🔀 Sam · Merge · squashed @ %s" % head[:7]), body)
             for text in ["Land rule: train of 3 (ready together).", "`crew/train-1` @ " + rec["sha"], LINK, "train PR #900", 'Permission: merge_grant = "test grant"',
                          "Mirror deferral used: none",
                          "<!-- crew:v1 role=synthesizer pass=merge pr=%d sha=%s round=n/a verdict=n/a content=identical carried-from=%s -->" % (n, head, head)]:
@@ -1370,7 +1377,7 @@ class Land(TrainBase):
                  ("hold label", {"labels": ["crew:hold"]}, "state tag crew:hold"),  # hold_label_blocks defaults true
                  ("sensitive", {"labels": ["crew:sensitive"]}, "crew:sensitive needs owner merge-ok at head"),
                  ("rereview", {"rereview": True}, "open rereview at head"),
-                 ("hold-until", {"comments": ["[Ash/hold] hold-until-#429"]}, "open coordinator hold-until-#429"),
+                 ("hold-until", {"comments": ["🔥 Ash · Hold · hold-until-#429\n<!-- crew:v1 role=coordinator pass=steer cmd=hold -->"]}, "open coordinator hold-until-#429"),
                  ("stop-landing", {"reviews_extra": [{"body": "<!-- crew:v1 role=coordinator pass=steer cmd=stop-landing cmd-id=stop -->"},
                                                         {"body": "<!-- crew:v1 role=coordinator pass=steer cmd=urgent -->"}]}, "open stop-landing: stop"),
                  ("conflicting", {"mergeable": "CONFLICTING"}, "not mergeable: GitHub reports CONFLICTING")]

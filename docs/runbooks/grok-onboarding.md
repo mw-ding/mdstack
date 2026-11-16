@@ -239,7 +239,7 @@ install the routines, backfill the per-PR watches in one pass, post a
 `cutover` marker on each PR, label each `crew:changes` or `crew:hold` as
 appropriate, and kick them in dependency order. Do not edit PR bodies. A cutover
 PR is exempt from the builder `pass=watch` merge gate only until its builder
-posts its `[<BuilderBot>/watch]` review or any builder `crew:v1` marker after
+posts its `<BuilderEmoji> <BuilderBot> · Watch` review or any builder `crew:v1` marker after
 the cutover (by post time, whatever commit it sits on, including attaching B2 at
 the unchanged cutover SHA); from then on a valid full-SHA `pass=watch` marker
 is required, and the synthesizer holds and priority-pings the builder if it is

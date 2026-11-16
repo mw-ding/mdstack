@@ -266,7 +266,7 @@ One account acts for every role (the roadmap setup decided in
   `review.list verdicts` cannot tell the parties apart by account.
 - **Allowed compensation.** `review.post verdict` is declared
   `emulated (COMMENT-review verdict + recorded owner merge-ok)`:
-  - the verdict is a narrative post headed `[<ReviewerBot>/verdict] round <k> @ <sha7>`,
+  - the verdict is a narrative post headed `<ReviewerEmoji> <ReviewerBot> · Verdict · round <k> @ <sha7>`,
     with review and validate markers and a final `pass=verdict` marker; the
     signed marker, not the account, identifies the reviewer;
   - the owner OKs each change, and the coordinator records it on the change as

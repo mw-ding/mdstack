@@ -1291,7 +1291,7 @@ class Route(SpawnBase):
                 self.route()
                 calls = [c for c in self.gh_calls() if c[:2] == ["issue", "close"]]
                 self.assertEqual(calls, [["issue", "close", "7", "-R", "acme/widgets", "--comment",
-                                          "[Ash/close-out] #12 merged and closes this issue, but GitHub left it open; "
+                                          "🔥 Ash · Close out · #12 merged and closes this issue, but GitHub left it open; "
                                           "closed by close-out."]] if closed else [])
                 self.assertEqual(self.pending(), [])
 

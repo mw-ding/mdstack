@@ -155,7 +155,7 @@ issue, then:
    `<mdstack>/cli/mdstack brief --item "issue #<n>" --pass research
    --base "$(git rev-parse origin/<default-branch>)" --engine "<engine> <model> <effort>"`,
    naming the engine it will actually run. It signs with that engine.
-3. The worker posts one signed `[<ResearcherBot>/research] #<n>` finding and
+3. The worker posts one signed `<ResearcherEmoji> <ResearcherBot> · Research · #<n>` finding and
    returns its URL.
 4. Verify the URL: a comment on issue `#<n>` with
    `role=researcher pass=research issue=<n>` and a signature. Then relay its

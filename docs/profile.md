@@ -521,7 +521,7 @@ set and the install-wide emoji switch (#431). Changes no marker or gate.
 
 | Key | Type | Default | Replaces |
 |---|---|---|---|
-| `emoji` | boolean | `true` | `false` renders `<report-status>`, `<RoleSignature>` and every `<RoleEmoji>` without emoji |
+| `emoji` | boolean | `true` | `false` renders `<report-status>`, `<RoleSignature>`, every `<RoleEmoji>` and every post title ([protocol §4](protocol.md#4-marker-conventions)) without emoji |
 | `status.<status>` | string: emoji for `pass`, `changes`, `landed`, `escalated` or `blocked`; any other key fails | `✅` / `🔁` / `🚢` / `⛔` / `🚧`; `""` shows the word alone | `<report-status>` |
 
 ### `[identities]`
@@ -537,7 +537,7 @@ set and the install-wide emoji switch (#431). Changes no marker or gate.
 | `researcher` | table: `gh_user`, `name`, `title`, `emoji` | optional; `gh_user` resolves to `coordinator.gh_user`, then `Riley` / `Researcher` / `🔬` | the [researcher](roles.md#researcher-riley)'s author identity: `<author-login>`, `<ResearcherBot>`, `<ResearcherTitle>`, `<ResearcherEmoji>` |
 | `<role>.name` | string: role display name, also the tmux window name | `Ash` / `Builder` / `Reviewer` / `Synthesizer` | `<CoordinatorBot>`, `<BuilderBot>`, `<ReviewerBot>`, `<SynthesizerBot>` |
 | `<role>.title` | string: role display title | `CTO` / `Builder` / `Reviewer-validator` / `Synthesizer` | `<CoordinatorTitle>`, `<BuilderTitle>`, `<ReviewerTitle>`, `<SynthesizerTitle>` |
-| `<role>.emoji` | string: signature emoji | `🔥` / `🛠️` / `🔎` / `🔀` | `<CoordinatorEmoji>`, `<BuilderEmoji>`, `<ReviewerEmoji>`, `<SynthesizerEmoji>` |
+| `<role>.emoji` | string: signature and post-title emoji | `🔥` / `🛠️` / `🔎` / `🔀` | `<CoordinatorEmoji>`, `<BuilderEmoji>`, `<ReviewerEmoji>`, `<SynthesizerEmoji>` |
 
 Every role signs authored posts and owner-facing replies as
 `— <emoji> <name> (<title>) · <team> · <harness> · <model actually used>`,

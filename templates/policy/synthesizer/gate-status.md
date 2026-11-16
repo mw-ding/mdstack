@@ -7,7 +7,7 @@ Gate-status reporting (diagnostic only; changes no gate or exemption):
   applicable §7 items, including blocking holds, before returning blocked.
   Stop without posting for a closed/merged PR or a stale event SHA.
 - Maintain one COMMENT review per PR, headed
-  "[<SynthesizerBot>/gate-status] @ <sha7>", with the full current head marker
+  "<title:synthesizer/gate-status> · @ <sha7>", with the full current head marker
   <!-- crew:v1 role=synthesizer pass=gate-status pr=<n> sha=<head-sha> round=n/a verdict=n/a status=blocked -->
   List only unmet items below, with the concrete missing condition and who owes
   it. Split evidence presence from validation; list both if both are missing.

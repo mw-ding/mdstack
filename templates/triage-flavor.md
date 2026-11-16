@@ -11,7 +11,7 @@ omit `Reason:` only when no rigor knob is lowered. Owner-selected flavors
 carry the owner's words as the reason. Tier measures difficulty separately.
 
 ```text
-[<CoordinatorBot>/flavor] #<n>: <flavor> (default <default>)
+<title:coordinator/flavor> · #<n>: <flavor> (default <default>)
 Reason: <reason>
 <!-- crew:v1 role=coordinator pass=flavor issue=<n> flavor=<flavor> default=<default> tier=<tier> -->
 <CoordinatorSignature> · <harness> · <model>

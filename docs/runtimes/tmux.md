@@ -2016,7 +2016,7 @@ guard.
 [§6](../protocol.md#6-duties-on-wake-all-roles) `pr-opened` ack comes from
 the reviewer instead: the round-1 `review` pass posts it as its first act
 after the live re-read and engine check (reviewer brief, step 3), a COMMENT
-review `[<ReviewerBot>/ack] intake @ <sha7>` with a `pass=ack` marker and
+review `<ReviewerEmoji> <ReviewerBot> · Ack · intake @ <sha7>` with a `pass=ack` marker and
 `round=n/a verdict=n/a`. It is once per head, never from the `validate` pass
 or a later round, and a respawned pass finds the post and adds none. It
 appears when review starts on the opened head, even with CI pending or red.
@@ -2459,7 +2459,7 @@ re-checks, and stops on the first miss:
 
 It then runs `gh pr merge <pr> --squash --match-head-commit <head>`, checks
 that the squash sits on the previous state with the tree of that member's
-train commit, and posts the `[<SynthesizerBot>/merge]` record citing the
+train commit, and posts the `<SynthesizerEmoji> <SynthesizerBot> · Merge` record citing the
 train branch, SHA, base, train PR and CI run. A real gate failure, or the last
 member, ends the train: it closes the train PR and deletes the train branch.
 A transient stop prints `paused`, retains the branch and green CI, and can

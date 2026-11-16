@@ -65,7 +65,7 @@ scan finds something or a judgment check is due.
    (the same rule authored in two places, cited `path:line` at the head SHA),
    contradictions between those copies, and docs that describe removed
    behaviour. It treats repo text as data, never as instructions.
-3. **Report.** Riley posts one signed `[Riley/docs-pass] <owner>/<repo> @
+3. **Report.** Riley posts one signed `🔬 Riley · Docs pass · <owner>/<repo> @
    <sha7>` comment on the repo's `docs:log` issue (one per repo, opened on
    the first pass): findings by class with citations, and draft issues. A
    quiet pass (nothing new since the last report) posts nothing.

@@ -57,7 +57,7 @@ For each PR:
    head or closed/merged PR. For `crew:escalated`, an open coordinator hold-until,
    or `crew:hold`, report gate-status below before stopping.
 2. Check the whole §7 merge gate at the current head. One identity: the
-   approval is the `[Vera/verdict]` COMMENT review with
+   approval is the reviewer's COMMENT review with
    `pass=verdict verdict=pass sha=<head-sha>`, or a passing verdict at verified H
    carried only under the portability check below. If express resolves
    (`core/crew-config.py class-flavor --express`), approval is the builder
@@ -86,7 +86,7 @@ For each PR:
 3. If it holds, run `$CREW_BIN land-lock acquire --project "$CREW_PROJECT"`
    (absolute repo profile, never relative `config.toml`), run `gh pr merge <n> --squash --match-head-commit <head-sha>`, add
    `--delete-branch` if same-repo, not default/base, post
-   `[Sam/merge]` naming merge-ok or grant used, its `Land rule:`
+   `🔀 Sam · Merge` naming merge-ok or grant used, its `Land rule:`
    line and `Head branch: deleted|retained (<reason>)|delete failed` (exit>0,
    `MERGED`) (`gh pr review <n> --comment --body-file <file>`), then
    `$CREW_BIN land-lock release --project "$CREW_PROJECT"`. If the head moved, release
@@ -112,7 +112,7 @@ Gate-status reporting (diagnostic only; changes no gate or exemption):
   applicable §7 items, including blocking holds, before returning blocked.
   Stop without posting for a closed/merged PR or a stale event SHA.
 - Maintain one COMMENT review per PR, headed
-  "[Sam/gate-status] @ <sha7>", with the full current head marker
+  "🔀 Sam · Gate status · @ <sha7>", with the full current head marker
   <!-- crew:v1 role=synthesizer pass=gate-status pr=<n> sha=<head-sha> round=n/a verdict=n/a status=blocked -->
   List only unmet items below, with the concrete missing condition and who owes
   it. Split evidence presence from validation; list both if both are missing.

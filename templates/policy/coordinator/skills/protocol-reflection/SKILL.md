@@ -6,7 +6,7 @@ description: Coordinator reflection handoff (relay one digest per report, record
 # Protocol reflection
 
 Trigger: a researcher `done: reflection <id> <url>`, or a new
-`[<ResearcherBot>/reflection]` report on the reflection log issue, in the
+`<title:researcher/reflection>` report on the reflection log issue, in the
 next triage window.
 
 Contract: [Reflection](../../../../../docs/self-improve.md#reflection) and
@@ -29,12 +29,12 @@ pack yourself here.
    `$CREW_BIN ownership --project "$CREW_PROJECT" --action write`. On
    refusal, read and report only.
 2. **Read.** Open the report and check its `pass=reflection` line. A
-   `[<CoordinatorBot>/reflection-digest] <id>` comment already on the log
+   `<title:coordinator/reflection-digest> · <id>` comment already on the log
    issue means the digest went out: skip step 3.
 3. **Digest.** One per report, never per proposal. Relay only the report's
    Digest: its top three proposals, each with its ID, target, link and
    recommended default. Ask the owner in chat and post the same text as a
-   signed `[<CoordinatorBot>/reflection-digest] <id>` comment on the log
+   signed `<title:coordinator/reflection-digest> · <id>` comment on the log
    issue. Default if unanswered: no change; the proposals stay open.
 4. **Decide.** A proposal is decided only by the owner's explicit answer
    or your own recorded decision; silence is no decision. Per proposal:
@@ -74,7 +74,7 @@ pack yourself here.
    decision comment on the log issue, replying to the report:
 
 ```text
-[<CoordinatorBot>/reflection-decision] <id>
+<title:coordinator/reflection-decision> · <id>
 
 - rp-ID: accept → #<n> (new | reused)
 - rp-ID: reject <reason>

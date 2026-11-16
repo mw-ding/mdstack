@@ -53,7 +53,7 @@ instead. Reflection: follow
 Post one finding on the source issue (`<op:markers.write-item|tracker.comment>`):
 
 ```text
-[<ResearcherBot>/research] #<n>
+<title:researcher/research> · #<n>
 
 TL;DR: the answer in two or three sentences.
 
@@ -91,7 +91,7 @@ quiet pass posts nothing. Else post one comment per repo on its log issue
 (`<op:tracker.comment>`):
 
 ```text
-[<ResearcherBot>/docs-pass] <owner>/<repo> @ <sha7>
+<title:researcher/docs-pass> · <owner>/<repo> @ <sha7>
 Findings by class with citations, then numbered draft issues.
 <!-- crew:v1 role=researcher pass=docs-pass repo=<owner>/<repo> sha=<head-sha> findings=<n> drafts=<n> -->
 <ResearcherSignature> · <harness> · <model>

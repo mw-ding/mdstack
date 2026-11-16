@@ -371,11 +371,11 @@ runs in the triage window after a report posts.
 
 - **Digest.** One per report: only its top three proposals, each with its
   link and recommended default, in owner chat and as a
-  `[<CoordinatorBot>/reflection-digest]` comment on the log issue. If
+  `<CoordinatorEmoji> <CoordinatorBot> · Reflection digest` comment on the log issue. If
   unanswered, nothing changes and the proposals stay open.
 - **Decision.** Each accept, reject or correction is explicit, from the
   owner's answer or the coordinator's own recorded decision, and goes in a
-  `[<CoordinatorBot>/reflection-decision]` comment on the log issue. A
+  `<CoordinatorEmoji> <CoordinatorBot> · Reflection decision` comment on the log issue. A
   reject keeps a triage reason; the researcher's cooldown reads it there.
 - **Build issue.** An accepted proposal becomes one normal issue per
   independent deliverable, reusing an open issue that covers it, with

@@ -57,7 +57,7 @@ def away(gh, state, cmd, record):
     """Append one signed coordinator away or away-return record to the fake forge's control-item comments."""
     path = Path(gh, "api---paginate---slurp.json")
     pages = json.loads(path.read_text()) if path.exists() else [[]]
-    body = "[Ash/steer] %s\n\n```json\n%s\n```\n\n<!-- crew:v1 role=coordinator pass=steer cmd=%s cmd-id=%s sha=%s " \
+    body = "🔥 Ash · Steer · %s\n\n```json\n%s\n```\n\n<!-- crew:v1 role=coordinator pass=steer cmd=%s cmd-id=%s sha=%s " \
            "round=n/a verdict=n/a -->\n\n— Ash (CTO) · stub · stub" % (cmd, json.dumps(record), cmd, cmd + "-1463", "a" * 40)
     pages[0].append({"id": len(pages[0]) + 1, "user": {"login": "sandbox-coordinator"}, "created_at": utc(),
                      "updated_at": utc(), "body": body})

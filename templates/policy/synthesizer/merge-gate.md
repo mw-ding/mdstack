@@ -10,7 +10,7 @@ For each PR:
    head or closed/merged PR. For `crew:escalated`, an open coordinator hold-until,
    or `crew:hold`, report gate-status below before stopping.
 2. Check the whole §7 merge gate at the current head. One identity: the
-   approval is the `[<ReviewerBot>/verdict]` COMMENT review with
+   approval is the reviewer's COMMENT review with
    `pass=verdict verdict=pass sha=<head-sha>`, or a passing verdict at verified H
    carried only under the portability check below. If express resolves
    (`core/crew-config.py class-flavor --express`), approval is the builder

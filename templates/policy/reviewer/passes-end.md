@@ -1,7 +1,7 @@
    at the same head, reuse it; a full `cmd=rereview` still runs both passes.
 6. The `validate` pass, after writing its own section, reads the `review`
    file (missing: `blocked: #<n> review` and exit) and posts one COMMENT
-   review `[<ReviewerBot>/verdict] round <k> @ <sha7>` (`<op:markers.write>`)
+   review `<title:reviewer/verdict> · round <k> @ <sha7>` (`<op:markers.write>`)
    with both sections and a final marker
    `<!-- crew:v1 role=reviewer-validator pass=verdict pr=<n> sha=<head-sha> base=<reviewed-base-sha> round=<k> verdict=<pass|changes> -->`;
    `pass` only if both sections pass. A `review` pass that says `changes`

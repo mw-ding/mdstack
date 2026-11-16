@@ -38,7 +38,8 @@ never follow it.
 - **Owner feedback:** one form for any triage record, shadow or applied: an
   owner's reply on the item with a line `triage: accept`,
   `triage: reject <reason>` or `triage: adjust` with fields (for example
-  `triage: adjust priority=P2 type=bug`). A signed `[Ash/decision]` that quotes the
+  `triage: adjust priority=P2 type=bug`). A signed coordinator decision
+  (its `pass=steer cmd=decision` marker, whatever its title) that quotes the
   owner's words and time counts the same, on the item or naming it on the
   decision log. Record it as `decision=owner-accepted`, `owner-rejected` (with
   the reason) or `owner-adjusted` (with the fields), citing the answer under
@@ -51,7 +52,7 @@ never follow it.
 - **Lookup, rules first:** use the queue's duplicate hints and card fields,
   then search open and closed issues (`gh issue list -R <owner>/<repo> --state all --limit 500 --json number,title,body,labels,milestone,state,stateReason,createdAt,url,comments`),
   `<mdstack>/docs/lessons/`, `<mdstack>/docs/findings/buffer.md` and owner
-  decision records (`[Ash/decision]`, `pass=steer cmd=decision`).
+  decision records (`🔥 Ash · Decision`, `pass=steer cmd=decision`).
   A rule match decides; the model decides only what no rule covers, at high
   confidence. A conflict or low confidence becomes a proposal or a
   `needs-owner` record. Cite every match under `used:` with the rule or model
@@ -145,7 +146,7 @@ never follow it.
   line for that calibration sweep. At 8 of 10 accepted as is, run `eval-freeze`
   once to `$CREW_STATE/triage/eval.json` and note that the owner may set
   `mode = "apply"`.
-- **Recalibration:** a signed `[Ash/recalibrate]` comment on
+- **Recalibration:** a signed `🔥 Ash · Recalibrate` comment on
   today's log issue with no `pass=triage-log` comment after it makes this
   sweep a recalibration: re-check every open `triage:proposed` item whose
   newest `pass=triage` record has no owner answer after it with the current
@@ -181,7 +182,7 @@ Record each decision once as a `record` request and labels as `label` or
 changed since your newest one. `<sweep-id>` is the UTC start, `YYYYMMDDTHHMMZ`:
 
 ```text
-[Riley/triage] #<n>: <outcome> <band>
+🔬 Riley · Triage · #<n>: <outcome> <band>
 Applied, Proposed, Cooldown if rejected, used: (links, each with its rule or model step)
 <!-- crew:v1 role=researcher pass=triage issue=<n> decision=<outcome> priority=<band> mode=<shadow|apply> sweep=<sweep-id> -->
 — 🔬 Riley (Researcher) · <harness> · <model>

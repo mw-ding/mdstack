@@ -185,9 +185,9 @@ reports, `done:` reports and coordinator updates (#431). The
 [owner-communication](#owner-communication-coordinator) wording rules apply to
 every role's prose: outcomes first, plain words, exact terms only in markers.
 
-1. **Headline.** The post's existing first line (`[<name>/<pass>]`, its item,
-   round and head, as each form already gives them), then ` · ` and one
-   status from the fixed set.
+1. **Headline.** The post title ([protocol §4](protocol.md#4-marker-conventions):
+   `<emoji> <name> · <Pass>`, then its item, round and head, as each form
+   already gives them), then ` · ` and one status from the fixed set.
 2. **TL;DR.** One or two plain sentences.
 3. **Changes or findings.** Numbered; each names its location and the exact
    fix or what changed.
@@ -198,17 +198,17 @@ The fixed status set is `pass`, `changes`, `landed`, `escalated` and
 `blocked`, each with a profile emoji (`[report.status]`, defaults ✅ 🔁 🚢 ⛔
 🚧; [profile](profile.md#report)). Every role brief carries the resolved set
 in one short line; synthesizer briefs name the merge statuses (landed or
-blocked) from it. With `report.emoji = false` the status words and signatures
-render without emoji. Apart from the protocol's 🔴 / 🟡 / 🟢 finding ranks,
-emoji appear only in the headline status and the signature, never in
-findings, evidence or markers.
+blocked) from it. With `report.emoji = false` the status words, titles and
+signatures render without emoji. Apart from the protocol's 🔴 / 🟡 / 🟢 finding
+ranks, emoji appear only in the title, the headline status and the signature,
+never in findings, evidence or markers.
 
 The skeleton changes no marker, gate, label or parsed field. Sections a form
 requires (protocol §3 review, validation and evidence sections, `## Risks /
 Not Done`, the PR body template) keep their names and slot in as items 3 and
 4. The [usage line](#usage-line), the `crew:v1` marker and the signature
-still close the post, in that order. Readers match the headline by its
-`[<name>/<pass>]` prefix only, so the appended status breaks none.
+still close the post, in that order. No reader parses the headline: routing,
+polling, dedupe and gates read the marker, so the appended status breaks none.
 
 ## Grant references in posts
 
@@ -297,7 +297,7 @@ the source issue (question, scope, deliverable), then runs
 `mdstack spawn researcher --issue <n>`; a full `researchers` cap queues it. Riley
 (`riley-<n>`, windows 40–44, brief
 [templates/runtimes/tmux/researcher.md](../templates/runtimes/tmux/researcher.md))
-posts `[Riley/research] #<n>` with the hidden line
+posts `🔬 Riley · Research · #<n>` with the hidden line
 `<!-- crew:v1 role=researcher pass=research issue=<n> engine=<engine> model=<model> effort=<effort> -->`
 and writes `done: #<n> research <url>`. `mdstack route` closes the window and
 leaves the `done:` wake for the coordinator, which relays the TL;DR. A
@@ -453,7 +453,7 @@ The round under review is every builder commit pushed since the previous verdict
 is always a verdict round number as
 [protocol §5](protocol.md#5-rounds-and-escalation) counts it. A fix or ci-fix
 note carries the `k` of the latest verdict whose findings it answers, so the
-first fix after a round-1 `REQUEST_CHANGES` is `[<BuilderBot>/fix] round 1`. A
+first fix after a round-1 `REQUEST_CHANGES` is `<BuilderEmoji> <BuilderBot> · Fix · round 1`. A
 ci-fix pushed before any verdict answers no verdict and carries `round=0`. The
 initial build is not a numbered round: its engine is named in the PR-body
 signature, the PR-body builder marker and the commit trailers. A rereview at
@@ -463,7 +463,7 @@ re-checks.
 Three places name it, each with engine, model and effort (for example
 `codex gpt-6.1-sol medium` or `claude-code sonnet medium`):
 
-1. **The fix note.** The `[<BuilderBot>/fix] round <k> @ <sha7>` COMMENT review
+1. **The fix note.** The `<BuilderEmoji> <BuilderBot> · Fix · round <k> @ <sha7>` COMMENT review
    (for the initial build, the PR body signature).
 2. **The commit trailer** on every commit of that round:
    `Engine: <engine> <model> <effort>`. A pure merge-up commit says
@@ -821,9 +821,9 @@ cascade, also show the child items are gone); see
 
 ### Fix note (crew and solo builders)
 
-After addressing findings and linked CI, push, then post a COMMENT review:
-`[<BuilderBot>/fix] round <k> @ <sha7>`. For a CI-only fix use
-`[<BuilderBot>/ci-fix]` and `pass=ci-fix`; before any verdict, its round is 0.
+After addressing findings and linked CI, push, then post a `… · Fix · round <k>
+@ <sha7>` COMMENT review (§4); a CI-only fix uses `CI fix`, `pass=ci-fix` and
+round 0 before any verdict.
 List findings addressed, commands and inline proof, unresolved risks, and the
 actual engine/model/effort. Keep the body of the original PR unchanged.
 

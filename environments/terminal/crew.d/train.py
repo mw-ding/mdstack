@@ -32,8 +32,8 @@ import subprocess
 import sys
 import tempfile
 import time
-from crew_shared import (checkout, commands, coordinator_window, fetch, GATEWAY, gateway_error, git, load, NAMES, ownership, profile,
-                         require_ownership, runs)
+from crew_shared import (checkout, commands, coordinator_window, fetch, GATEWAY, gateway_error, git, load, NAMES, ownership, post_title,
+                         profile, require_ownership, runs)
 
 precheck = load("crew_precheck", "scripts/crew-precheck.py")
 item_flavor = load("crew_item_flavor", "scripts/item-flavor.py")
@@ -754,14 +754,15 @@ def train_wait(args, values, state, repo, slug):
 
 def train_merge_record(values, rec, i, m, merge, permission, mirror_deferral="none", branch="retained"):
     content = " content=identical carried-from=" + m.get("verified_head", m["head"]) if m.get("verified_base") else ""
-    return ("[%s/merge] squashed @ %s → %s (mdstack train %d)\n\n"
+    return ("%s\n\n"
             "Land rule: train of %d (ready together).\n\n"
             "- Train: `%s` @ %s (base `%s` %s), member %d of %d, train PR #%d (draft, CI only); CI green: %s. "
             "Tested with main: `%s` held exactly the train's state before this member, so no catch-up.\n"
             "- Passing approval carried from: `pass=%s verdict=pass` at %s.\n- Permission: %s.\n"
             "- %s.\n- Head branch: %s.\n- %s\n\n"
             "<!-- crew:v1 role=synthesizer pass=merge pr=%d sha=%s round=n/a verdict=n/a%s -->\n" % (
-                values.get("identities.synthesizer.name", "Sam"), m["head"][:7], merge[:7], rec["n"], len(rec["members"]), rec["branch"],
+                post_title(values, "synthesizer", "merge", "squashed @ %s → %s (mdstack train %d)" % (
+                    m["head"][:7], merge[:7], rec["n"])), len(rec["members"]), rec["branch"],
                 rec["sha"], values["repo.default_branch"], rec["base"], i, len(rec["members"]), rec["pr"],
                 ", ".join(rec["ci_links"]) or "all checks", values["repo.default_branch"], m.get("approval", "verdict"),
                 m.get("verified_head", m["head"]), permission, "Mirror: n/a (profile)" if values.get(
@@ -985,7 +986,6 @@ def train_gate(poll, values, slug, view, head, state, verified_head=None, lane=F
                 not reviewer or r.get("author", {}).get("login") == reviewer):  # §7: a formal changes request
             rework = rework or "reviewer CHANGES_REQUESTED review"
     tags = {lb["name"] for lb in view["labels"]} & {"crew:escalated", "crew:changes", "crew:hold"}
-    coordinator = values.get("identities.coordinator.name")
     posts = []
     for post in sorted(view["comments"] + view["reviews"],
                        key=lambda p: p.get("submittedAt") or p.get("createdAt") or ""):
@@ -994,8 +994,7 @@ def train_gate(poll, values, slug, view, head, state, verified_head=None, lane=F
                    for line in poll.CREW_LINE.findall(body)]
         if any(m.get("role") in ("reviewer-validator", "builder", "synthesizer") for m in markers):
             continue
-        if any(m.get("role") == "coordinator" and m.get("pass") == "steer" for m in markers) or (
-                coordinator and body.startswith("[%s/" % coordinator)):
+        if any(m.get("role") == "coordinator" and m.get("pass") == "steer" for m in markers):  # marker only (#1946)
             posts.append(body)
     holds = set()
     for body in posts:
