@@ -336,18 +336,19 @@ def start(values, session, state, project_dir, env):
     return 0
 
 
-def up_attach(args, verb="up --attach"):
+def up_attach(args, verb="up --attach", ref=None):
     """mdstack up --attach (#1845), also mdstack start (#1919, verb names it in a refusal): refuse a crew pane or a
     foreign tmux client before any start, run mdstack up, then attach or switch the owner's terminal to window 0. A
-    crew already running is attached even when up's role pass fails; a crew up could not start is not."""
+    crew already running is attached even when up's role pass fails; a crew up could not start is not. A bare
+    mdstack attach (#1942) passes --team with ref, one of its repos, to find the team's session."""
     if os.environ.get("CREW_ROLE"):
         print("crew: refusing %s: run from a crew pane (CREW_ROLE=%s); it is the owner's terminal shortcut" % (
             verb, os.environ["CREW_ROLE"]))
         return 2
-    if args.role or args.team:
+    if args.role or args.team and ref is None:
         print("crew: refusing %s: it takes --project, not %s" % (verb, "a ROLE" if args.role else "--team"))
         return 2
-    _, session, _ = profile(args)
+    _, session, _ = profile(argparse.Namespace(project=ref or args.project, org_profile=args.org_profile))
     client = tmux.client_socket()
     if client and os.path.realpath(client) != os.path.realpath(tmux.socket_path()):
         print("crew: refusing %s: this tmux client is on another server (%s), not the crew's (%s); detach and "

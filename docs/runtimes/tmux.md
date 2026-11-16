@@ -807,8 +807,9 @@ another tmux server is refused, exit 1, before anything starts: detach and
 retry. Run from a crew pane (`CREW_ROLE` set) it refuses, exit 2, before
 anything starts, so an agent never takes the owner's terminal. It takes
 `--project` only (not `--team` or a role) and only a `tmux` profile. A
-start verb, not a no-target `mdstack attach`, keeps `attach` free of start
-side effects.
+bare [`mdstack attach`](#mdstack-attach) runs the same path for the
+installed team, `--team` included (#1942); `attach` with a target never
+starts anything.
 
 `--team` starts one instance for every repo of a
 [team file](../profile.md#team-files) (#634): one session and coordinator,
@@ -2085,10 +2086,31 @@ as information only, and independently reproduced failures remain findings.
 ### mdstack attach
 
 ```sh
+cli/mdstack attach [--project <file>[#<repo>]]
 cli/mdstack attach <window>|<role>|builders [--rw] [--project <config.toml>]
 ```
 
-`mdstack attach` (#138) is the owner's live view of a window:
+A bare `mdstack attach` (#1942) is the owner's way into the coordinator of
+the installed team:
+
+- Without `--project` it uses `$CREW_PROJECT`, else `$MDSTACK_CONFIG`, else
+  `<root>/config.toml`, else the root's only `<team>.toml` team file (the
+  #1348 home layout; `[team] name` keys the session). With no such file, or
+  several team files and no `config.toml`, it fails as the missing
+  `config.toml` before anything starts.
+- A team file needs no `#<repo>`: the session is per team. It runs as
+  [`mdstack up --team`](#mdstack-up) would, so a team that is down starts,
+  persistent watcher included; a profile with a `[repo]` table runs as
+  `mdstack up --project`. A crew that could not start is not attached.
+- It then attaches interactively to window 0, or switches a client of the
+  crew's tmux server there instead of nesting, as
+  [`mdstack start`](#mdstack-start) does, with its refusals: a crew pane
+  (exit 2) or a client of another tmux server (exit 1) before anything
+  starts.
+
+With a target, `mdstack attach` is the owner's live view of a window. It
+never starts the crew; `coordinator` also takes a team file without
+`#<repo>`:
 
 - `<window>` is a window name (`ben-7`, `crew-status`). `<role>` (`builder`,
   `reviewer`, `synthesizer`, `coordinator`) picks the role's only window in

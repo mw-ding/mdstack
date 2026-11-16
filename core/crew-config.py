@@ -1157,6 +1157,24 @@ def default_config():
     $MDSTACK_CONFIG, else <user_root>/config.toml (#1316, #1324). An explicitly named file always wins."""
     return (os.environ.get("CREW_PROJECT") or os.environ.get("MDSTACK_CONFIG")
             or os.path.join(user_root(), "config.toml"))
+
+
+def installed_config():
+    """The installed team's file for a bare `mdstack attach` (#1942): default_config(), except that a missing
+    <user_root>/config.toml falls back to the root's only <team>.toml team file (the 7.0.0 home layout, #1348)."""
+    found = default_config()
+    if os.environ.get("CREW_PROJECT") or os.environ.get("MDSTACK_CONFIG") or os.path.exists(found):
+        return found
+    teams = []
+    for path in sorted(glob.glob(os.path.join(user_root(), "*.toml"))):
+        try:
+            if team_repos(path):
+                teams.append(path)
+        except (OSError, ValueError):
+            continue
+    return teams[0] if len(teams) == 1 else found
+
+
 CORE_DEFAULTS = {"repo": {"default_branch": "main"},
                  "size_budget": {r: 16384 for r in ROLE_REGISTRY},
                  "builder": {"precheck": {"enabled": False, "max_fix_attempts": 2}},
