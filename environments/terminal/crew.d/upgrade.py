@@ -6,8 +6,8 @@ Usage: mdstack upgrade --project FILE [--version vX.Y.Z | --latest] [--dry-run] 
 --version fetches from the profile's [install] source; a source change without --version is refused. --latest is
 --version with the latest release's tag (github source only). Under a user-level install (mdstack install,
 releases/current present), a --version upgrade also upgrades every other project whose install.json, under the
-same state root, runs from that releases directory (a record from before #1317 by its `Run mdstack up --project`
-step), then flips that root's releases/current, so its <root>/bin launcher follows and another root's stays (#1317,
+same state root, runs from that releases directory (a record from before #1317 by the project file in its
+`Run mdstack up` step), then flips that root's releases/current, so its <root>/bin launcher follows and another root's stays (#1317,
 #1324). A release already on disk is reused once a fresh fetch matches it: that is rollback.
 A tmux install with no install.json is adopted first when its link, release VERSION (beside releases/current)
 and profile copy verify; otherwise the refusal names the mismatch (#1616).
