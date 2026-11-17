@@ -16,7 +16,8 @@ docs/roles-registry.md#lifecycle). Each watcher scan also runs routine_tick: a d
 docs/routines.md#terminal).
 
 `mdstack up --team` also records each repo in `<team-root>/team.json` and ensures one `(team, pool)` lead per enabled
-pool through the first repo whose render, pause and ownership allow it; a repeat run starts none (#1858).
+pool through the first repo whose render, pause and ownership allow it; a repeat run starts none (#1858). On a running
+session it first reconciles team.json against the team file, adding and removing repos without a restart (#1964).
 
 `mdstack up --attach` (also `mdstack start` and `<home>/start`, #1919) is the owner's start-or-reattach shortcut on a tmux
 profile (#1845): it runs `mdstack up`, then attaches this terminal interactively to window 0 of the crew session on its configured
@@ -511,7 +512,7 @@ def team(args):
         builder_warnings(v)
     if tmux.has_session(session):
         print("crew: %s already running; attach with: %s" % (session, attach_hint(session)))
-        return team_roles(args, repos)
+        return team_reconcile(args, repos, root, session) or team_roles(args, repos)
     try:
         notes = role_notes(values, root, "coordinator")
     except RuntimeError as e:
@@ -523,7 +524,7 @@ def team(args):
         if not render_briefs(args, ref, state):
             return 1
         record_binding(v, ref, args)
-        team_module.bind(state, v["team.name"], repo_id(v), work_context(ref, v)["project"])
+        team_module.bind(state, v["team.name"], repo_id(v), work_context(ref, v)["project"], coordinator=ref == repos[0][0])
     if launch(values, "coordinator") == "none":
         print("crew: preflight ok; launch.coordinator = none, so no session started (render: %s)" % root)
         return 0
@@ -540,6 +541,75 @@ def team(args):
         reconcile(state)
         watcher(args, state, ref)
     return team_roles(args, repos)
+
+
+def team_reconcile(args, repos, root, session):
+    """A repeat up --team on a running session reconciles team.json against the team file (#1964, portable.md H1): a
+    repo in the file and not bound gets the fresh start's steps; a bound repo no longer in it has its watcher stopped
+    and its row dropped, its state kept. Every refusal comes before the first write. When the set changed, the
+    coordinator and live lead briefs are regenerated and each window gets one inbox message naming its brief; no window
+    restarts. No change writes nothing."""
+    values, bound = repos[0][1], team_module.read(root)["repos"]
+    added = [(ref, v, state) for ref, v, state in repos if repo_id(v) not in bound]
+    removed = sorted(set(bound) - {repo_id(v) for _, v, _ in repos})
+    if not added and not removed:
+        return 0
+    first = team_module.coordinator(root)
+    for repo in removed:
+        live = [n for n, _ in runs(bound[repo]["state"])]
+        if repo == first or live:
+            print("crew: refusing to remove %s: %s" % (repo, "the coordinator's $CREW_PROJECT names it; only a restart "
+                                                       "changes that" if repo == first else
+                                                       "live run(s) %s; stop or drain them first" % ", ".join(live)))
+            return 1
+    try:
+        notes = role_notes(values, root, "coordinator")
+    except RuntimeError as e:
+        print(e)
+        return 1
+    if not all(install_ok(v, ref) for ref, v, _ in added):
+        return 1
+    coordinator = harnesses.ADAPTERS[values["engines.coordinator"]]
+    for ref, v, state in added:
+        if not render_briefs(args, ref, state):
+            return 1
+        record_binding(v, ref, args)
+        team_module.bind(state, v["team.name"], repo_id(v), work_context(ref, v)["project"])
+        if hasattr(coordinator, "coordinator_setup"):
+            coordinator.coordinator_setup(os.path.dirname(os.path.abspath(args.team)), state)
+        reconcile(state)
+        watcher(args, state, ref)
+        print("crew: added %s to the running team (state %s)" % (repo_id(v), state))
+    for repo in removed:
+        pid = commands()["down"].stop_watcher(bound[repo]["state"])
+        if pid:
+            print("crew: refusing to remove %s: its watcher (pid %s) is still armed" % (repo, pid if pid > 0 else "unknown"))
+            return 1
+        team_module.unbind(root, repo)
+        print("crew: removed %s from the running team; its state %s is kept" % (repo, bound[repo]["state"]))
+    project = team_module.read(root)["repos"][team_module.coordinator(root)]["project"]
+    return team_notice(args, values, root, session, project, coordinator_brief(root, repos, notes))
+
+
+def team_notice(args, values, root, session, project, brief):
+    """Rewrite each live lead's brief from team.json, then send the coordinator and each live lead one refs-only
+    `brief` message naming its brief (lead inboxes are at the team root); the nudge is the only typed text."""
+    lead = commands()["lead"]
+    windows = {n for _, n in tmux.list_windows(session)}
+    targets = [(coordinator_window(values), brief)]
+    for name, rec in lead.records(root):
+        if name in windows:
+            role = rec["role"].removesuffix("-lead")
+            path = os.path.join(root, "leads", role + ".brief.md")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(lead.team_brief(root, role))
+            targets.append((name, path))
+    code = 0
+    for window, path in targets:
+        sent = commands()["send"].run(argparse.Namespace(project=project, org_profile=args.org_profile, window=window,
+                                                         kind="brief", refs=[path], wait_ack=None))
+        code = code or (sent not in (0, 4))  # 4: in the inbox, nudge unconfirmed
+    return int(code)
 
 
 def team_roles(args, repos):

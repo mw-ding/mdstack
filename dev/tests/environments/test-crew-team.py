@@ -4,13 +4,17 @@ pass and round under one team file; a fake gh logs every backend call and fake t
 pairs with a valid same-repo control. No model or network calls. Run in CI.
 """
 import argparse
+import contextlib
+import fcntl
 import importlib.machinery
 import importlib.util
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
+import time
 import unittest
 from unittest import mock
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # dev/tests/: crew_testlib
@@ -32,6 +36,19 @@ else:
     print(%r)
 """ % SECRET
 LEAD = "Lead the pool for <owner>/<repo>; never build.\n"
+
+
+def fake_watcher(tmp):
+    """A detached process whose command line names `watch`, as `mdstack watch` does; returns its pid."""
+    code = ("import os, sys, time\nif os.fork(): sys.exit(0)\nos.setsid()\nprint(os.getpid(), flush=True)\n"
+            "null = os.open(os.devnull, os.O_RDWR)\nos.dup2(null, 1), os.dup2(null, 2)\ntime.sleep(60)\n")
+    out = subprocess.run([sys.executable, "-c", code, "watch"], capture_output=True, text=True, timeout=10, cwd=tmp)
+    return int(out.stdout.split()[0])
+
+
+def kill(pid):
+    with contextlib.suppress(ProcessLookupError):
+        os.kill(pid, signal.SIGKILL)
 
 
 class TeamBase(Base):
@@ -77,16 +94,16 @@ class TeamBase(Base):
         self.mod = importlib.util.module_from_spec(importlib.util.spec_from_loader("crew_cli", loader))
         loader.exec_module(self.mod)
 
-    def write_team(self, extra_a=""):
+    def write_team(self, extra_a="", repos="ab", paths="", checkout_b=None):
+        sections = {"a": '[repos.a]\nrepo = "example/alpha"\ncheckout = "%s"\n%s' % (self.checkouts["alpha"], extra_a),
+                    "b": '[repos.b]\nrepo = "example/beta"\ncheckout = "%s"\n' % (checkout_b or self.checkouts["beta"])}
         with open(self.team, "w") as f:
             f.write('[team]\npersonas = { builder = "Ben", reviewer = "Vera" }\n'
                     'accounts = { all = "acme-bot", reviewer = "acme-reviewer" }\n'
                     '[team.runtime]\nname = "tmux"\ninstance = "local"\n[team.identities]\nowners = ["acme-owner"]\n'
-                    '[team.paths]\nstate_dir = "%s"\nworktree_root = "%s"\ntoolchain_bin = "/opt/node/bin"\n'
-                    '[repos.a]\nrepo = "example/alpha"\ncheckout = "%s"\n%s'
-                    '[repos.b]\nrepo = "example/beta"\ncheckout = "%s"\n'
-                    % (os.path.join(self.tmp, "state"), os.path.join(self.tmp, "wt"), self.checkouts["alpha"], extra_a,
-                       self.checkouts["beta"]))
+                    '[team.paths]\nstate_dir = "%s"\nworktree_root = "%s"\ntoolchain_bin = "/opt/node/bin"\n%s%s'
+                    % (os.path.join(self.tmp, "state"), os.path.join(self.tmp, "wt"), paths,
+                       "".join(sections[r] for r in repos)))
 
     def up(self):
         return self.crew("up", "--team", self.team, "--inputs", self.inputs)
@@ -210,6 +227,158 @@ class TeamLeads(TeamBase):
             self.assertEqual(f.read(), "ack: %s\ndone: %s\n" % (a, a))  # the live head moved: A's settles, at the root
         self.assertFalse(os.path.exists(os.path.join(self.states["alpha"], "status", "vera-lead.status")))
         self.assertEqual([m["id"] for m in lead.pending(self.states["beta"], "vera-lead")], [b])
+
+
+class TeamReconcile(TeamBase):
+    """#1964 (portable.md H1.1-H1.5): a repeat `up --team` on a running session adds the file's unbound repos and
+    removes bound repos no longer in it, with no window restarted. Each refusal row pairs with its valid control."""
+    def setUp(self):
+        super().setUp()
+        bindir = os.path.join(self.tmp, "bin")  # the planted watcher's pid reads from the real ps, all else is fake
+        os.rename(os.path.join(bindir, "ps"), os.path.join(bindir, "ps-fake"))
+        with open(os.path.join(bindir, "ps"), "w") as f:
+            f.write('#!/bin/sh\ncase " $* " in *" -p $WATCHER_PID "*) exec /bin/ps "$@";; esac\n'
+                    'exec "$(dirname "$0")/ps-fake" "$@"\n')
+        os.chmod(os.path.join(bindir, "ps"), 0o755)
+        self.write_team(repos="a")
+        r = self.up()
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.coordinator = self.tmux_state()[SESSION]["0"]
+        self.settings = os.path.join(os.path.dirname(self.team), ".claude", "settings.local.json")
+
+    def team_json(self):
+        with open(os.path.join(self.root, "team.json")) as f:
+            return json.load(f)
+
+    def read(self, path):
+        with open(path) as f:
+            return f.read()
+
+    def notices(self):
+        """(kind, refs) of every message the coordinator (inbox under its repo's state) and each lead got."""
+        found = {}
+        for name, d in ((self.coordinator, self.states["alpha"]), ("ben-lead", self.root), ("vera-lead", self.root)):
+            path = os.path.join(d, "inbox", name + ".jsonl")
+            found[name] = [(m["kind"], m["refs"]) for m in map(json.loads, self.read(path).splitlines())] \
+                if os.path.exists(path) else []
+        return found
+
+    def files(self):
+        """Content and mtime of every file under the team root and of the Stop-hook settings: a no-op writes none."""
+        paths = [os.path.join(d, n) for d, _, names in os.walk(self.root) for n in names] + [self.settings]
+        found = {}
+        for p in paths:
+            with open(p, "rb") as f:
+                found[p] = (f.read(), os.stat(p).st_mtime_ns)
+        return found
+
+    def restarts(self):
+        return [c for c in self.calls() if c[0] in ("new-session", "kill-session", "kill-window", "respawn-pane")]
+
+    def wait_stopped(self, pid, state):
+        """SIGTERM a watcher and wait until it frees wake/watcher.lock (#1654)."""
+        with contextlib.suppress(ProcessLookupError):
+            os.kill(pid, signal.SIGTERM)
+        deadline = time.monotonic() + 20
+        with open(os.path.join(state, "wake", "watcher.lock"), "a") as f:
+            while True:
+                try:
+                    fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    return
+                except BlockingIOError:
+                    self.assertLess(time.monotonic(), deadline, "watcher %d still holds its lock" % pid)
+                    time.sleep(0.05)
+
+    def refused(self, line, **team):
+        """A refused reconcile: exit 1 with line, and nothing written for any repo."""
+        before, notices, calls = self.files(), self.notices(), len(self.calls())
+        self.write_team(**team)
+        r = self.up()
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn(line, r.stdout)
+        self.assertEqual((self.files(), self.notices()), (before, notices))
+        self.assertEqual({c[0] for c in self.calls()[calls:]}, {"has-session"})  # no window touched
+
+    def test_reconcile_adds_and_removes_a_repo_on_the_running_team(self):
+        self.assertEqual(self.team_json()["coordinator"], "example/alpha")
+        start = {n: self.read(os.path.join(self.root, "leads", r + ".brief.md")) for n, r in (("ben-lead", "builder"),
+                                                                                             ("vera-lead", "reviewer"))}
+        self.assertNotIn("example/beta", start["ben-lead"])
+        # H1.3: a clone of another repo, then a missing paths.mdstack; neither writes anything for any added repo
+        other = os.path.join(self.tmp, "other")
+        os.makedirs(other)
+        self.git("init", "-q", "-b", "main", cwd=other)
+        self.git("remote", "add", "origin", "https://github.com/example/alpha.git", cwd=other)
+        self.refused("crew: refusing to start: checkout: %s is a clone of example/alpha, not example/beta" % other,
+                     checkout_b=other)
+        missing = os.path.join(self.tmp, "no-mdstack")
+        self.refused("crew: refusing to start: paths.mdstack %s is missing; run mdstack bootstrap" % missing,
+                     paths='mdstack = "%s"\n' % missing)
+        # H1.1, the valid control: render, row, Stop hook, watcher, both briefs and one notice per window
+        self.write_team()
+        r = self.crew("up", "--team", self.team, "--inputs", self.inputs, CREW_WATCHER="")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        started = [x for x in r.stdout.splitlines() if x.startswith("crew: persistent watcher started")]
+        self.assertEqual(len(started), 1, r.stdout)
+        self.addCleanup(self.wait_stopped, int(started[0].split("pid ")[1].split(",")[0]), self.states["beta"])
+        self.assertIn(os.path.join(self.states["beta"], "wake", "watcher.log"), started[0])
+        self.assertIn("crew: added example/beta to the running team", r.stdout)
+        self.assertTrue(os.path.isfile(os.path.join(self.states["beta"], "render", "runtime", "builder-lead.md")))
+        self.assertEqual(self.team_json()["repos"]["example/beta"],
+                         {"project": os.path.realpath(self.team) + "#b", "state": self.states["beta"]})
+        guards = [h["command"] for e in json.loads(self.read(self.settings))["hooks"]["Stop"] for h in e["hooks"]]
+        self.assertEqual([g.rsplit(" ", 1)[1] for g in guards], [self.states["alpha"], self.states["beta"]])
+        coordinator = os.path.join(self.root, "coordinator.md")
+        self.assertIn("| example/beta | `%s#b` | `%s` |" % (self.team, self.states["beta"]), self.read(coordinator))
+        leads = {n: os.path.join(self.root, "leads", r + ".brief.md") for n, r in (("ben-lead", "builder"),
+                                                                                 ("vera-lead", "reviewer"))}
+        for name, path in leads.items():
+            self.assertIn("| example/beta | `%s#b` |" % os.path.realpath(self.team), self.read(path))
+        notices = {self.coordinator: [("brief", [coordinator])], **{n: [("brief", [p])] for n, p in leads.items()}}
+        self.assertEqual(self.notices(), notices)
+        self.assertEqual(self.restarts(), [c for c in self.calls() if c[0] == "new-session"])  # the first start only
+        self.assertEqual(sorted(self.new_windows()), ["ben-lead", "vera-lead"])
+        self.wait_stopped(int(started[0].split("pid ")[1].split(",")[0]), self.states["beta"])
+        # H1.2: a repeat writes nothing, sends nothing and starts no watcher
+        before = self.files()
+        r = self.crew("up", "--team", self.team, "--inputs", self.inputs, CREW_WATCHER="")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertNotIn("watcher", r.stdout)
+        self.assertEqual((self.files(), self.notices()), (before, notices))
+        # H1.5: a live run in beta, then the coordinator's own repo; the control (H1.4) removes
+        watcher = fake_watcher(self.tmp)
+        self.addCleanup(kill, watcher)
+        self.env["WATCHER_PID"] = str(watcher)
+        os.makedirs(os.path.join(self.states["beta"], "wake"), exist_ok=True)
+        with open(os.path.join(self.states["beta"], "wake", "watcher.pid"), "w") as f:
+            f.write("%d\n" % watcher)
+        run = os.path.join(self.states["beta"], "runs", "ben-9-example__beta.json")
+        os.makedirs(os.path.dirname(run))
+        with open(run, "w") as f:
+            json.dump(dict.fromkeys(("index", "role", "item", "pass", "repo", "worktree", "claim", "engine", "model",
+                                     "effort", "harness"), "x"), f)
+        self.refused("crew: refusing to remove example/beta: live run(s) ben-9-example__beta; stop or drain them first",
+                     repos="a")
+        self.refused("crew: refusing to remove example/alpha: the coordinator's $CREW_PROJECT names it", repos="b")
+        os.kill(watcher, 0)  # still running: a refusal stops no watcher
+        os.remove(run)
+        # H1.4: the watcher stopped, the row and brief rows gone, the state kept; notices as H1.1
+        self.write_team(repos="a")
+        r = self.up()
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("crew: removed example/beta from the running team; its state %s is kept" % self.states["beta"],
+                      r.stdout)
+        deadline = time.monotonic() + 5  # SIGTERMed by the reconcile; detached, so init reaps it
+        while subprocess.run(["ps", "-o", "command=", "-p", str(watcher)], capture_output=True, text=True).stdout.strip():
+            self.assertLess(time.monotonic(), deadline, "watcher %d still running" % watcher)
+            time.sleep(0.1)
+        self.assertEqual(list(self.team_json()["repos"]), ["example/alpha"])
+        self.assertTrue(os.path.isfile(os.path.join(self.states["beta"], "render", "runtime", "builder-lead.md")))
+        for path in [coordinator] + list(leads.values()):
+            self.assertNotIn("example/beta", self.read(path))
+        self.assertEqual(self.notices(), {n: m * 2 for n, m in notices.items()})
+        self.assertEqual(self.restarts(), [c for c in self.calls() if c[0] == "new-session"])
+        self.assertEqual(sorted(self.new_windows()), ["ben-lead", "vera-lead"])
 
 
 class TeamWorkers(TeamBase):
