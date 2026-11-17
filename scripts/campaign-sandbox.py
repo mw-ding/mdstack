@@ -299,7 +299,8 @@ def teardown(a):
     session, state = m["session"], m["roots"]["state_dir"]
     sock = tmux_socket(state)
     env = {k: v for k, v in os.environ.items() if k not in ("TMUX", "TMUX_PANE") and not k.startswith("CREW_")}
-    env.update(TMUX_TMPDIR=os.path.join(state, "tmux"), PATH=os.path.join(state, "bin") + os.pathsep + env["PATH"])
+    env.update(TMUX_TMPDIR=os.path.join(state, "tmux"), PATH=os.path.join(state, "bin") + os.pathsep + env["PATH"],
+               MDSTACK_INTERNAL="1")  # mdstack down --project, as a crew window passes it (#1965)
     stopped = []
     for t in teams_of(m) if shutil.which("tmux") else []:
         # mdstack down --preserve stops the team's watcher and pane processes and keeps every run's work (#1440)

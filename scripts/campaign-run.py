@@ -88,7 +88,8 @@ def scenario_env(m, seed, base):
     env.update(CREW_PROJECT=m["profile"]["path"], CAMPAIGN_SEED=str(seed), CAMPAIGN_RUN=m["run_id"],
                CAMPAIGN_STUB_LOG=os.path.join(state, "stub.log"), CAMPAIGN_GH_LOG=os.path.join(state, "gh.log"),
                CAMPAIGN_GH_DIR=os.path.join(state, "gh"), GH_CONFIG_DIR=os.path.join(state, "gh-config"),
-               PATH=os.path.join(state, "bin") + os.pathsep + base.get("PATH", os.defpath))
+               PATH=os.path.join(state, "bin") + os.pathsep + base.get("PATH", os.defpath),
+               MDSTACK_INTERNAL="1")  # the harness passes --project as a crew window does (#1965)
     return env
 
 
