@@ -21,7 +21,7 @@ and checks deployed targets and doctor again.
 Records failed checks in install.json. --smoke queues a real docs-only issue on a started crew, once per install;
 it does not claim the asynchronous pipeline passed. Missing profiles are proposed from local git config,
 confirmed (or supplied as edited TOML), and recorded once, including flavor.name; a tmux proposal adds the one-root
-[paths] layout under $CREW_ROOT, else ~/.mdstack. Without --project the profile is $CREW_PROJECT, else
+[paths] layout under $CREW_ROOT, else ~/.mdstack. By default the profile is $CREW_PROJECT, else
 $MDSTACK_CONFIG, else that root's config.toml (#1316, #1324).
 """
 import contextlib

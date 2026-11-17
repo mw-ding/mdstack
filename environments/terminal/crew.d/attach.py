@@ -1,8 +1,9 @@
 """`mdstack attach` watches a window read-only (or a temporary tiled builders view), on this host or a run's role host.
 
 A bare `mdstack attach` (#1942) is the owner's way in: it types into the coordinator window of the installed team,
-starting the team first if it is down. Without --project it uses $CREW_PROJECT, else $MDSTACK_CONFIG, else
-<user root>/config.toml, else the root's only <team>.toml team file. A team file needs no #REPO: it runs as
+starting the team first if it is down. It uses the installed team: $CREW_PROJECT, else $MDSTACK_CONFIG, else
+<user root>/config.toml, else the root's only <team>.toml team file; an owner shell takes no project option and names
+one repo with --repo KEY (#1965). A team file needs no #REPO: it runs as
 `mdstack up --team` would, so the team's one session, persistent watcher included, starts if down. Then, as
 `mdstack start` does, it attaches this terminal to window 0, or switches a client of the crew's tmux server there
 instead of nesting. A crew pane or a client of another tmux server is refused before anything starts.

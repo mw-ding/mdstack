@@ -367,7 +367,7 @@ def up_attach(args, verb="up --attach", ref=None):
 
 
 def run(args):
-    return up_attach(args) if args.attach else up(args)
+    return up_attach(args, ref=getattr(args, "team_ref", None)) if args.attach else up(args)
 
 
 def up(args):

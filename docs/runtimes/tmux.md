@@ -141,11 +141,28 @@ layout and writes the start wrappers ([mdstack layout](#mdstack-layout)).
 
 Every command takes its profile from the first of (#1324):
 
-1. `--project FILE`;
+1. `--project FILE`, in a crew window only (below);
 2. `$CREW_PROJECT`, which every role window sets to its own crew's file;
 3. `$MDSTACK_CONFIG`;
 4. the user-level `<root>/config.toml`, where root is `$CREW_ROOT`, else
-   `~/.mdstack`.
+   `~/.mdstack`; for an owner, else the root's only `<team>.toml` team file.
+
+**Owner shell (#1965).** A shell with no `CREW_ROLE` and no
+`MDSTACK_INTERNAL` (which mdstack sets for its own child processes, such as
+the watcher, and drops for the tmux server it starts) is the owner's. There
+`--project` is hidden from every `--help` and refused, exit 2, with one
+stderr line before any profile read:
+`mdstack: --project is disabled; mdstack uses the installed team (<path>). Set MDSTACK_CONFIG to override.`
+The owner's commands use the installed team. `up`, `start` and a bare or
+`coordinator` [`attach`](#mdstack-attach) take a team file whole: `up` and
+`start` run `up --team`. Every other command is per repo: `--repo <key>`
+(also spelled `--team-repo <key>`, the only spelling for `content` and
+`feedback`, whose own `--repo` means something else) selects
+`<file>#<key>`, a single-repo team needs none, and a multi-repo team
+without it, or an unknown key, exits 2 naming the keys. `MDSTACK_CONFIG`
+still selects another profile or `<file>#<repo>`. A crew window (`CREW_ROLE`
+set) keeps `--project` and `$CREW_PROJECT` as before. Re-enabling the flag
+for owners is `OWNER_PROJECT = True` in `crew.d/_shared.py`.
 
 An explicitly named file always wins over the user-level default, and the
 two never merge. Every command that can write (`bootstrap`, `upgrade`,
@@ -154,10 +171,10 @@ stderr as `mdstack: config <path>`.
 
 - **User-level (the default).** `~/.mdstack/config.toml` is the owner's own
   install: one repo, or a [team file](../configuration/team-files.md) for
-  several. Commands need no `--project`.
+  several. Commands need no profile flag.
 - **Project-level (secondary).** A project or project group that needs its
   own stack keeps its own `config.toml`, for example beside a group's
-  checkouts, and passes it with `--project FILE` (or `MDSTACK_CONFIG`). It is
+  checkouts, and selects it with `MDSTACK_CONFIG`. It is
   a separate crew: its own `[repo]`, identities, `[paths]` and session. Its
   state must still live outside every git checkout.
 
@@ -172,7 +189,7 @@ Run its bundle's `mdstack install --name <name>` so its launcher,
 `<root>/bin/<name>`, links onto `PATH` under a name of its own and never
 replaces the first root's `mdstack`. Its `upgrade` and rollback fetch into
 its own `releases/` and flip only its own `current`. A command run for it
-without `--project` needs `CREW_ROOT` or `MDSTACK_CONFIG` set; with neither
+for it needs `CREW_ROOT` or `MDSTACK_CONFIG` set; with neither
 set it acts under the first root's config, and prints that path.
 
 The two files never merge: the chosen file is the `project` layer of
@@ -767,7 +784,7 @@ use `--project "$CREW_PROJECT"`.
 ### mdstack start
 
 ```sh
-cli/mdstack start [--project <config.toml>[#<repo>]] [--org-profile <path>] [--inputs <inputs-dir>] [--coordinator-only] [--resume <id>]
+cli/mdstack start [--repo <key>] [--org-profile <path>] [--inputs <inputs-dir>] [--coordinator-only] [--resume <id>]
 ```
 
 `mdstack start` is the owner's shortcut: one command that starts the crew
@@ -775,21 +792,20 @@ or reattaches to it (#1919). It runs exactly `mdstack up --attach`
 ([below](#mdstack-up)), which stays as its alias, so it has the same one
 session and watcher, the same `switch-client` from a client of the crew's
 server and the same refusals: a client of another tmux server, exit 1, and
-a crew pane, exit 2, both before anything starts. Without `--project` it
-uses the default config, like other owner commands: `$CREW_PROJECT`, else
-`$MDSTACK_CONFIG`, else `<user root>/config.toml`. It names that file on
-stderr and never searches the current directory, so it works from any
-directory. A missing or invalid config, or a team file with several repos
-and no `#<repo>`, refuses before anything starts; it takes no `--team` or
-role. The generated `<home>/start` ([mdstack layout](#mdstack-layout)) runs
+a crew pane, exit 2, both before anything starts. It uses the installed
+team, like other owner commands ([owner shell](#user-level-and-project-level-config-1316)):
+a team file runs the whole team as `mdstack up --team`, unless `--repo
+<key>` names one repo. It names that file on stderr and never searches the
+current directory, so it works from any directory. A missing or invalid
+config refuses before anything starts; it takes no `--team` or role. The generated `<home>/start` ([mdstack layout](#mdstack-layout)) runs
 it.
 
 ### mdstack up
 
 ```sh
-cli/mdstack up [--project <config.toml>] [--org-profile <path>] [--inputs <inputs-dir>] [--coordinator-only] [--resume <id>] [--attach]
+cli/mdstack up [--repo <key>] [--org-profile <path>] [--inputs <inputs-dir>] [--coordinator-only] [--resume <id>] [--attach]
 cli/mdstack up --team <config-home>/teams/<team>.toml [--org-profile <path>] [--inputs <inputs-dir>]
-cli/mdstack up <role> [--project <config.toml>] [--org-profile <path>]
+cli/mdstack up <role> [--repo <key>] [--org-profile <path>]
 ```
 
 `mdstack up <role>` starts one more instance of a role with a `lifecycle`
@@ -811,7 +827,8 @@ From a client of that same server (`$TMUX` names its socket) it runs
 another tmux server is refused, exit 1, before anything starts: detach and
 retry. Run from a crew pane (`CREW_ROLE` set) it refuses, exit 2, before
 anything starts, so an agent never takes the owner's terminal. It takes
-`--project` only (not `--team` or a role) and only a `tmux` profile. A
+no `--team` or role (an owner shell's team file is passed for it) and only a
+`tmux` profile. A
 bare [`mdstack attach`](#mdstack-attach) runs the same path for the
 installed team, `--team` included (#1942); `attach` with a target never
 starts anything.
@@ -995,7 +1012,7 @@ binding's commands; a pack supplies its own through the render overlay
 ### mdstack down
 
 ```sh
-cli/mdstack down [--project <config.toml>] [--org-profile <path>] [--keep-grant]
+cli/mdstack down [--repo <key>] [--org-profile <path>] [--keep-grant]
 ```
 
 `mdstack down` refuses while `locks/merge.lock` is held, runs `mdstack kill` on
@@ -1029,7 +1046,7 @@ their shutdown behavior. No unattended confirmation flag is available.
 ### mdstack grant prune
 
 ```sh
-cli/mdstack grant prune [--project <config.toml>] [--org-profile <path>] [--dry-run]
+cli/mdstack grant prune [--repo <key>] [--org-profile <path>] [--dry-run]
 ```
 
 `--dry-run` prints removed/kept clauses, reasons and source/finished-state
@@ -1073,7 +1090,7 @@ clauses, restrictions and all other raw/effective values remain intact.
 ### mdstack pause
 
 ```sh
-cli/mdstack pause [--project <config.toml>] [--org-profile <path>] [--reason <text>]
+cli/mdstack pause [--repo <key>] [--org-profile <path>] [--reason <text>]
 ```
 
 `mdstack pause` is the owner's work pause (#1714): the coordinator in window 0
@@ -1110,7 +1127,7 @@ does not exit. Owner asks, holds, rounds and landing stops are untouched.
 ### mdstack resume
 
 ```sh
-cli/mdstack resume [--project <config.toml>] [--org-profile <path>] [--timeout <secs>]
+cli/mdstack resume [--repo <key>] [--org-profile <path>] [--timeout <secs>]
 ```
 
 `mdstack resume` ends a pause, and only on the owner's word. It refuses unless
@@ -1136,17 +1153,17 @@ Window 0 is untouched. With no pause it prints `crew: not paused`.
 ### mdstack layout
 
 ```sh
-cli/mdstack layout [--project <config.toml>] [--org-profile <path>] [--write] [--owner-cmd <cmd>]
+cli/mdstack layout [--repo <key>] [--org-profile <path>] [--write] [--owner-cmd <cmd>]
 ```
 
 `mdstack layout` prints the resolved `root`, `home` (the profile's directory),
 `checkout`, `state`, `worktree_root`, `live_dir`, `mdstack` and the CLI the
 wrappers run. `--write` writes two one-command starts: `<home>/start` runs
-[mdstack start](#mdstack-start) `--project <project>` from any cwd, starting
-or reattaching to window 0 (extra arguments pass through, for example
+[mdstack start](#mdstack-start) with `MDSTACK_CONFIG=<project>` from any cwd,
+starting or reattaching to window 0 (extra arguments pass through, for example
 `--coordinator-only`; a redundant `--attach` is accepted). A `<home>/start`
-written before #1919 runs `mdstack up --project <project>` and keeps working,
-`--attach` included; rerun `--write` to update it. `<home>/start-owner` starts
+written before #1965 passes `--project`, which an owner shell refuses; rerun
+`--write` to update it. `<home>/start-owner` starts
 the owner's session (`--owner-cmd`, default `claude`) in the checkout. Both
 hold absolute, shell-quoted paths and a generated marker line; rerun
 `--write` after the layout moves. A wrapper file without the marker is
@@ -1207,7 +1224,7 @@ runbook's values. An extra `crew:*` name is still a namespace collision.
 ### mdstack migrate
 
 ```sh
-cli/mdstack migrate --project <old>/config.toml --to <new>/config.toml [--org-profile <path>]
+cli/mdstack migrate --to <new>/config.toml [--repo <key>] [--org-profile <path>]
 ```
 
 `mdstack migrate` previews moving a stopped crew from the old profile's layout
@@ -1255,7 +1272,8 @@ next steps: `mdstack layout --write`, then `mdstack up --coordinator-only` with 
 new profile. Unregistered directories stay where they are for the owner's
 cleanup.
 
-`--project` and `--to` may each be a team reference `<file>#<repo>` (#1347).
+The old profile (`--repo <key>` or `MDSTACK_CONFIG=<file>#<repo>`) and `--to`
+may each be a team reference `<file>#<repo>` (#1347).
 The file is the profile that moves and is rewritten, and it may sit outside
 every clone: the repo section's `checkout` names the git repository both
 sides must share. Only that repo's state folder, its `[repos.<repo>]` section
@@ -1266,7 +1284,7 @@ the next steps name the new reference. With an explicit `team.name`
 name such as `config.toml` keeps the team's state root and session.
 
 ```sh
-cli/mdstack migrate --project ~/.mdstack/config.toml --rename-to <owner>/<new> [--apply]
+cli/mdstack migrate --rename-to <owner>/<new> [--apply]
 ```
 
 `--rename-to` plans a repository rename in place of `--to` (#1234,
@@ -1519,7 +1537,7 @@ its issue (`gh issue comment <n>`). If the post fails, nothing is removed.
 ### mdstack gc
 
 ```sh
-cli/mdstack gc [--apply] [--max <n>] [--project <config.toml>]
+cli/mdstack gc [--apply] [--max <n>] [--repo <key>]
 ```
 
 Lifecycle reaping removes a run's worktree at kill, close-out and idle
@@ -2105,14 +2123,14 @@ as information only, and independently reproduced failures remain findings.
 ### mdstack attach
 
 ```sh
-cli/mdstack attach [--project <file>[#<repo>]]
-cli/mdstack attach <window>|<role>|builders [--rw] [--project <config.toml>]
+cli/mdstack attach [--repo <key>]
+cli/mdstack attach <window>|<role>|builders [--rw] [--repo <key>]
 ```
 
 A bare `mdstack attach` (#1942) is the owner's way into the coordinator of
 the installed team:
 
-- Without `--project` it uses `$CREW_PROJECT`, else `$MDSTACK_CONFIG`, else
+- It uses the installed team: `$CREW_PROJECT`, else `$MDSTACK_CONFIG`, else
   `<root>/config.toml`, else the root's only `<team>.toml` team file (the
   #1348 home layout; `[team] name` keys the session). With no such file, or
   several team files and no `config.toml`, it fails as the missing
@@ -2120,7 +2138,7 @@ the installed team:
 - A team file needs no `#<repo>`: the session is per team. It runs as
   [`mdstack up --team`](#mdstack-up) would, so a team that is down starts,
   persistent watcher included; a profile with a `[repo]` table runs as
-  `mdstack up --project`. A crew that could not start is not attached.
+  `mdstack up` for that repo. A crew that could not start is not attached.
 - It then attaches interactively to window 0, or switches a client of the
   crew's tmux server there instead of nesting, as
   [`mdstack start`](#mdstack-start) does, with its refusals: a crew pane
@@ -2160,7 +2178,7 @@ or reattaches-or-creates a tmux session there, through the transport in
 ### mdstack logs
 
 ```sh
-cli/mdstack logs <window> [-n <lines>] [-f] [--project <config.toml>]
+cli/mdstack logs <window> [-n <lines>] [-f] [--repo <key>]
 ```
 
 `mdstack logs` (#138) prints the last `-n` lines (default 20) of the run's step
@@ -2856,7 +2874,7 @@ nothing. Exit 0.
 ### mdstack status
 
 ```sh
-cli/mdstack status [--project <config.toml>]
+cli/mdstack status [--repo <key>]
 ```
 
 A `coordinator` row for window 0 (liveness only: `alive` with `claude` or
@@ -2937,8 +2955,8 @@ config error, 3 when `destination` is unset (`status --all: unconfigured`).
 ### mdstack restart
 
 ```sh
-cli/mdstack restart <window> [--project <config.toml>]
-cli/mdstack restart <coordinator-window> [--project <config.toml>] [--resume <id>]
+cli/mdstack restart <window> [--repo <key>]
+cli/mdstack restart <coordinator-window> [--repo <key>] [--resume <id>]
 ```
 
 On the coordinator's window (window 0, or its bare name `ash`) it relaunches
@@ -2986,7 +3004,7 @@ coordinator decides per run with `mdstack status` and `mdstack restart`.
 ### mdstack doctor
 
 ```sh
-cli/mdstack doctor [--project <config.toml>] [--org-profile <path>] [--fix]
+cli/mdstack doctor [--repo <key>] [--org-profile <path>] [--fix]
 ```
 
 Checks whether this host can run the crew, a subset of the

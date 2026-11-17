@@ -80,7 +80,7 @@ def child_env(m):
     d = lab_dir(m)
     env = {k: os.environ[k] for k in KEEP if k in os.environ}
     env.update(HOME=os.path.join(d, "home"), XDG_CONFIG_HOME=os.path.join(d, "home", ".config"),
-               GH_CONFIG_DIR=os.path.join(d, "gh-config"))
+               GH_CONFIG_DIR=os.path.join(d, "gh-config"), MDSTACK_INTERNAL="1")  # scenarios pass --project (#1965)
     if m.get("lab"):
         env["DOCKER_HOST"] = m["lab"]["endpoint"]
     return env

@@ -9,7 +9,8 @@ With no FILE, runs every `dev/tests/*/test-*.py`; a FILE given as a bare
 `python3 <file>` from the repo root, in its own process with its output
 captured. Each file runs with `TMUX` and `TMUX_PANE` removed and `TMUX_TMPDIR`
 set to a fresh private directory, removed when the file finishes, so a test's
-bare `tmux` call can never reach the caller's server (#1156). -j sets the
+bare `tmux` call can never reach the caller's server (#1156), and with
+`MDSTACK_INTERNAL=1`, so `mdstack --project` is accepted as in a crew window (#1965). -j sets the
 worker count (default: CPU count, at most 8). Files in SERIAL run one at a
 time after the parallel batch. The runner prints one line per file as it
 finishes (status and duration), then the K slowest files, then the full output
@@ -55,6 +56,7 @@ def run_one(path):
     tmux_tmpdir = tempfile.mkdtemp(prefix="rt.", dir=short_tmp_root())
     env = {k: v for k, v in os.environ.items() if k not in ("TMUX", "TMUX_PANE")}
     env["TMUX_TMPDIR"] = tmux_tmpdir
+    env["MDSTACK_INTERNAL"] = "1"  # tests pass --project as crew windows do; owner-shell tests unset it (#1965)
     try:
         proc = subprocess.run([sys.executable, path], cwd=ROOT, env=env, stdin=subprocess.DEVNULL,
                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT)

@@ -4,9 +4,10 @@ attaches this terminal interactively to window 0 of the crew session on its conf
 server it switches the client there (`switch-client`) instead of nesting. A client of another tmux server (exit 1) or
 a crew pane with `CREW_ROLE` set (exit 2) is refused before anything starts.
 
-Without --project it uses the default config like other owner commands ($CREW_PROJECT, else $MDSTACK_CONFIG, else
-<user root>/config.toml) and names it on stderr; a missing, invalid or ambiguous config (a team file with several
-repos and no #REPO) refuses before anything starts. It takes no --team or ROLE. `<home>/start` from
+It uses the installed team like other owner commands ($MDSTACK_CONFIG, else <user root>/config.toml, else the root's
+only <team>.toml team file) and names it on stderr: a team file without #REPO starts the whole team as
+`mdstack up --team` would, unless --repo KEY names one of its repos (#1965). A missing or invalid config refuses
+before anything starts. It takes no --team or ROLE. `<home>/start` from
 `mdstack layout --write` runs it; --attach is accepted, redundant, for wrapper calls written before it.
 
 Usage: mdstack start [--project FILE[#REPO]] [--org-profile FILE] [--inputs DIR] [--coordinator-only] [--resume ID]
@@ -29,4 +30,5 @@ def register(sub):
 
 
 def run(args):
-    return commands()["up"].up_attach(argparse.Namespace(**dict(vars(args), attach=True)), verb="start")
+    return commands()["up"].up_attach(argparse.Namespace(**dict(vars(args), attach=True)), verb="start",
+                                      ref=getattr(args, "team_ref", None))  # an owner shell's team file (#1965)

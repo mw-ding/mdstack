@@ -45,7 +45,9 @@ def bind(session, tmux_server="default"):
 
 
 def tmux(*args):
-    return subprocess.run(["tmux", *server(), *args], capture_output=True, text=True)
+    # a server this call starts keeps no MDSTACK_INTERNAL, so an owner pane on it stays an owner shell (#1965)
+    env = {k: v for k, v in os.environ.items() if k != "MDSTACK_INTERNAL"}
+    return subprocess.run(["tmux", *server(), *args], capture_output=True, text=True, env=env)
 
 
 def has_session(name):

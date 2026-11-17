@@ -12,7 +12,7 @@ Supported here (every other action is refused as unsupported, exit 6):
   ack --message ID                           appends `ack: <id>` to status/<run>.status
   report --status S --ref REF... [--reason TEXT]   appends `<status>: <refs> <reason>` to status/<run>.status
 
-The run is --actor (default $CREW_ID); --project defaults to $CREW_PROJECT. An explicit --key is kept in
+The run is --actor (default $CREW_ID); the profile defaults to $CREW_PROJECT. An explicit --key is kept in
 actions/keys/: a repeat with the same inputs returns the first outcome with no second effect (check-ownership is a
 read and never replays). Without --key the key is
 the derived one plus a nonce, so each call is a new effect. Reason codes this binding adds: `not-held` (heartbeat: no

@@ -917,6 +917,75 @@ WRITES = {"action", "bootstrap", "dequeue", "doctor", "down", "drain", "feedback
           "schedule", "send", "spawn", "start", "train", "up", "upgrade", "watch"}
 
 
+# The owner CLI without --project (#1965): an owner shell (no CREW_ROLE, not a child of an mdstack command) gets no
+# --project; it uses the installed team, and --repo KEY picks one of its repos. True re-enables --project there.
+OWNER_PROJECT = False
+INTERNAL = "MDSTACK_INTERNAL"  # set by main() for its child processes (watcher, poll, bootstrap) and by the test runner
+UNSET = object()  # an owner shell's --project default, so a given one is seen whatever its spelling
+TEAM_SCOPED = ("up", "start")  # with no --repo, a team file runs `up --team`; attach (bare, coordinator) takes it too
+USAGE_PROJECT = re.compile(r"\(--project \S+ \| (--team FILE)\)|\s?\[--project \S+\]\]?|\s?--project [A-Z]\S*")
+
+
+def owner_shell():
+    return not OWNER_PROJECT and not os.environ.get("CREW_ROLE") and not os.environ.get(INTERNAL)
+
+
+def owner_options(parser, seen=None):
+    """Hide every --project from help, default it to UNSET, and add the repo selector --repo KEY (--team-repo KEY where
+    the command's own --repo means something else, as for content and feedback)."""
+    seen = set() if seen is None else seen
+    if id(parser) in seen:
+        return
+    seen.add(id(parser))
+    if parser.description:
+        parser.description = USAGE_PROJECT.sub(lambda m: "[%s]" % m.group(1) if m.group(1) else "", parser.description)
+    for action in list(parser._actions):
+        if isinstance(action, argparse._SubParsersAction):
+            for child in action.choices.values():
+                owner_options(child, seen)
+        elif "--project" in action.option_strings:
+            action.help, action.default = argparse.SUPPRESS, UNSET
+            names = ["--team-repo"] if "--repo" in parser._option_string_actions else ["--repo", "--team-repo"]
+            parser.add_argument(*names, dest="owner_repo", metavar="KEY",
+                                help="the installed team file's repo (its [repos.KEY] section)")
+            parser.set_defaults(owner_repo_flag=names[0])
+
+
+def owner_project(args):
+    """The installed team for an owner shell: up and start (no ROLE) and a bare or coordinator attach take a team file
+    whole, unless --repo names a repo; any other command takes FILE#<--repo>, the reference's own repo or the team's
+    only repo; an explicit --team stays. Returns an exit code; 2 when the repo is unknown or ambiguous."""
+    if getattr(args, "team", None):
+        args.project = None
+        return 0
+    found = crew_render.crew_config.installed_config()
+    file, ref_repo = crew_render.crew_config.split_ref(found)
+    key = getattr(args, "owner_repo", None)
+    try:
+        keys = crew_render.crew_config.team_repos(file)
+    except (OSError, ValueError):
+        keys = None  # not readable here: the profile read reports it
+    if key and key not in (keys or ()):
+        print("mdstack: %s %s: %s has no such repo (repos: %s)" % (args.owner_repo_flag, key, file,
+                                                                  ", ".join(keys or ()) or "none"),
+              file=sys.stderr)
+        return 2
+    args.project = "%s#%s" % (file, key) if key else found
+    if key or ref_repo or not keys:
+        return 0
+    if args.cmd in TEAM_SCOPED and not args.role:
+        args.team, args.project, args.team_ref = file, None, "%s#%s" % (file, keys[0])
+    elif args.cmd == "attach" and args.target in (None, "coordinator"):
+        pass
+    elif len(keys) == 1:
+        args.project = "%s#%s" % (file, keys[0])
+    else:
+        print("mdstack: %s lists repos %s; name one with %s KEY" % (file, ", ".join(keys), args.owner_repo_flag),
+              file=sys.stderr)
+        return 2
+    return 0
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=DESCRIPTION, formatter_class=argparse.RawDescriptionHelpFormatter)
     version = os.path.join(ROOT, "VERSION")  # the release bundle's tag; a clone has none (#1317)
@@ -928,11 +997,21 @@ def main(argv=None):
         # `crew <cmd> --help` prints the command module's docstring, its usage doc (#325)
         sub.choices[name].description = mod.__doc__
         sub.choices[name].formatter_class = argparse.RawDescriptionHelpFormatter
+    owner = owner_shell()
+    if owner:
+        owner_options(ap)
     args = ap.parse_args(argv)
+    if owner and getattr(args, "project", UNSET) is not UNSET:
+        print("mdstack: --project is disabled; mdstack uses the installed team (%s). Set MDSTACK_CONFIG to override."
+              % os.path.abspath(crew_render.crew_config.installed_config()), file=sys.stderr)
+        return 2
+    os.environ[INTERNAL] = "1"  # the commands' own mdstack calls pass --project
+    if owner and getattr(args, "project", None) is UNSET and (code := owner_project(args)):
+        return code
     if getattr(args, "project", "") is None and not getattr(args, "team", None):
         args.project = crew_render.crew_config.default_config()  # the user-level config by default (#1316)
-    if args.cmd in WRITES and getattr(args, "project", None):
-        print("mdstack: config " + os.path.abspath(args.project), file=sys.stderr)  # the file it acts under (#1324)
+    if args.cmd in WRITES and (getattr(args, "project", None) or owner and getattr(args, "team", None)):
+        print("mdstack: config " + os.path.abspath(args.project or args.team), file=sys.stderr)  # its file (#1324)
     guarded = args.cmd in ("spawn", "restart", "send", "train") or (
         args.cmd == "land-lock" and args.action == "acquire" or args.cmd == "kill" and args.discard)
     if guarded:
