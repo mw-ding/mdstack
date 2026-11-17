@@ -3214,6 +3214,150 @@ crew, a live apply-mode sweep or a terminal adoption of bare
 - Owner-added items fit the bookends as one-row amendments recorded in the
   closing sync; none waited on S0.
 
+### M61: team ergonomics
+
+Opening spec slice #1972 (S0) and closing status-sync slice #1973 (S1)
+bookend [#1966](https://github.com/mw-ding/mdstack/issues/1966). Scope comes
+from #1964 and #1965, under the owner's
+[M61 approval](https://github.com/mw-ding/mdstack/issues/985#issuecomment-6922720067).
+Runtime module paths below are under `environments/terminal/crew.d/`;
+`path:line` citations refer to base `bb85757c7276c3de16f15cb5723b4b607a5aa2d7`.
+S0 is recorded as done for this opening slice (PR #1974), effective on merge.
+Order: S0 first; then #1964 and #1965 independently. If both edit the same
+shared module (`_shared.py`, `up.py`), #1964 lands first and #1965 merges up.
+S1 last. One issue → one PR. Sizes are non-test lines, planning ranges, not
+limits.
+
+| ID | Issue | Scope / named paths | Size | Depends on | Tier | Status |
+|---|---|---|---|---|---|---|
+| S0 | #1972 | This section (PR #1974) | 120–180 docs | Signed M61 approval | default | done |
+| H1 | #1964 | Hot-add and remove a repo on a running team: `up.py` team reconcile, `lead.py` brief rewrite, `down.py` watcher stop reuse; `docs/runtimes/tmux.md`; tests | 120–200 + 20–40 docs | #1972 | deep | open |
+| P1 | #1965 | Owner CLI without `--project`: one guard and help hiding in `_shared.py`, default-team resolution via `core/crew-config.py`, `--repo` selection; `docs/runtimes/tmux.md`, `README.md` quick start; tests | 100–180 + 30–60 docs | #1972; merges up after #1964 if they share a module | deep | open |
+| S1 | #1973 | Status, settled choices as built and tracker reconciliation | 40–80 docs | Every admitted member landed | default | open |
+
+**Target environment:** the tmux runtime; every acceptance path uses fake
+tmux and disposable profiles, team files and state. **Owner prerequisites:
+none.** Standard flavor, tmux lane.
+
+#### H1: hot-add and remove a repo (#1964)
+
+Today a repeat `up --team` on a running session prints `already running` and
+only calls `team_roles` (`up.py:496`); every per-repo step runs only at first
+start (`up.py:506`–`535`). Settled choices, which are H1's ACs:
+
+- **H1.a One entry point: reconcile on `up --team`.** On a running session,
+  `up --team FILE` reconciles the bound set (`team.json`) against the team
+  file's `[repos.<key>]`: a repo in the file and not bound is added; a bound
+  repo no longer in the file is removed. No `team add` / `team remove`
+  command. Reason: the team file is already the single source of truth, the
+  owner's flow is already "edit the file, run `up --team`", and a bare
+  `mdstack attach` reaches the same path (`attach.py:106`), so there is one
+  code path and no second record of membership to drift.
+- **H1.b Add runs the fresh-start steps.** For each added repo, in order:
+  the fresh start's preflight (`install_ok`, `up.py:259`), `render_briefs`,
+  `record_binding`, `team_module.bind`, `coordinator_setup` for its state,
+  `reconcile` and `watcher` (`up.py:295`). All added repos pass preflight
+  before the first write; a refusal prints the fresh start's line, exits 1
+  and writes nothing (no render, `team.json` row, hook or watcher).
+- **H1.c Remove.** For each removed repo: stop its persistent watcher
+  (`down.py:41` `stop_watcher`), then drop its `team.json` row. Its state
+  directory, render, runs and inboxes are kept. Removal refuses, writing
+  nothing, while the repo has a live run record (stop or drain it first), or
+  when it is the repo the running coordinator's `$CREW_PROJECT` names, which
+  only a restart can change.
+- **H1.d Briefs and notice.** When the bound set changed, regenerate
+  `<team-root>/coordinator.md` and each live lead's
+  `<team-root>/leads/<role>.brief.md` (`lead.py:88`) from the new set, then
+  notify through the durable inbox: one refs-only `send` message to the
+  coordinator window and one to each live lead (a lead's inbox is at the team
+  root, `send.py:298`), each naming its regenerated brief. The fixed nudge is
+  the only typed text. No window restarts; `team_roles` then runs as today.
+- **H1.e Idempotent.** A repeat run with no change writes no brief, binding,
+  hook or notice, starts no watcher and leaves bound repos alone.
+
+One table-driven test drives `up --team` with fake tmux and disposable
+state; each refusal row pairs with a valid control.
+
+| Row | State | Outcome | Status |
+|---|---|---|---|
+| H1.1 | Running team; one `[repos.<key>]` added | Render, `team.json` row, Stop hook, persistent watcher; coordinator and lead briefs list it; one inbox message to the coordinator and to each live lead; no window restarted | open |
+| H1.2 | H1.1 repeated | No write, no notice, no second watcher | open |
+| H1.3 | Added repo's checkout is a clone of another repo; `paths.mdstack` missing | Exit 1 with the fresh start's refusal line; nothing written for any added repo; the valid control (H1.1) adds | open |
+| H1.4 | Running team; a bound repo deleted from the file | Its watcher stopped, its `team.json` row and brief rows gone, its state dir kept; notices as H1.1 | open |
+| H1.5 | Removal of a repo with a live run, or of the coordinator's `$CREW_PROJECT` repo | Exit 1, nothing written; the valid control (H1.4) removes | open |
+
+#### P1: owner CLI without `--project` (#1965)
+
+Settled choices, which are P1's ACs:
+
+- **P1.a Owner shell.** A shell with `CREW_ROLE` unset or empty. Any other
+  value is a crew window and keeps today's behaviour exactly, including
+  `--project`, `$CREW_PROJECT` and `default_config()`.
+- **P1.b One guard.** In `_shared.py` `main()` right after `parse_args`
+  (`_shared.py:931`), before any profile read or write: in an owner shell, a
+  `--project` given on the command line (either spelling) exits 2 with
+  exactly one stderr line:
+  `mdstack: --project is disabled; mdstack uses the installed team (<path>). Set MDSTACK_CONFIG to override.`
+  `<path>` is the absolute `installed_config()` (`core/crew-config.py:1162`).
+  A module constant `OWNER_PROJECT = False` beside the guard re-enables the
+  flag with a one-line change; no profile key. Argument parsing,
+  `default_config()` and `FILE#repo` resolution stay.
+- **P1.c Help.** In an owner shell, `main()` marks every subcommand's
+  `--project` as `argparse.SUPPRESS`, so `mdstack <cmd> --help` omits it.
+- **P1.d Default team.** With no `--project`, an owner shell resolves
+  `installed_config()` (`$MDSTACK_CONFIG`, else `<root>/config.toml`, else the
+  root's only team file), not `default_config()`. `MDSTACK_CONFIG` still
+  overrides.
+- **P1.e Team-scoped commands.** `up`, `start` and `attach` (bare and
+  `coordinator`) take a multi-repo team file without `#repo` and act on the
+  team: `up` and `start` run the `up --team` path. Every other command is
+  per-repo.
+- **P1.f Per-repo commands.** A new `--repo <key>` (owner shells only)
+  resolves to `FILE#<key>`. A single-repo team needs none. A multi-repo team
+  without it exits 2 naming the valid keys; an unknown key exits 2 the same
+  way. No interactive prompt: commands also run unattended.
+- **P1.g Docs.** `docs/runtimes/tmux.md` usage and the README quick start
+  drop `--project` from owner examples; crew-window examples keep it.
+
+| Row | Shell | Input | Outcome | Status |
+|---|---|---|---|---|
+| P1.1 | Owner | Any command with `--project X` or `--project=X` | Exit 2, the P1.b line, no write; control: same command without it runs | open |
+| P1.2 | Owner | `mdstack <cmd> --help` | No `--project` in the output, exit 0 | open |
+| P1.3 | Owner | `up` / `start` / `attach`, multi-repo team file installed | Acts on the team, no `#repo` needed | open |
+| P1.4 | Owner | Per-repo command: `--repo <key>`; none; unknown key; single-repo team | Selects `FILE#<key>`; exit 2 listing keys; exit 2 listing keys; selects the only repo | open |
+| P1.5 | Owner | `MDSTACK_CONFIG` set to another profile | That profile is used | open |
+| P1.6 | Crew (`CREW_ROLE` set) | `--project`, `--help`, no flag | Exactly as today; the crew test suite passes unchanged | open |
+
+#### Checks, forecast and closing
+
+Against [Versioning](../deliverables.md#versioning), M61 forecasts as
+**major** for P1 (an owner shell's `--project` changes from accepted to
+refused, exit 2) and **minor** for H1 (a repeat `up --team` now reconciles);
+this is not a release cut, and the cut asks the owner before any
+`**Breaking:**` entry. S0 and S1 are **none**.
+
+| Unit | Affected local tests (refine against the actual diff) | Status |
+|---|---|---|
+| S0/S1 | Required checks only | done |
+| H1 | `test-crew-up.py`, `test-crew-team.py`, `test-crew-lead.py`, `test-crew-down.py`, `test-crew-attach.py` | open |
+| P1 | Every `dev/tests/*/test-*.py` (`_shared.py` and `core/crew-config.py` are shared plumbing) | open |
+
+Every PR runs `python3 scripts/check-repo.py` and
+`python3 scripts/check-changelog-pr.py --base origin/main --pr N`, with
+selected tests via `python3 scripts/run-tests.py <names...>` under the
+[affected-tests policy](https://github.com/mw-ding/mdstack/issues/985#issuecomment-6763423100).
+**PR CI runs the full suite.** P1's guard and H1's removal are likely
+sensitive candidates; classify each actual full diff at head.
+
+S1 sets each admitted row `done` with PR refs or `dropped` with recorded
+supersession; an `open` row blocks closing M61. It records the settled
+choices as built, states source delivery, release and installation
+separately, and confirms every landed member is closed. Merge permission is
+the owner's M61 approval
+([c6922720067](https://github.com/mw-ding/mdstack/issues/985#issuecomment-6922720067)),
+recorded per PR at each actual head; it supplies no approval, CI waiver, hold
+clearance, sensitive reason or missing AC proof.
+
 ## 6. Decisions
 
 | Date | Decision | Source |
