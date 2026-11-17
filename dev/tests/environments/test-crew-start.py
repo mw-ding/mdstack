@@ -281,14 +281,15 @@ class StartMatrix(Base):
     def test_m8_new_wrapper_runs_start(self):
         with open(self.wrapper) as f:
             self.assertEqual(f.read().splitlines()[1:], [
-                MARKER, "exec %s start --project %s \"$@\"" % (shlex.quote(CREW), shlex.quote(self.project))])
+                MARKER, "MDSTACK_CONFIG=%s" % shlex.quote(self.project), "export MDSTACK_CONFIG",
+                "exec %s start \"$@\"" % shlex.quote(CREW)])  # no --project in an owner shell (#1965)
 
     def test_m9_layout_write_refuses_an_unowned_start_and_rewrites_its_own(self):
         shutil.copy(self.old_wrapper, self.wrapper)  # control: an old generated wrapper is rewritten to start
         r = self.crew("layout", "--project", self.project, "--write")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         with open(self.wrapper) as f:
-            self.assertIn(" start --project ", f.read())
+            self.assertIn(" start \"$@\"", f.read())
         with open(self.wrapper, "w") as f:
             f.write("#!/bin/sh\necho mine\n")
         r = self.crew("layout", "--project", self.project, "--write")
