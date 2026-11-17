@@ -824,6 +824,20 @@ one `(team, pool)` lead per enabled pool, through the first repo whose render,
 pause and ownership allow it; a repeat run finds the leads live and starts
 none (#1858, [team pools](#team-pools)).
 
+On a running team session, `up --team` first reconciles `team.json` against
+the team file, with no restart (#1964). A repo in the file and not bound gets
+the fresh start's steps: preflight, render, binding, its `team.json` row, its
+Stop hook and its persistent watcher. A bound repo no longer in the file has
+its watcher stopped and its row dropped; its state directory, render, runs
+and inboxes are kept. Every refusal exits 1 before the first write: the fresh
+start's preflight for each added repo, a removed repo with a live run record
+(stop or drain it first), and the repo the coordinator's `$CREW_PROJECT`
+names (`team.json` `coordinator`), which only a restart changes. When the set
+changed, `<team-root>/coordinator.md` and each live lead's brief are
+regenerated, and the coordinator and each live lead get one refs-only
+`brief` message naming it; the nudge is the only typed text. A repeat with
+no change writes nothing and sends nothing.
+
 `mdstack up` (#131):
 
 1. Resolves the profile and refuses unless `runtime.name` is `tmux`.
