@@ -1,7 +1,7 @@
 ---
 type: changed
 issue: 1965
-pr: TBD
+pr: 1976
 date: 2026-11-17
 box-skill: none
 ---
