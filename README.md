@@ -250,6 +250,15 @@ closed; M60 closes after status sync #1937 lands
 is in a release: v7.15.0 predates every unit. Installation is a separate
 step; no live apply-mode sweep or terminal adoption is claimed.
 
+M61 team ergonomics is built in source: `mdstack up --team` adds or removes a
+repo on a running team without a restart (PR #1975), and the owner CLI takes
+no `--project`, using the installed team and `--repo <key>` (PR #1976), on
+the opening spec (PR #1974). All member issues are closed; M61 closes after
+status sync #1973 lands
+([M61 outcome](docs/specs/portable.md#m61-outcome-and-lessons)). None of it
+is in a release: v7.16.0 predates every unit. Installation is a separate
+step; no live hot-add or owner-shell adoption is claimed.
+
 Content is built by the crew itself through the normal PR pipeline; every
 change is recorded in `CHANGELOG.md`.
 

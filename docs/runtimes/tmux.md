@@ -33,6 +33,12 @@ M60's bare `mdstack attach` (PR #1954) is built in source.
 evidence. It landed after the 7.15.0 cut and is in no release; this binding
 claims no installed crew or live terminal adoption.
 
+M61's team reconcile on `up --team` (PR #1975) and the owner shell without
+`--project` (PR #1976) are built in source.
+[M61 status](../specs/portable.md#m61-outcome-and-lessons) records the
+evidence. They landed after the 7.16.0 cut and are in no release; this
+binding claims no installed crew or live terminal adoption.
+
 ## Decisions
 
 | #110 question | Decision | Section |
