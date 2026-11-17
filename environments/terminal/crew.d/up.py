@@ -472,6 +472,22 @@ def session_up(args, values, state):
     return 0
 
 
+def coordinator_brief(root, repos, notes):
+    """Write <team-root>/coordinator.md, one row per repo (its --project reference, state and rendered brief), and
+    return its path."""
+    team_name = os.path.basename(root)
+    rows = "".join("| %s/%s | `%s` | `%s` | `%s` |\n" % (v["repo.owner"], v["repo.name"], os.path.abspath(ref), state,
+                                                     brief_src(state, "coordinator")) for ref, v, state in repos)
+    brief = os.path.join(root, "coordinator.md")
+    with open(brief, "w", encoding="utf-8") as f:
+        f.write("# Team coordinator: %s\n\nYou coordinate every repo of team `%s` from this window: one session, one "
+                "coordinator, one state root (`%s`) with a subfolder per repo. For each repo, follow its rendered "
+                "coordinator brief, pass its reference as `--project` to every crew command, and use its state "
+                "directory as `CREW_STATE`. `$CREW_PROJECT` names the first repo; `$CREW_TEAM` is the team file.\n\n"
+                "| Repo | --project | State | Brief |\n|---|---|---|---|\n%s%s" % (team_name, team_name, root, rows, notes))
+    return brief
+
+
 def team(args):
     """One instance for a team file: one session and coordinator, state root <state_dir>/<team>/ with a subfolder
     and render per repo. The coordinator's brief lists each repo's --project reference, state and rendered brief."""
@@ -511,16 +527,7 @@ def team(args):
     if launch(values, "coordinator") == "none":
         print("crew: preflight ok; launch.coordinator = none, so no session started (render: %s)" % root)
         return 0
-    team_name = os.path.basename(root)
-    rows = "".join("| %s/%s | `%s` | `%s` | `%s` |\n" % (v["repo.owner"], v["repo.name"], os.path.abspath(ref), state,
-                                                     brief_src(state, "coordinator")) for ref, v, state in repos)
-    brief = os.path.join(root, "coordinator.md")
-    with open(brief, "w", encoding="utf-8") as f:
-        f.write("# Team coordinator: %s\n\nYou coordinate every repo of team `%s` from this window: one session, one "
-                "coordinator, one state root (`%s`) with a subfolder per repo. For each repo, follow its rendered "
-                "coordinator brief, pass its reference as `--project` to every crew command, and use its state "
-                "directory as `CREW_STATE`. `$CREW_PROJECT` names the first repo; `$CREW_TEAM` is the team file.\n\n"
-                "| Repo | --project | State | Brief |\n|---|---|---|---|\n%s%s" % (team_name, team_name, root, rows, notes))
+    brief = coordinator_brief(root, repos, notes)
     project_dir = os.path.dirname(os.path.abspath(args.team))
     coordinator = harnesses.ADAPTERS[values["engines.coordinator"]]
     if hasattr(coordinator, "coordinator_setup"):
