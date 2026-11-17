@@ -8,7 +8,7 @@ import os
 import re
 import time
 
-RECORD = "team.json"  # <team-root>/team.json: {"team", "repos": {canonical repo: {"project", "state"}}}
+RECORD = "team.json"  # <team-root>/team.json: {"team", "coordinator", "repos": {canonical repo: {"project", "state"}}}
 
 
 def root(state):
@@ -46,15 +46,35 @@ def lock(top):
         yield
 
 
-def bind(state, team, repo, project):
-    """Record a team repo in team.json: its canonical repo, project reference and state. Returns the team root."""
+def bind(state, team, repo, project, coordinator=False):
+    """Record a team repo in team.json: its canonical repo, project reference and state, and with coordinator as the
+    repo the coordinator's $CREW_PROJECT names. An unchanged record is not rewritten. Returns the team root."""
     top = os.path.dirname(os.path.abspath(state))
     with lock(top):
         data = read(top)
+        old = json.dumps(data, sort_keys=True)
         data["team"] = team
         data["repos"][repo] = {"project": project, "state": os.path.abspath(state)}
-        save(os.path.join(top, RECORD), data)
+        if coordinator:
+            data["coordinator"] = repo
+        if json.dumps(data, sort_keys=True) != old:
+            save(os.path.join(top, RECORD), data)
     return top
+
+
+def unbind(top, repo):
+    """Drop a repo's team.json row (#1964); its state directory is kept."""
+    with lock(top):
+        data = read(top)
+        if data["repos"].pop(repo, None) is not None:
+            save(os.path.join(top, RECORD), data)
+
+
+def coordinator(top):
+    """The repo the running coordinator's $CREW_PROJECT names: recorded at start, else the first bound repo (a team
+    started before the record existed binds in file order)."""
+    data = read(top)
+    return data.get("coordinator") or next(iter(data["repos"]), None)
 
 
 def repo_of(state):
