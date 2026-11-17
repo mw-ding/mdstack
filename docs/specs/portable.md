@@ -3268,11 +3268,10 @@ start (`up.py:506`–`535`). Settled choices, which are H1's ACs:
 - **H1.d Briefs and notice.** When the bound set changed, regenerate
   `<team-root>/coordinator.md` and each live lead's
   `<team-root>/leads/<role>.brief.md` (`lead.py:88`) from the new set, then
-  notify: one durable wake record in a bound repo's `wake/queue.jsonl` under
-  the queue lock, as `resume` does (`resume.py:91`), naming the coordinator
-  brief; and one inbox message per live lead through `send`'s team-root inbox
-  path (`send.py:298`) naming its brief. The fixed nudge is the only typed
-  text. No window restarts; `team_roles` then runs as today.
+  notify through the durable inbox: one refs-only `send` message to the
+  coordinator window and one to each live lead (a lead's inbox is at the team
+  root, `send.py:298`), each naming its regenerated brief. The fixed nudge is
+  the only typed text. No window restarts; `team_roles` then runs as today.
 - **H1.e Idempotent.** A repeat run with no change writes no brief, binding,
   hook or notice, starts no watcher and leaves bound repos alone.
 
@@ -3281,7 +3280,7 @@ state; each refusal row pairs with a valid control.
 
 | Row | State | Outcome | Status |
 |---|---|---|---|
-| H1.1 | Running team; one `[repos.<key>]` added | Render, `team.json` row, Stop hook, persistent watcher; coordinator and lead briefs list it; one wake record and one inbox line per live lead; no window restarted | open |
+| H1.1 | Running team; one `[repos.<key>]` added | Render, `team.json` row, Stop hook, persistent watcher; coordinator and lead briefs list it; one inbox message to the coordinator and to each live lead; no window restarted | open |
 | H1.2 | H1.1 repeated | No write, no notice, no second watcher | open |
 | H1.3 | Added repo's checkout is a clone of another repo; `paths.mdstack` missing | Exit 1 with the fresh start's refusal line; nothing written for any added repo; the valid control (H1.1) adds | open |
 | H1.4 | Running team; a bound repo deleted from the file | Its watcher stopped, its `team.json` row and brief rows gone, its state dir kept; notices as H1.1 | open |
