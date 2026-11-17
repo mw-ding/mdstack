@@ -3222,7 +3222,7 @@ from #1964 and #1965, under the owner's
 [M61 approval](https://github.com/mw-ding/mdstack/issues/985#issuecomment-6922720067).
 Runtime module paths below are under `environments/terminal/crew.d/`;
 `path:line` citations refer to base `bb85757c7276c3de16f15cb5723b4b607a5aa2d7`.
-S0 is recorded as done for this opening slice (PR TBD), effective on merge.
+S0 is recorded as done for this opening slice (PR #1974), effective on merge.
 Order: S0 first; then #1964 and #1965 independently. If both edit the same
 shared module (`_shared.py`, `up.py`), #1964 lands first and #1965 merges up.
 S1 last. One issue → one PR. Sizes are non-test lines, planning ranges, not
@@ -3230,7 +3230,7 @@ limits.
 
 | ID | Issue | Scope / named paths | Size | Depends on | Tier | Status |
 |---|---|---|---|---|---|---|
-| S0 | #1972 | This section (PR TBD) | 120–180 docs | Signed M61 approval | default | done |
+| S0 | #1972 | This section (PR #1974) | 120–180 docs | Signed M61 approval | default | done |
 | H1 | #1964 | Hot-add and remove a repo on a running team: `up.py` team reconcile, `lead.py` brief rewrite, `down.py` watcher stop reuse; `docs/runtimes/tmux.md`; tests | 120–200 + 20–40 docs | #1972 | deep | open |
 | P1 | #1965 | Owner CLI without `--project`: one guard and help hiding in `_shared.py`, default-team resolution via `core/crew-config.py`, `--repo` selection; `docs/runtimes/tmux.md`, `README.md` quick start; tests | 100–180 + 30–60 docs | #1972; merges up after #1964 if they share a module | deep | open |
 | S1 | #1973 | Status, settled choices as built and tracker reconciliation | 40–80 docs | Every admitted member landed | default | open |
