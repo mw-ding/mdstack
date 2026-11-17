@@ -3238,7 +3238,7 @@ proof boundary, release status and lessons are in
 | S0 | #1972 | This section (PR #1974) | 120–180 docs | Signed M61 approval | default | done |
 | H1 | #1964 | Hot-add and remove a repo on a running team: `up.py` team reconcile, `lead.py` brief rewrite, `down.py` watcher stop reuse; `docs/runtimes/tmux.md`; tests (PR #1975) | 120–200 + 20–40 docs | #1972 | deep | done |
 | P1 | #1965 | Owner CLI without `--project`: one guard and help hiding in `_shared.py`, default-team resolution via `core/crew-config.py`, `--repo` selection; `docs/runtimes/tmux.md`, `README.md` quick start; tests (PR #1976) | 100–180 + 30–60 docs | #1972; merges up after #1964 if they share a module | deep | done |
-| S1 | #1973 | Status, settled choices as built and tracker reconciliation (PR TBD) | 40–80 docs | Every admitted member landed | default | done |
+| S1 | #1973 | Status, settled choices as built and tracker reconciliation (PR #1977) | 40–80 docs | Every admitted member landed | default | done |
 
 **Target environment:** the tmux runtime; every acceptance path uses fake
 tmux and disposable profiles, team files and state. **Owner prerequisites:
