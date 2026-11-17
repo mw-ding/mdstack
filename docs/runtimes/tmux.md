@@ -156,7 +156,9 @@ stderr line before any profile read:
 The owner's commands use the installed team. `up`, `start` and a bare or
 `coordinator` [`attach`](#mdstack-attach) take a team file whole: `up` and
 `start` run `up --team`. Every other command is per repo: `--repo <key>`
-selects `<file>#<key>`, a single-repo team needs none, and a multi-repo team
+(also spelled `--team-repo <key>`, the only spelling for `content` and
+`feedback`, whose own `--repo` means something else) selects
+`<file>#<key>`, a single-repo team needs none, and a multi-repo team
 without it, or an unknown key, exits 2 naming the keys. `MDSTACK_CONFIG`
 still selects another profile or `<file>#<repo>`. A crew window (`CREW_ROLE`
 set) keeps `--project` and `$CREW_PROJECT` as before. Re-enabling the flag

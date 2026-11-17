@@ -931,7 +931,8 @@ def owner_shell():
 
 
 def owner_options(parser, seen=None):
-    """Hide every --project from help, default it to UNSET, and add --repo KEY where the parser has no --repo."""
+    """Hide every --project from help, default it to UNSET, and add the repo selector --repo KEY (--team-repo KEY where
+    the command's own --repo means something else, as for content and feedback)."""
     seen = set() if seen is None else seen
     if id(parser) in seen:
         return
@@ -944,9 +945,10 @@ def owner_options(parser, seen=None):
                 owner_options(child, seen)
         elif "--project" in action.option_strings:
             action.help, action.default = argparse.SUPPRESS, UNSET
-            if "--repo" not in parser._option_string_actions:
-                parser.add_argument("--repo", dest="owner_repo", metavar="KEY",
-                                    help="the installed team file's repo (its [repos.KEY] section)")
+            names = ["--team-repo"] if "--repo" in parser._option_string_actions else ["--repo", "--team-repo"]
+            parser.add_argument(*names, dest="owner_repo", metavar="KEY",
+                                help="the installed team file's repo (its [repos.KEY] section)")
+            parser.set_defaults(owner_repo_flag=names[0])
 
 
 def owner_project(args):
@@ -964,7 +966,8 @@ def owner_project(args):
     except (OSError, ValueError):
         keys = None  # not readable here: the profile read reports it
     if key and key not in (keys or ()):
-        print("mdstack: --repo %s: %s has no such repo (repos: %s)" % (key, file, ", ".join(keys or ()) or "none"),
+        print("mdstack: %s %s: %s has no such repo (repos: %s)" % (args.owner_repo_flag, key, file,
+                                                                  ", ".join(keys or ()) or "none"),
               file=sys.stderr)
         return 2
     args.project = "%s#%s" % (file, key) if key else found
@@ -977,8 +980,8 @@ def owner_project(args):
     elif len(keys) == 1:
         args.project = "%s#%s" % (file, keys[0])
     else:
-        print("mdstack: %s lists repos %s; name one with %s" % (file, ", ".join(keys), "--repo KEY" if hasattr(
-            args, "owner_repo") else "MDSTACK_CONFIG=%s#KEY" % file), file=sys.stderr)
+        print("mdstack: %s lists repos %s; name one with %s KEY" % (file, ", ".join(keys), args.owner_repo_flag),
+              file=sys.stderr)
         return 2
     return 0
 

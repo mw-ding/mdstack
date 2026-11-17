@@ -134,6 +134,27 @@ class OwnerCli(Base):
         rows = self.rows(self.owner("layout"))  # a single-repo team needs no --repo
         self.assertEqual(rows["state"], os.path.join(self.tmp, "state", "eng", "acme__widgets"))
 
+    def test_p1_4_own_repo_option_selects_by_team_repo(self):
+        """content and feedback keep their own --repo; their team repo is --team-repo KEY (#1976 round 1)."""
+        content = ("content", "HEAD", "HEAD", "HEAD", "HEAD", "--repo", ROOT_DIR)
+        feedback = ("feedback", "--class", "owner-cli", "--summary", "x", "--repo", "acme/mdstack", "--dry-run")
+        for argv in (content, feedback):
+            with self.subTest(cmd=argv[0]):
+                r = self.owner(*argv)
+                self.assertEqual((r.returncode, r.stdout), (2, ""))
+                self.assertIn("lists repos widgets, gadgets, gizmos; name one with --team-repo KEY", r.stderr)
+                r = self.owner(*argv, "--team-repo", "nope")
+                self.assertEqual(r.returncode, 2)
+                self.assertIn("--team-repo nope: %s has no such repo" % self.team, r.stderr)
+        r = self.owner(*content, "--team-repo", "gadgets")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertTrue(r.stdout.startswith("content=identical carried-from="), r.stdout)
+        r = self.owner(*feedback, "--team-repo", "widgets")  # past the resolver: it acts under FILE#widgets
+        self.assertIn("mdstack: config %s#widgets\n" % self.team, r.stderr)
+        self.assertNotIn("lists repos", r.stderr)
+        rows = self.rows(self.owner("layout", "--team-repo", "gizmos"))  # an alias of --repo elsewhere
+        self.assertEqual(rows["state"], os.path.join(self.tmp, "state", "eng", "acme__gizmos"))
+
     def test_p1_5_mdstack_config_overrides(self):
         rows = self.rows(self.owner("layout", MDSTACK_CONFIG=self.project))
         self.assertEqual(rows["state"], self.state)
