@@ -30,8 +30,9 @@ CI runs on every PR. When review and CI both pass the merge gate, the
 synthesizer merges and the coordinator closes out. Loops are capped, and every
 handoff is a marker on the PR.
 
-- How work flows, with the stage and module diagrams:
-  [docs/architecture.md](docs/architecture.md)
+- How it fits together: the canonical
+  [deployment, wake and release diagram](docs/architecture.md#deployment-wakes-and-releases);
+  stage and module diagrams in [docs/architecture.md](docs/architecture.md)
 - Stages, markers, rounds and the merge gate: [docs/protocol.md](docs/protocol.md)
 - Roles, tiers and engines: [docs/roles.md](docs/roles.md)
 - Rigor per item (review depth, evidence, caps): [docs/flavors.md](docs/flavors.md)

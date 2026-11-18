@@ -6,18 +6,103 @@ Each stage is woken by a GitHub event, does its job through fresh workers, and
 leaves its result on GitHub (labels, markers, a formal review) so the next stage
 can read that state. Nothing important lives only in a bot's chat.
 
-This page covers roles, identities, stages, labels, markers and the
-[modules](#modules) the team is built from. Full protocol
+This page covers the [deployment](#deployment-wakes-and-releases), roles,
+identities, stages, labels, markers and the [modules](#modules) the team is
+built from. Full protocol
 detail is in [protocol.md](protocol.md). Worker roles, tiers and engines are in
 [roles.md](roles.md). See the [docs index](README.md).
 
 Placeholders used below: `<owner>`, `<repo>`, `<author-login>`,
 `<reviewer-login>`, `<BotName>`, `<default-branch>`, `<state-dir>`.
 
-![mdstack collaboration flow](diagrams/eng-crew-flow.png)
+## Deployment, wakes and releases
 
-*The crew collaboration flow, from spec to merge.
-Editable source: [eng-crew-flow.excalidraw](diagrams/eng-crew-flow.excalidraw).*
+The canonical picture of one running deployment: who talks to whom, how a
+GitHub change wakes a worker, and how a release reaches an install. This is
+the [tmux runtime](runtimes/tmux.md); other runtimes keep the same GitHub
+side and gates. Edge labels E1–E23 key the source table below the diagram.
+
+```mermaid
+flowchart TD
+  owner["Owner<br/>specs, decisions, merge-ok"]
+  subgraph github["GitHub: tools of record"]
+    issues["Issues<br/>crew:* labels, signed markers"]
+    prs["PRs<br/>evidence, markers, formal reviews"]
+    ci["CI<br/>required checks at head"]
+    gate{"§7 merge gate<br/>at the current head SHA"}
+    main["default branch"]
+    rel["GitHub Release<br/>tag, bundle, SHA256SUMS"]
+  end
+  subgraph runtime["Runtime: one machine, one state dir"]
+    poll["mdstack poll<br/>zero-model GitHub reads"]
+    watch["mdstack watch<br/>status files, liveness, deadlines"]
+    queue[("wake/queue.jsonl")]
+    route["mdstack route<br/>mechanical wakes, no model turn"]
+    subgraph sessions["Long-lived harness sessions"]
+      coord["Coordinator<br/>judgement wakes, dispatch"]
+      poolleads["Builder and reviewer leads<br/>spawn, dequeue, reclaim"]
+      synth["Synthesizer lead<br/>the lander, spawns no workers"]
+    end
+    subgraph worktrees["Isolated role worktrees: one harness session each"]
+      builder["Builder"]
+      reviewer["Reviewer-validator"]
+    end
+    install["Install<br/>~/.mdstack/releases/current, VERSION"]
+  end
+  owner -- "E1: chat, decisions" --> coord
+  owner -- "E2: issues, comments, decision replies" --> issues
+  owner -- "E23: /crew steering, merge-ok" --> prs
+  coord -- "E3: issues, crew:ready, records" --> issues
+  issues -- "E4" --> poll
+  prs -- "E4" --> poll
+  ci -- "E4" --> poll
+  poll -- "E5: new-head, ci-passed, ci-failed,<br/>merge-ok-recorded ..." --> queue
+  watch -- "E6: done:, blocked:, dead workers" --> queue
+  queue -- "E7" --> route
+  route -- "E8: judgement records" --> coord
+  route -- "E9: new-head starts review,<br/>review passed starts validation" --> poolleads
+  route -- "E10: review-approved, ci-passed<br/>with approval: land work" --> synth
+  coord -- "E11: lead handoff" --> poolleads
+  poolleads -- "E12: spawn" --> builder
+  poolleads -- "E12: spawn" --> reviewer
+  builder -- "E13: branch, PR, fix notes" --> prs
+  prs -- "E14: each push" --> ci
+  reviewer -- "E15: verdict, formal review" --> prs
+  prs -- "E16: approval or merge-ok at head" --> gate
+  ci -- "E17: green at head" --> gate
+  synth -- "E18: re-checks live, then squash" --> gate
+  gate -- "E19" --> main
+  main -- "E20: landed cut PR: validate,<br/>approval check, publish" --> rel
+  rel -- "E21: mdstack upgrade: checksum,<br/>re-render, drift check" --> install
+  install -. "E22: rendered briefs" .-> coord
+```
+
+*Review and CI are independent inputs to the merge gate: a new head starts
+review at once (`new-head`); it does not wait for `ci-passed`. Each worker
+runs in its own worktree through one
+[harness](runtimes/harness-adapters.md). The
+[session runtime](runtimes/session.md) runs no watcher: the coordinator
+sweeps GitHub on owner turns and worker completions, so it supports only an
+attended crew ([session: recovery and support
+boundary](runtimes/session.md#recovery-and-support-boundary)).*
+
+| Edge | Source |
+|---|---|
+| E1 | Coordinator woken by the owner: [protocol §1](protocol.md#1-roles-and-identities) |
+| E2 | Owner posts and decision replies on the tracker: [owner channel](concepts.md#owner-channel), [triage: owner feedback](triage.md#owner-feedback) |
+| E3 | Spec and handoff stages: [protocol §2](protocol.md#2-stages) |
+| E4, E5 | [`mdstack poll`](runtimes/tmux.md#mdstack-poll); `environments/terminal/crew.d/poll.py` module docstring |
+| E6 | [`mdstack watch`](runtimes/tmux.md#mdstack-watch); `environments/terminal/crew.d/watch.py` `run` |
+| E7, E8 | [`mdstack route`](runtimes/tmux.md#mdstack-route); `environments/terminal/crew.d/route.py` module docstring |
+| E9, E11, E12 | [Builder lead](runtimes/tmux.md#builder-lead), [reviewer lead](runtimes/tmux.md#reviewer-lead), [spawn and kill](runtimes/tmux.md#spawn-and-kill) |
+| E10, E18 | [Synthesizer lead](runtimes/tmux.md#synthesizer-lead) |
+| E13 | Build stage: [protocol §2](protocol.md#2-stages), [PR conventions](roles.md#pr-conventions) |
+| E14 | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) |
+| E15 | Verdict: [protocol §4](protocol.md#4-marker-conventions), [§5](protocol.md#5-rounds-and-escalation) |
+| E16, E17, E19 | [protocol §7](protocol.md#7-merge-gate-synthesizer), [land rules](protocol.md#land-rules-and-merge-trains) |
+| E20 | [release: Steps](release.md#steps) 6–9; [`.github/workflows/release.yml`](../.github/workflows/release.yml) |
+| E21, E22 | [release: Update path](release.md#update-path), [`mdstack install`](runtimes/tmux.md#mdstack-install) |
+| E23 | PR steering by conversation or inline review comment, `/crew merge-ok` at head: [protocol §9](protocol.md#9-steering-crew-commands), [§7](protocol.md#7-merge-gate-synthesizer) |
 
 ## Roles
 
