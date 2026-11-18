@@ -20,7 +20,7 @@ Placeholders used below: `<owner>`, `<repo>`, `<author-login>`,
 The canonical picture of one running deployment: who talks to whom, how a
 GitHub change wakes a worker, and how a release reaches an install. This is
 the [tmux runtime](runtimes/tmux.md); other runtimes keep the same GitHub
-side and gates.
+side and gates. Edge labels E1–E22 key the source table below the diagram.
 
 ```mermaid
 flowchart TD
@@ -38,52 +38,69 @@ flowchart TD
     watch["mdstack watch<br/>status files, liveness, deadlines"]
     queue[("wake/queue.jsonl")]
     route["mdstack route<br/>mechanical wakes, no model turn"]
-    coord["Coordinator<br/>judgement wakes, dispatch"]
-    leads["Builder, reviewer and<br/>synthesizer leads"]
+    subgraph sessions["Long-lived harness sessions"]
+      coord["Coordinator<br/>judgement wakes, dispatch"]
+      poolleads["Builder and reviewer leads<br/>spawn, dequeue, reclaim"]
+      synth["Synthesizer lead<br/>the lander, spawns no workers"]
+    end
     subgraph worktrees["Isolated role worktrees: one harness session each"]
       builder["Builder"]
       reviewer["Reviewer-validator"]
-      synth["Synthesizer"]
     end
     install["Install<br/>~/.mdstack/releases/current, VERSION"]
   end
-  owner -- "chat, decisions" --> coord
-  owner -- "issues, comments, merge-ok" --> issues
-  coord -- "issues, crew:ready, records" --> issues
-  issues --> poll
-  prs --> poll
-  ci --> poll
-  poll -- "new-head, ci-passed, ci-failed,<br/>merge-ok-recorded ..." --> queue
-  watch -- "done:, blocked:, dead workers" --> queue
-  queue --> route
-  route -- "judgement records" --> coord
-  route -- "new-head starts review,<br/>review passed starts validation,<br/>approved goes to the land queue" --> leads
-  coord -- "lead handoff" --> leads
-  leads -- spawn --> builder
-  leads -- spawn --> reviewer
-  leads -- spawn --> synth
-  builder -- "branch, PR, fix notes" --> prs
-  prs -- "each push" --> ci
-  reviewer -- "verdict, formal review" --> prs
-  prs -- "approval or merge-ok at head" --> gate
-  ci -- "green at head" --> gate
-  synth -- "re-checks, then squash" --> gate
-  gate --> main
-  main -- "landed cut PR: validate,<br/>approval check, publish" --> rel
-  rel -- "mdstack upgrade: checksum,<br/>re-render, drift check" --> install
-  install -. "rendered briefs" .-> coord
+  owner -- "E1: chat, decisions" --> coord
+  owner -- "E2: issues, comments, merge-ok" --> issues
+  coord -- "E3: issues, crew:ready, records" --> issues
+  issues -- "E4" --> poll
+  prs -- "E4" --> poll
+  ci -- "E4" --> poll
+  poll -- "E5: new-head, ci-passed, ci-failed,<br/>merge-ok-recorded ..." --> queue
+  watch -- "E6: done:, blocked:, dead workers" --> queue
+  queue -- "E7" --> route
+  route -- "E8: judgement records" --> coord
+  route -- "E9: new-head starts review,<br/>review passed starts validation" --> poolleads
+  route -- "E10: review-approved, ci-passed<br/>with approval: land work" --> synth
+  coord -- "E11: lead handoff" --> poolleads
+  poolleads -- "E12: spawn" --> builder
+  poolleads -- "E12: spawn" --> reviewer
+  builder -- "E13: branch, PR, fix notes" --> prs
+  prs -- "E14: each push" --> ci
+  reviewer -- "E15: verdict, formal review" --> prs
+  prs -- "E16: approval or merge-ok at head" --> gate
+  ci -- "E17: green at head" --> gate
+  synth -- "E18: re-checks live, then squash" --> gate
+  gate -- "E19" --> main
+  main -- "E20: landed cut PR: validate,<br/>approval check, publish" --> rel
+  rel -- "E21: mdstack upgrade: checksum,<br/>re-render, drift check" --> install
+  install -. "E22: rendered briefs" .-> coord
 ```
 
 *Review and CI are independent inputs to the merge gate: a new head starts
 review at once (`new-head`); it does not wait for `ci-passed`. Each worker
 runs in its own worktree through one
-[harness](runtimes/harness-adapters.md). The release path is
-[release: Steps](release.md#steps) and the
-[update path](release.md#update-path).
-The [session runtime](runtimes/session.md) runs no watcher: the coordinator
+[harness](runtimes/harness-adapters.md). The
+[session runtime](runtimes/session.md) runs no watcher: the coordinator
 sweeps GitHub on owner turns and worker completions, so it supports only an
 attended crew ([session: recovery and support
 boundary](runtimes/session.md#recovery-and-support-boundary)).*
+
+| Edge | Source |
+|---|---|
+| E1 | Coordinator woken by the owner: [protocol §1](protocol.md#1-roles-and-identities) |
+| E2 | Owner commands and merge-ok on GitHub: [protocol §9](protocol.md#9-steering-crew-commands), [§7](protocol.md#7-merge-gate-synthesizer) |
+| E3 | Spec and handoff stages: [protocol §2](protocol.md#2-stages) |
+| E4, E5 | [`mdstack poll`](runtimes/tmux.md#mdstack-poll); `environments/terminal/crew.d/poll.py` module docstring |
+| E6 | [`mdstack watch`](runtimes/tmux.md#mdstack-watch); `environments/terminal/crew.d/watch.py` `run` |
+| E7, E8 | [`mdstack route`](runtimes/tmux.md#mdstack-route); `environments/terminal/crew.d/route.py` module docstring |
+| E9, E11, E12 | [Builder lead](runtimes/tmux.md#builder-lead), [reviewer lead](runtimes/tmux.md#reviewer-lead), [spawn and kill](runtimes/tmux.md#spawn-and-kill) |
+| E10, E18 | [Synthesizer lead](runtimes/tmux.md#synthesizer-lead) |
+| E13 | Build stage: [protocol §2](protocol.md#2-stages), [PR conventions](roles.md#pr-conventions) |
+| E14 | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) |
+| E15 | Verdict: [protocol §4](protocol.md#4-marker-conventions), [§5](protocol.md#5-rounds-and-escalation) |
+| E16, E17, E19 | [protocol §7](protocol.md#7-merge-gate-synthesizer), [land rules](protocol.md#land-rules-and-merge-trains) |
+| E20 | [release: Steps](release.md#steps) 6–9; [`.github/workflows/release.yml`](../.github/workflows/release.yml) |
+| E21, E22 | [release: Update path](release.md#update-path), [`mdstack install`](runtimes/tmux.md#mdstack-install) |
 
 ## Roles
 
