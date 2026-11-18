@@ -6,8 +6,8 @@ is a snapshot table, not a dashboard: no charts, no live API.
 
 Files:
 
-- `prs.md`: the table, with a header stating lookback, repos and generation time
-  (UTC).
+- [prs.md](prs.md): the table, with a header stating lookback, repos and
+  generation time (UTC).
 - `prs.csv`: the same rows as CSV.
 - **Dated snapshot.** The committed `prs.md` and `prs.csv` were generated
   2026-10-29 and predate the columns from `flavor` onward in [Fields](#fields).
@@ -21,10 +21,16 @@ Files:
 - [a31-campaign-report.md](a31-campaign-report.md): the A31 campaign-history
   report over M25's actual PR and decision records (#1462). See
   [Campaign-history report](#campaign-history-report).
+- [regression-drills.md](regression-drills.md): the replayable M2 drill
+  recipe, a hand-run checklist with a metrics record per run (design and
+  history).
 - [decisions.md](decisions.md): how these numbers trip a harness issue and
   pause new `M*` feature work.
   [`scripts/metrics-decide.py`](../../scripts/metrics-decide.py) reads
   `prs.csv` and prints the verdict.
+- Dated M25 records: [m25-report.md](m25-report.md),
+  [m25-1-evidence-ledger.md](m25-1-evidence-ledger.md) and the
+  [owner-SLA drill](owner-sla-drill.md).
 
 ## Crew PR definition
 
