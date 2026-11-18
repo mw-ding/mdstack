@@ -7,6 +7,13 @@ run, release, operate and recover a crew. Navigation only. Each link goes to
 the doc that owns those steps, and this page adds no rule, step or default of
 its own.
 
+This is the **operator** route of the [docs index](README.md#find-your-path).
+The other routes start elsewhere: a **user** at
+[guides/getting-started.md](guides/getting-started.md), a **contributor** at
+[../CONTRIBUTING.md](../CONTRIBUTING.md), **reference** lookups at the
+[index table](README.md#available-now) and **history** at
+[decisions.md](decisions.md).
+
 ## Install and onboard
 
 | Task | Owner doc |
@@ -28,6 +35,8 @@ its own.
 | Every `mdstack` command | [runtimes/tmux.md, Usage](runtimes/tmux.md#usage) |
 | Land changes and run merge trains | [runtimes/tmux.md, mdstack train](runtimes/tmux.md#mdstack-train) |
 | Steer the crew (`/crew` commands) | [protocol.md §9](protocol.md#9-steering-crew-commands) |
+| Read crew PR cycle time and review rounds | [metrics/README.md](metrics/README.md) and [metrics/decisions.md](metrics/decisions.md) |
+| Replay the regression drills after a protocol or harness change | [metrics/regression-drills.md](metrics/regression-drills.md) |
 
 ## Release and upgrade
 

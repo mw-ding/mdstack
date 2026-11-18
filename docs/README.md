@@ -20,6 +20,11 @@ what each role reads at start, every wake and on a trigger is in
 
 <a id="find-your-path"></a>
 
+Five routes, one per kind of reader, each in reading order. Every page
+under `docs/` is reachable from this index, directly or through a subindex
+([lessons](lessons/README.md), [findings](findings/README.md),
+[metrics](metrics/README.md) and [campaign scenarios](campaign-harness.md)).
+
 - **User** (you own a repo and want the team to work on it):
   [guides/getting-started.md](guides/getting-started.md), or
   [../README.md](../README.md) and its [Quickstart](../README.md#quickstart-tmux),
@@ -36,33 +41,40 @@ what each role reads at start, every wake and on a trigger is in
   [runtimes/grok-bot.md](runtimes/grok-bot.md) or
   [runtimes/session.md](runtimes/session.md)) and
   [release.md](release.md#update-path) for upgrades.
-- **Pack author** (you add a connector, environment, harness or org
-  specifics): [guides/pack-authoring.md](guides/pack-authoring.md),
-  [concepts.md](concepts.md), the module READMEs below, then
+- **Contributor** (you change mdstack itself):
+  [../CONTRIBUTING.md](../CONTRIBUTING.md), [../AGENTS.md](../AGENTS.md),
+  the specs ([specs/team.md](specs/team.md) for the module layout and
+  dependency rules, [specs/portable.md](specs/portable.md) for the
+  invariants), [protocol.md](protocol.md), [verification.md](verification.md)
+  and [../scripts/](../scripts/README.md). A **pack author** (you add a
+  connector, environment, harness or org specifics) starts at
+  [guides/pack-authoring.md](guides/pack-authoring.md), then
+  [concepts.md](concepts.md), the module READMEs below,
   [interfaces.md](interfaces.md),
   [runtimes/README.md](runtimes/README.md),
   [runtimes/harness-adapters.md](runtimes/harness-adapters.md),
   [../actions/README.md](../actions/README.md),
   [profile.md](profile.md), [roles-registry.md](roles-registry.md) and
   [packs.md](packs.md).
-- **Contributor** (you change mdstack itself):
-  [../CONTRIBUTING.md](../CONTRIBUTING.md), [../AGENTS.md](../AGENTS.md),
-  the specs ([specs/team.md](specs/team.md) for the module layout and
-  dependency rules, [specs/portable.md](specs/portable.md) for the
-  invariants), [protocol.md](protocol.md), [verification.md](verification.md)
-  and [../scripts/](../scripts/README.md).
-
-By task:
-
-- **Understand the flow:** [architecture.md](architecture.md), then
-  [concepts.md](concepts.md); diagram sources are in
-  [diagrams/](diagrams/README.md).
-- **Look up history:** [decisions.md](decisions.md),
-  [lessons/README.md](lessons/README.md),
-  [findings/README.md](findings/README.md) and
-  [../CHANGELOG.md](../CHANGELOG.md).
-- **Read metrics:** [metrics/README.md](metrics/README.md) and
-  [metrics/decisions.md](metrics/decisions.md).
+- **Reference** (you need the exact rule, key, schema or contract):
+  [Available now](#available-now) lists every doc with its kind (`rule`,
+  `reference`, `design`, `history`); the [ownership map](#documentation-principles)
+  names the one page that owns each topic. Start with
+  [concepts.md](concepts.md) for vocabulary,
+  [architecture.md](architecture.md) for the flow (diagram sources in
+  [diagrams/](diagrams/README.md)), [protocol.md](protocol.md) for stages
+  and gates, [profile.md](profile.md) for keys and [roles.md](roles.md) for
+  role contracts.
+- **History** (you want why something is the way it is, or what happened):
+  [decisions.md](decisions.md), the
+  [lessons sub-index](lessons/README.md), the
+  [findings sub-index](findings/README.md), the
+  [metrics sub-index](metrics/README.md) (dated reports, the
+  [PR snapshot](metrics/prs.md) and the
+  [regression drills](metrics/regression-drills.md)),
+  [runbooks/tmux-onboarding-history.md](runbooks/tmux-onboarding-history.md),
+  the specs' delivery sections and [../CHANGELOG.md](../CHANGELOG.md). A
+  history page is a dated record, not a current rule.
 
 ## Modules
 
