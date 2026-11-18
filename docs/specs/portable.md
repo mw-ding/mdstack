@@ -3409,6 +3409,30 @@ hot-add on a running team or an owner shell without `--project`.
 - The shared-module ordering rule held: H1 landed first and P1's merge-up
   carried identical content.
 
+### M62: public onboarding and documentation
+
+Opening spec slice #1985 (S0) and closing slice #1996 (S1) bookend
+[#1997](https://github.com/mw-ding/mdstack/issues/1997), under the
+[owner's M62 decision](https://github.com/mw-ding/mdstack/issues/985#issuecomment-6991908550).
+The decisions, writing rules, member ACs and closing checks C1–C6 are in
+[public-docs.md](public-docs.md); this table holds the statuses. S0 is
+recorded as done for this opening slice, effective on merge. Publication
+dispositions (#1995) left M62.
+
+| ID | Issue | Scope | Depends on | Tier | Status |
+|---|---|---|---|---|---|
+| S0 | #1985 | [public-docs.md](public-docs.md) and this section (PR #1998) | Owner plan-ok | default | done |
+| D1 | #1986 | Docs information architecture | #1985 | trivial | open |
+| D2 | #1987 | README | #1986 | trivial | open |
+| D3 | #1988 | Architecture Mermaid view | #1986 | default | open |
+| D4 | #1989 | First-run walkthrough and clean-profile dry run | #1987, #1988 | default | open |
+| D5 | #1990 | Configuration guide | #1989 | default | open |
+| D6 | #1991 | Operating a crew | #1989 | default | open |
+| D7 | #1992 | Runtime and harness support | #1989 | default | open |
+| D8 | #1993 | Upgrades and v8 migration | #1989 | default | open |
+| D9 | #1994 | Contributor and community hygiene | #1990–#1993 | default | open |
+| S1 | #1996 | Status sync and closing checks | Every admitted member landed | default | open |
+
 ## 6. Decisions
 
 | Date | Decision | Source |
