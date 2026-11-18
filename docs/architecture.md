@@ -6,18 +6,84 @@ Each stage is woken by a GitHub event, does its job through fresh workers, and
 leaves its result on GitHub (labels, markers, a formal review) so the next stage
 can read that state. Nothing important lives only in a bot's chat.
 
-This page covers roles, identities, stages, labels, markers and the
-[modules](#modules) the team is built from. Full protocol
+This page covers the [deployment](#deployment-wakes-and-releases), roles,
+identities, stages, labels, markers and the [modules](#modules) the team is
+built from. Full protocol
 detail is in [protocol.md](protocol.md). Worker roles, tiers and engines are in
 [roles.md](roles.md). See the [docs index](README.md).
 
 Placeholders used below: `<owner>`, `<repo>`, `<author-login>`,
 `<reviewer-login>`, `<BotName>`, `<default-branch>`, `<state-dir>`.
 
-![mdstack collaboration flow](diagrams/eng-crew-flow.png)
+## Deployment, wakes and releases
 
-*The crew collaboration flow, from spec to merge.
-Editable source: [eng-crew-flow.excalidraw](diagrams/eng-crew-flow.excalidraw).*
+The canonical picture of one running deployment: who talks to whom, how a
+GitHub change wakes a worker, and how a release reaches an install. This is
+the [tmux runtime](runtimes/tmux.md); other runtimes keep the same GitHub
+side and gates.
+
+```mermaid
+flowchart TD
+  owner["Owner<br/>specs, decisions, merge-ok"]
+  subgraph github["GitHub: tools of record"]
+    issues["Issues<br/>crew:* labels, signed markers"]
+    prs["PRs<br/>evidence, markers, formal reviews"]
+    ci["CI<br/>required checks at head"]
+    gate{"§7 merge gate<br/>at the current head SHA"}
+    main["default branch"]
+    rel["GitHub Release<br/>tag, bundle, SHA256SUMS"]
+  end
+  subgraph runtime["Runtime: one machine, one state dir"]
+    poll["mdstack poll<br/>zero-model GitHub reads"]
+    watch["mdstack watch<br/>status files, liveness, deadlines"]
+    queue[("wake/queue.jsonl")]
+    route["mdstack route<br/>mechanical wakes, no model turn"]
+    coord["Coordinator<br/>judgement wakes, dispatch"]
+    leads["Builder, reviewer and<br/>synthesizer leads"]
+    subgraph worktrees["Isolated role worktrees: one harness session each"]
+      builder["Builder"]
+      reviewer["Reviewer-validator"]
+      synth["Synthesizer"]
+    end
+    install["Install<br/>~/.mdstack/releases/current, VERSION"]
+  end
+  owner -- "chat, decisions" --> coord
+  owner -- "issues, comments, merge-ok" --> issues
+  coord -- "issues, crew:ready, records" --> issues
+  issues --> poll
+  prs --> poll
+  ci --> poll
+  poll -- "new-head, ci-passed, ci-failed,<br/>merge-ok-recorded ..." --> queue
+  watch -- "done:, blocked:, dead workers" --> queue
+  queue --> route
+  route -- "judgement records" --> coord
+  route -- "new-head starts review,<br/>review passed starts validation,<br/>approved goes to the land queue" --> leads
+  coord -- "lead handoff" --> leads
+  leads -- spawn --> builder
+  leads -- spawn --> reviewer
+  leads -- spawn --> synth
+  builder -- "branch, PR, fix notes" --> prs
+  prs -- "each push" --> ci
+  reviewer -- "verdict, formal review" --> prs
+  prs -- "approval or merge-ok at head" --> gate
+  ci -- "green at head" --> gate
+  synth -- "re-checks, then squash" --> gate
+  gate --> main
+  main -- "landed cut PR: validate,<br/>approval check, publish" --> rel
+  rel -- "mdstack upgrade: checksum,<br/>re-render, drift check" --> install
+  install -. "rendered briefs" .-> coord
+```
+
+*Review and CI are independent inputs to the merge gate: a new head starts
+review at once (`new-head`); it does not wait for `ci-passed`. Each worker
+runs in its own worktree through one
+[harness](runtimes/harness-adapters.md). The release path is
+[release: Steps](release.md#steps) and the
+[update path](release.md#update-path).
+The [session runtime](runtimes/session.md) runs no watcher: the coordinator
+sweeps GitHub on owner turns and worker completions, so it supports only an
+attended crew ([session: recovery and support
+boundary](runtimes/session.md#recovery-and-support-boundary)).*
 
 ## Roles
 
