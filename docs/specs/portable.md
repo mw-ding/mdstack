@@ -3421,7 +3421,7 @@ dispositions (#1995) left M62.
 
 | ID | Issue | Scope | Depends on | Tier | Status |
 |---|---|---|---|---|---|
-| S0 | #1985 | [public-docs.md](public-docs.md) and this section | Owner plan-ok | default | done |
+| S0 | #1985 | [public-docs.md](public-docs.md) and this section (PR #1998) | Owner plan-ok | default | done |
 | D1 | #1986 | Docs information architecture | #1985 | trivial | open |
 | D2 | #1987 | README | #1986 | trivial | open |
 | D3 | #1988 | Architecture Mermaid view | #1986 | default | open |
