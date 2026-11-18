@@ -20,12 +20,8 @@ and validator, a different identity from the author, post a verdict. When the
 gate passes, the synthesizer merges and the coordinator closes out. Loops are
 capped, and every handoff is a marker on the PR.
 
-![mdstack collaboration flow](docs/diagrams/eng-crew-flow.png)
-
-*Crew collaboration flow.* Editable source:
-[eng-crew-flow.excalidraw](docs/diagrams/eng-crew-flow.excalidraw)
-(see [docs/diagrams/README.md](docs/diagrams/README.md)).
-
+- How it fits together: the canonical
+  [deployment, wake and release diagram](docs/architecture.md#deployment-wakes-and-releases)
 - Stages, markers, rounds and the merge gate: [docs/protocol.md](docs/protocol.md)
 - Roles, tiers and engines: [docs/roles.md](docs/roles.md)
 
