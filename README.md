@@ -184,7 +184,8 @@ gaps: [docs/runtimes/README.md](docs/runtimes/README.md) and the
   ([CHANGELOG.md](CHANGELOG.md),
   [GitHub Releases](https://github.com/mw-ding/mdstack/releases)).
 - **Current source:** `main` carries changes since that cut as fragments in
-  [changes/unreleased/](changes/unreleased/) until the next release. Source on
+  `changes/unreleased/` until the next release (the [Unreleased](CHANGELOG.md#unreleased)
+  section stays empty until then). Source on
   `main` is not a release, and installing one is a separate step.
 - **Support:** only the latest release is supported; fixes go forward as a new
   release ([versioning](docs/deliverables.md#versioning)). Report bugs and ask
