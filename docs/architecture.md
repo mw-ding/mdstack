@@ -20,7 +20,7 @@ Placeholders used below: `<owner>`, `<repo>`, `<author-login>`,
 The canonical picture of one running deployment: who talks to whom, how a
 GitHub change wakes a worker, and how a release reaches an install. This is
 the [tmux runtime](runtimes/tmux.md); other runtimes keep the same GitHub
-side and gates. Edge labels E1–E22 key the source table below the diagram.
+side and gates. Edge labels E1–E23 key the source table below the diagram.
 
 ```mermaid
 flowchart TD
@@ -50,7 +50,8 @@ flowchart TD
     install["Install<br/>~/.mdstack/releases/current, VERSION"]
   end
   owner -- "E1: chat, decisions" --> coord
-  owner -- "E2: issues, comments, merge-ok" --> issues
+  owner -- "E2: issues, comments, decision replies" --> issues
+  owner -- "E23: /crew steering, merge-ok" --> prs
   coord -- "E3: issues, crew:ready, records" --> issues
   issues -- "E4" --> poll
   prs -- "E4" --> poll
@@ -88,7 +89,7 @@ boundary](runtimes/session.md#recovery-and-support-boundary)).*
 | Edge | Source |
 |---|---|
 | E1 | Coordinator woken by the owner: [protocol §1](protocol.md#1-roles-and-identities) |
-| E2 | Owner commands and merge-ok on GitHub: [protocol §9](protocol.md#9-steering-crew-commands), [§7](protocol.md#7-merge-gate-synthesizer) |
+| E2 | Owner posts and decision replies on the tracker: [owner channel](concepts.md#owner-channel), [triage: owner feedback](triage.md#owner-feedback) |
 | E3 | Spec and handoff stages: [protocol §2](protocol.md#2-stages) |
 | E4, E5 | [`mdstack poll`](runtimes/tmux.md#mdstack-poll); `environments/terminal/crew.d/poll.py` module docstring |
 | E6 | [`mdstack watch`](runtimes/tmux.md#mdstack-watch); `environments/terminal/crew.d/watch.py` `run` |
@@ -101,6 +102,7 @@ boundary](runtimes/session.md#recovery-and-support-boundary)).*
 | E16, E17, E19 | [protocol §7](protocol.md#7-merge-gate-synthesizer), [land rules](protocol.md#land-rules-and-merge-trains) |
 | E20 | [release: Steps](release.md#steps) 6–9; [`.github/workflows/release.yml`](../.github/workflows/release.yml) |
 | E21, E22 | [release: Update path](release.md#update-path), [`mdstack install`](runtimes/tmux.md#mdstack-install) |
+| E23 | PR steering by conversation or inline review comment, `/crew merge-ok` at head: [protocol §9](protocol.md#9-steering-crew-commands), [§7](protocol.md#7-merge-gate-synthesizer) |
 
 ## Roles
 
