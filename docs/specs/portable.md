@@ -3228,12 +3228,17 @@ shared module (`_shared.py`, `up.py`), #1964 lands first and #1965 merges up.
 S1 last. One issue → one PR. Sizes are non-test lines, planning ranges, not
 limits.
 
+Statuses below are synced by #1973: every admitted member landed with the PR
+shown, and no item was added after S0. M61 is built in source only; outcome,
+proof boundary, release status and lessons are in
+[M61 outcome and lessons](#m61-outcome-and-lessons).
+
 | ID | Issue | Scope / named paths | Size | Depends on | Tier | Status |
 |---|---|---|---|---|---|---|
 | S0 | #1972 | This section (PR #1974) | 120–180 docs | Signed M61 approval | default | done |
-| H1 | #1964 | Hot-add and remove a repo on a running team: `up.py` team reconcile, `lead.py` brief rewrite, `down.py` watcher stop reuse; `docs/runtimes/tmux.md`; tests | 120–200 + 20–40 docs | #1972 | deep | open |
-| P1 | #1965 | Owner CLI without `--project`: one guard and help hiding in `_shared.py`, default-team resolution via `core/crew-config.py`, `--repo` selection; `docs/runtimes/tmux.md`, `README.md` quick start; tests | 100–180 + 30–60 docs | #1972; merges up after #1964 if they share a module | deep | open |
-| S1 | #1973 | Status, settled choices as built and tracker reconciliation | 40–80 docs | Every admitted member landed | default | open |
+| H1 | #1964 | Hot-add and remove a repo on a running team: `up.py` team reconcile, `lead.py` brief rewrite, `down.py` watcher stop reuse; `docs/runtimes/tmux.md`; tests (PR #1975) | 120–200 + 20–40 docs | #1972 | deep | done |
+| P1 | #1965 | Owner CLI without `--project`: one guard and help hiding in `_shared.py`, default-team resolution via `core/crew-config.py`, `--repo` selection; `docs/runtimes/tmux.md`, `README.md` quick start; tests (PR #1976) | 100–180 + 30–60 docs | #1972; merges up after #1964 if they share a module | deep | done |
+| S1 | #1973 | Status, settled choices as built and tracker reconciliation (PR #1977) | 40–80 docs | Every admitted member landed | default | done |
 
 **Target environment:** the tmux runtime; every acceptance path uses fake
 tmux and disposable profiles, team files and state. **Owner prerequisites:
@@ -3280,11 +3285,11 @@ state; each refusal row pairs with a valid control.
 
 | Row | State | Outcome | Status |
 |---|---|---|---|
-| H1.1 | Running team; one `[repos.<key>]` added | Render, `team.json` row, Stop hook, persistent watcher; coordinator and lead briefs list it; one inbox message to the coordinator and to each live lead; no window restarted | open |
-| H1.2 | H1.1 repeated | No write, no notice, no second watcher | open |
-| H1.3 | Added repo's checkout is a clone of another repo; `paths.mdstack` missing | Exit 1 with the fresh start's refusal line; nothing written for any added repo; the valid control (H1.1) adds | open |
-| H1.4 | Running team; a bound repo deleted from the file | Its watcher stopped, its `team.json` row and brief rows gone, its state dir kept; notices as H1.1 | open |
-| H1.5 | Removal of a repo with a live run, or of the coordinator's `$CREW_PROJECT` repo | Exit 1, nothing written; the valid control (H1.4) removes | open |
+| H1.1 | Running team; one `[repos.<key>]` added | Render, `team.json` row, Stop hook, persistent watcher; coordinator and lead briefs list it; one inbox message to the coordinator and to each live lead; no window restarted | done |
+| H1.2 | H1.1 repeated | No write, no notice, no second watcher | done |
+| H1.3 | Added repo's checkout is a clone of another repo; `paths.mdstack` missing | Exit 1 with the fresh start's refusal line; nothing written for any added repo; the valid control (H1.1) adds | done |
+| H1.4 | Running team; a bound repo deleted from the file | Its watcher stopped, its `team.json` row and brief rows gone, its state dir kept; notices as H1.1 | done |
+| H1.5 | Removal of a repo with a live run, or of the coordinator's `$CREW_PROJECT` repo | Exit 1, nothing written; the valid control (H1.4) removes | done |
 
 #### P1: owner CLI without `--project` (#1965)
 
@@ -3321,12 +3326,12 @@ Settled choices, which are P1's ACs:
 
 | Row | Shell | Input | Outcome | Status |
 |---|---|---|---|---|
-| P1.1 | Owner | Any command with `--project X` or `--project=X` | Exit 2, the P1.b line, no write; control: same command without it runs | open |
-| P1.2 | Owner | `mdstack <cmd> --help` | No `--project` in the output, exit 0 | open |
-| P1.3 | Owner | `up` / `start` / `attach`, multi-repo team file installed | Acts on the team, no `#repo` needed | open |
-| P1.4 | Owner | Per-repo command: `--repo <key>`; none; unknown key; single-repo team | Selects `FILE#<key>`; exit 2 listing keys; exit 2 listing keys; selects the only repo | open |
-| P1.5 | Owner | `MDSTACK_CONFIG` set to another profile | That profile is used | open |
-| P1.6 | Crew (`CREW_ROLE` set) | `--project`, `--help`, no flag | Exactly as today; the crew test suite passes unchanged | open |
+| P1.1 | Owner | Any command with `--project X` or `--project=X` | Exit 2, the P1.b line, no write; control: same command without it runs | done |
+| P1.2 | Owner | `mdstack <cmd> --help` | No `--project` in the output, exit 0 | done |
+| P1.3 | Owner | `up` / `start` / `attach`, multi-repo team file installed | Acts on the team, no `#repo` needed | done |
+| P1.4 | Owner | Per-repo command: `--repo <key>`; none; unknown key; single-repo team | Selects `FILE#<key>`; exit 2 listing keys; exit 2 listing keys; selects the only repo | done |
+| P1.5 | Owner | `MDSTACK_CONFIG` set to another profile | That profile is used | done |
+| P1.6 | Crew (`CREW_ROLE` set) | `--project`, `--help`, no flag | Exactly as today; the crew test suite passes unchanged | done |
 
 #### Checks, forecast and closing
 
@@ -3339,8 +3344,8 @@ this is not a release cut, and the cut asks the owner before any
 | Unit | Affected local tests (refine against the actual diff) | Status |
 |---|---|---|
 | S0/S1 | Required checks only | done |
-| H1 | `test-crew-up.py`, `test-crew-team.py`, `test-crew-lead.py`, `test-crew-down.py`, `test-crew-attach.py` | open |
-| P1 | Every `dev/tests/*/test-*.py` (`_shared.py` and `core/crew-config.py` are shared plumbing) | open |
+| H1 | `test-crew-up.py`, `test-crew-team.py`, `test-crew-lead.py`, `test-crew-down.py`, `test-crew-attach.py` | done |
+| P1 | Every `dev/tests/*/test-*.py` (`_shared.py` and `core/crew-config.py` are shared plumbing) | done |
 
 Every PR runs `python3 scripts/check-repo.py` and
 `python3 scripts/check-changelog-pr.py --base origin/main --pr N`, with
@@ -3357,6 +3362,52 @@ the owner's M61 approval
 ([c6922720067](https://github.com/mw-ding/mdstack/issues/985#issuecomment-6922720067)),
 recorded per PR at each actual head; it supplies no approval, CI waiver, hold
 clearance, sensitive reason or missing AC proof.
+
+#### M61 outcome and lessons
+
+**Tracker.** S0 (#1972, PR #1974) and every admitted member landed: H1 #1964
+(PR #1975) and P1 #1965 (PR #1976). No item was added after S0. Each issue
+is closed. #1973 closes on this change's merge, then #1966 and M61 close.
+
+**Applied decisions.** H1 was built on H1.a–H1.e as settled: on a running
+session, `up --team` runs `team_reconcile()` in `up.py` before `team_roles`;
+`_team.py` gains `unbind()` and records the coordinator's repo (the first
+repo at start, falling back to the first bound repo for older teams), and
+`bind()` skips an unchanged record, so a no-change repeat writes nothing. Each
+window's notice is one refs-only `brief` inbox message. P1 was built on
+P1.a–P1.g with two refinements. First, an owner shell is `CREW_ROLE` unset
+and `MDSTACK_INTERNAL` unset: mdstack's own child processes and the test and
+campaign harnesses set the marker because they pass `--project` as a crew
+window does, and the tmux adapter strips it so no owner pane inherits it.
+Second, `content` and `feedback`, whose own `--repo` means something else,
+take the key as `--team-repo KEY`, which every owner parser also accepts.
+`OWNER_PROJECT = True` in `crew.d/_shared.py` re-enables the flag, and
+`mdstack layout --write` writes a `<home>/start` that sets `MDSTACK_CONFIG`.
+Rounds: H1 and P1 each passed in round 2. H1's round 1 asked for replayable
+negative controls (an evidence-only fix); P1's found the `--repo` collision.
+P1 merged up after H1 landed, with identical content carried to the merged
+head. No round-cap extension was used. All H1 and P1 matrix rows are `done`.
+
+**Proof boundary.** H1 acceptance runs on fake tmux and disposable state
+(`TeamReconcile` in `dev/tests/environments/test-crew-team.py`, rows H1.1–H1.5
+in one walk); P1 on disposable profiles and team files
+(`dev/tests/environments/test-crew-owner-cli.py`, rows P1.1–P1.6).
+**Source delivery:** every unit is on `main`. **Release:** none is in a
+release; v7.16.0 (2026-11-17T09:34Z) predates all of them, and their
+fragments wait in `changes/unreleased/`. P1's fragment carries a
+**Breaking:** entry, so the next cut asks the owner before picking the
+version. **Installation:** nothing here claims an installed crew, a live
+hot-add on a running team or an owner shell without `--project`.
+
+**Lessons.** No lesson file was added. From the milestone itself:
+
+- A guard's negative control belongs in the PR as a replayable captured pair;
+  "checked locally, reverted" cost H1 a round.
+- A new option name shared across every command needs a collision audit: the
+  spec's `--repo` already meant something else on `content` and `feedback`,
+  which only review caught.
+- The shared-module ordering rule held: H1 landed first and P1's merge-up
+  carried identical content.
 
 ## 6. Decisions
 
