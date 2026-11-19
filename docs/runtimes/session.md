@@ -5,7 +5,7 @@
 > - **Current rules:** [protocol](../protocol.md), [runtime contract](README.md#contract)
 > - **Built:** [Run parameters for hosted dispatch](#run-parameters-for-hosted-dispatch) via `mdstack brief` (#647); the [selector, options and briefs](#selector-options-and-briefs) (#914); [starting the coordinator](#starting-the-coordinator) via `mdstack up` (#1548); [upgrading](#upgrading) via `mdstack upgrade` (#1541); the [triage sweep routine](#triage-sweep-routine) (#1404), opt-in since #1724; stack land by top change with revision ids and per-change readback (#1722); the one-time bootstrap for an install without `install.json` in [upgrading](#upgrading) (#1727)
 > - **Design only:** everything in [Implementation follow-ups](#implementation-follow-ups)
-> - **Last checked:** 2026-11-12 at `8b6ebe4`
+> - **Last checked:** 2026-11-18 at `f7e4938`
 
 `runtime.name = "session"` runs one interactive coordinator session,
 with short-lived workers as native subagents or external harness CLI runs
@@ -14,11 +14,16 @@ with short-lived workers as native subagents or external harness CLI runs
 single-session mode used to build mdstack on 2026-10-29: a Claude Code
 coordinator, subagent builders and an independent Codex reviewer.
 
-The validator and renderer accept the selector; the lifecycle mechanisms
-below remain manual procedures, and bootstrap's
+Support level: **attended only** ([support table](README.md#support)). The
+validator and renderer accept the selector, `mdstack brief` fills each
+worker's run block, `mdstack up` starts the coordinator and
+`mdstack upgrade` upgrades the install. Dispatch, liveness, receipts,
+worktrees, locks and ownership guards remain manual procedures run by the
+coordinator with a person attended, and bootstrap's
 [harness pointers](../bootstrap.md#q4-install-targets) do not implement this
-runtime. It adds no rule, gate, cap, marker field or label: the
-[protocol](../protocol.md) and [runtime contract](README.md#contract) apply.
+runtime. Unattended progress needs the tmux runtime. It adds no rule, gate,
+cap, marker field or label: the [protocol](../protocol.md) and
+[runtime contract](README.md#contract) apply.
 
 ## Selector, options and briefs
 
