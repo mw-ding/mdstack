@@ -7,12 +7,13 @@ Reviewed PRs only (`docs/memory.md`).
 - Pre-dispatch `cmd=plan-ok` per milestone tracker, even after #985 (#1779).
 - Worker/test tmux: no unowned servers (#1474).
 - Unbuilt-feature ACs: lab proof on their issue (#1472).
-- Owner-shell captures: builder-signed fix review at head (#1766).
+- Owner-shell proofs: milestone close (S1); confirm owner runs them
+  early, else follow up on their word (#1989, #985 c7014850164). PRs
+  give commands outside tmux; builder-signed fix review at head. Exit
+  71: set `runtime.options.sandbox_env`, relaunch leads, window 0;
+  check PATH `codex`/`claude` first (#1465, #1478, #1544, #1707,
+  #1766, #985 c6816385952).
 - List open milestones before adding (#985 c6757404578).
-- Exit 71: launchers need `runtime.options.sandbox_env` (fix profile,
-  relaunch leads, window 0); check PATH `codex`/`claude` before proof
-  asks; builder PRs give owner-shell commands outside tmux (#1465,
-  #1478, #1544, #1707, #985 c6816385952).
 - Merge-ok beats changes only if all open findings are unverifiable
   proofs; log scope at head, file follow-up (#1613, #1614).
 - Merge up budgeted coordinator brief PRs before land; lone lands skip
@@ -26,8 +27,8 @@ Reviewed PRs only (`docs/memory.md`).
   note at once (#1877).
 - Until #1850 installed: Claude builders ack mid-turn inbox at turn
   end; busy one's no-ack: read pane, never restart.
-- Post-land remove PR review files; route reclaims builder. Post-cut:
-  check release, close milestone, capture, admit next (#1559, #1719).
+- Post-cut: check release, close milestone, capture, admit next (#1559,
+  #1719).
 - Until #1830/#1835/#1836 ship: deep tier via builder-lead note ref;
   hand synthesizer land on merge-ok at green CI; lead settles
   owner-blocked held id, re-sends on answer (#1774, #1832, #1833).
