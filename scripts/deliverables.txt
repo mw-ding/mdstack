@@ -60,7 +60,7 @@ docs/diagrams/**	internal	n/a	Maintainer docs: diagrams, not loaded by roles
 docs/express-lane.md	deliverable	tmux	Profile and pack contract: express flavor design for the tmux binding ([#636](https://github.com/mw-ding/eng-crew/issues/636))
 docs/findings/**	internal	n/a	Maintainer docs: findings buffer, not loaded by roles
 docs/flavors.md	deliverable	all	Profile and pack contract: flavor keys and the floor ([#156](https://github.com/mw-ding/eng-crew/issues/156))
-docs/guides/*.md	deliverable	all	Install and upgrade docs: getting-started, connector, pack author and migration guides ([#1238](https://github.com/mw-ding/eng-crew/issues/1238))
+docs/guides/*.md	deliverable	all	Install and upgrade docs: getting-started, configuration, connector, pack author and migration guides ([#1238](https://github.com/mw-ding/eng-crew/issues/1238))
 docs/handoff.md	deliverable	all	Coordinator procedure: runtime handoff the coordinator runs (#157)
 docs/interfaces.md	deliverable	all	Protocol bundle (core): the text roles load and cite
 docs/lessons/**	internal	n/a	Maintainer docs: lessons log, history not loaded by roles
