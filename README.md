@@ -178,7 +178,7 @@ Default profile names; window indexes from the
 
 The terminal (tmux) runtime is the shipped way to run a crew. Which runtimes
 and harnesses are supported, attended-only or design, and their declared
-gaps: [docs/runtimes/README.md](docs/runtimes/README.md) and the
+gaps: the [support table](docs/runtimes/README.md#support) and the
 [harness adapters](docs/runtimes/harness-adapters.md).
 
 ## Release and support

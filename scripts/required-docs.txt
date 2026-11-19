@@ -184,7 +184,7 @@ scripts/intake-sweep.py
 scripts/metrics-decide.py
 scripts/step-summary.py
 templates/README.md
-templates/README.md :: # Routine and listener templates
+templates/README.md :: # Template catalog
 templates/README.md :: ## Event to consuming role
 templates/README.md :: ## Files
 templates/README.md :: ## Placeholders
