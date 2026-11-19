@@ -18,23 +18,26 @@ release tag. Use a release that includes `mdstack bootstrap`; check
 `<mdstack>/cli/mdstack bootstrap --help`. An untagged development checkout
 requires `--dev`, records its commit SHA and satisfies no version pin.
 
-Write `<project>/config.toml` using item 1 of the
-[manual fallback](#manual-fallback). For tmux, use
-[Set up the target repo](../runbook-new-repo.md#set-up-the-target-repo) for the runtime-specific
-profile values. Set every path used by the install to a real path; for tmux,
-`paths.mdstack` must be `<state-dir>/<owner>__<repo>/mdstack`, the link
-bootstrap creates to the bundle. Use an absolute project-file path:
+Write the profile using item 1 of the [manual fallback](#manual-fallback).
+For tmux, write `~/.mdstack/config.toml` as in
+[Write the config](../guides/getting-started.md#2-write-the-config), the
+copyable first-run path. Set every path used by the install to a real path;
+for tmux, `paths.mdstack` must be `<state-dir>/<owner>__<repo>/mdstack`, the
+link bootstrap creates to the bundle. Owner commands take no `--project`
+(8.0.0): they read `$MDSTACK_CONFIG` (an absolute path), else
+`~/.mdstack/config.toml`, and refuse `--project` with exit 2
+([migration guide](../guides/migration.md)):
 
 ```bash
-<mdstack>/cli/mdstack bootstrap [--project <config.toml>] --dry-run
-<mdstack>/cli/mdstack bootstrap [--project <config.toml>]
+mdstack bootstrap --dry-run
+mdstack bootstrap
 ```
 
 Pass `--org-profile <pack>/profile.toml` to both commands if a pack applies.
 Review the render diff, target paths and human steps before confirming apply.
 In a non-interactive shell, use `--yes` only after reviewing the dry run.
 A failed preflight stops the install; follow its hints, use
-`<mdstack>/cli/mdstack doctor [--project <config.toml>] --fix` for
+`mdstack doctor --fix` for
 missing state directories, then retry. Never overwrite a tracked, edited or
 unowned target to get past a refusal.
 
@@ -46,8 +49,11 @@ link in the shared state directory. Grok Bot receives the deployed render at
 left to `mdstack up`. See [bootstrap](../bootstrap.md) for the design and build slices.
 
 Complete Steps 1–5 and the remaining wiring in [Step 6](../runbook-new-repo.md#step-6-state-dir-and-wiring-doc).
-The current core does not automate labels, collaborator acceptance, Milestones,
-Project setup, protection choices or the end-to-end smoke test. Record every
+`mdstack doctor --fix --milestone M1` creates the crew labels, the milestone
+and, where its login can, the Project, and sends the reviewer invitation. The
+current core does not automate collaborator acceptance, protection choices or
+the end-to-end smoke test: `mdstack bootstrap --smoke` only queues its issue
+([first run](../guides/getting-started.md#6-first-issue)). Record every
 pending human step from the install manifest. Bootstrap does not start roles:
 create Grok Bot routines in [Step 7](../runbook-new-repo.md#step-7-listener-wiring-per-bot), or run
 `mdstack up` for [tmux](../runbook-new-repo.md#run-the-crew), then complete Step 8 and the checklist.
