@@ -96,16 +96,83 @@ Next: [Run the crew](#run-the-crew).
 
 ## Run the crew
 
+Every command below runs from your own terminal, never from a crew window.
+Each links to its exact behaviour in the [tmux binding](../runtimes/tmux.md#usage).
+
+### Start and reattach
+
 | Command | What it does |
 |---|---|
-| `mdstack up` | Renders the briefs, installs the coordinator's turn-end guard, starts the session with `ash` in window 0 and the enabled builder and reviewer leads, unless the [launch topology](../runtimes/tmux.md#launch-topology) or `--coordinator-only` starts none ([README: Bringing up the team](../../README.md#bringing-up-the-team)). Running again only prints the attach command |
-| `mdstack attach ash --rw` | Interactive view of `ash`, for typing to it. Without `--rw` it is read-only; `mdstack attach builders` tiles the builder band. Detach with the tmux prefix and `d` |
-| `mdstack status` | One row per window: role, item, head, heartbeat age, liveness (`alive`, `dead`, `missing`, `ambiguous`), last status line |
-| `mdstack logs <window> [-f]` | The run's step summary, never raw logs |
+| `mdstack start` (or `<home>/start`) | The everyday entry: starts the crew if it is down, then attaches your terminal to `ash` in window 0. A running crew gets no second session or watcher, so it is also how you reattach. Inside the crew's tmux server it switches your client instead of nesting; a client of another tmux server is refused (exit 1: detach first). A team file starts the whole team unless `--repo <key>` names one repo ([mdstack start](../runtimes/tmux.md#mdstack-start)) |
+| `mdstack up` | Starts without attaching: renders the briefs, installs the coordinator's turn-end guard, starts the session with `ash` in window 0 and the enabled builder and reviewer leads, unless the [launch topology](../runtimes/tmux.md#launch-topology) or `--coordinator-only` starts none ([README: Bringing up the team](../../README.md#bringing-up-the-team)). On a running session it only prints the attach command; a running team session also picks up repos added to or removed from its team file ([mdstack up](../runtimes/tmux.md#mdstack-up)) |
+
+### Attach modes
+
+| Command | Starts the crew? | What you get |
+|---|---|---|
+| `mdstack attach` (no target) | **Yes**, when it is down | The same path as `mdstack start` for the installed team: an interactive terminal on `ash` |
+| `mdstack attach <window>` or `<role>` | Never | A read-only view: keystrokes never reach the agent. Add `--rw` to type to it, as in `mdstack attach ash --rw` |
+| `mdstack attach builders` | Never | A temporary tiled read-only view of the builder band, removed when you detach |
+
+Use a target when you only mean to look; a bare `attach` on a stopped crew
+starts it. Detach with the tmux prefix and `d`: detaching stops nothing.
+Attaching selects that window for every client on the session
+([mdstack attach](../runtimes/tmux.md#mdstack-attach)).
+
+### Status and logs
+
+| Command | What it does |
+|---|---|
+| `mdstack status` | A `coordinator` row, then one row per run: role, item, head, heartbeat age, liveness (`alive`, `dead`, `missing`, `ambiguous`), last status line ([mdstack status](../runtimes/tmux.md#mdstack-status)) |
+| `mdstack logs <window> [-f]` | The run's step summary, never raw logs ([mdstack logs](../runtimes/tmux.md#mdstack-logs)) |
 | `mdstack drain` | Prints and empties the wake queue; `ash` runs it each turn, so run it by hand only to inspect a stuck queue |
-| `mdstack restart <window>` | Restarts a `dead` or `missing` run once, keeping unlanded work in its worktree |
-| `mdstack kill <window>` | Stops the window's process group and removes its worktree and state; refuses to delete unlanded work unless `--discard --reason "<why>"` (step summaries under `.crew/` do not count) |
-| `mdstack down` | Kills every role window, then the session; refuses while the land lock is held and keeps any window with unlanded work (exit 1) |
+
+### Pause, resume and stop
+
+| Command | Stops | Keeps |
+|---|---|---|
+| `mdstack pause [--reason <text>]` | Every role window | `ash`, the watcher, and every run's worktree, record, claim, inbox and status file. The `pause.json` barrier blocks new spawns and lands until `resume` |
+| `mdstack resume` | Nothing | Ends the pause on your word: rechecks each stopped run live, restarts the ones still open and not held, starts the leads, and wakes `ash` |
+| `mdstack down --preserve` | The watcher, every window and the session | Every run's work, for maintenance such as a migration; allowed while paused |
+| `mdstack down` | The watcher, every role window, then the session | Any window with unlanded work: it names them and exits 1. Refused while the land lock is held or the crew is paused |
+| `mdstack kill <window>` | One window's process group | Nothing: it removes the worktree and state, and refuses unlanded work unless `--discard --reason "<why>"` (step summaries under `.crew/` do not count) |
+
+To stop work while you are away, pause: it is the safe shutdown that keeps
+`ash` able to answer and the queue filling. `pause` exits 75 while a land is
+in progress (run it again once the land ends) and 1 when a process survived
+(pause again); `crew: paused` means done
+([mdstack pause](../runtimes/tmux.md#mdstack-pause),
+[mdstack resume](../runtimes/tmux.md#mdstack-resume)). Use `down` only to
+end the session, `ash` included
+([mdstack down](../runtimes/tmux.md#mdstack-down)). Never use
+`tmux kill-server`: it skips the process-group stop
+([troubleshooting](#tmux-troubleshooting)).
+
+### Upgrade
+
+`mdstack upgrade --version vX.Y.Z` (or `--latest`) fetches and verifies the
+bundle, re-renders this project and every other project the install serves,
+then moves `releases/current`, so the launcher follows. `--dry-run` previews
+the plan. On a running crew it waits for every current pass to finish
+(`--wait-timeout`, default 300 seconds; a timeout changes nothing), then
+restarts the roles with their worktrees, claims and inboxes kept, `ash` last.
+Rolling back is the same command with the previous tag. A major version waits
+for your OK after its `**Breaking:**` entries
+([release.md: Update path](../release.md#update-path),
+[mdstack install](../runtimes/tmux.md#mdstack-install)).
+
+### Recover
+
+| Situation | Do |
+|---|---|
+| A run shows `dead` or `missing` | `ash` decides per run. By hand: `mdstack restart <window>` restarts it once, keeping unlanded work in its worktree; a second failure escalates ([mdstack restart](../runtimes/tmux.md#mdstack-restart)) |
+| `ash` hangs or died | `mdstack restart ash` from your own terminal relaunches the coordinator in place, resuming per `launch.resume` |
+| The tmux server died, the machine rebooted, or after `down --preserve` | `mdstack start` rebuilds the session and `ash` from disk with the existing wake queue. Recorded runs probe `missing`; `up` never respawns them, and `ash` decides per run with `mdstack restart` |
+| The crew was paused before the restart | It stays paused: `mdstack start` brings back only `ash` and the watcher. Run `mdstack resume` |
+| Duplicate or lost runs | [Deduplication and recovery](../runtimes/tmux.md#deduplication-and-recovery) |
+| Anything else | [tmux troubleshooting](#tmux-troubleshooting) |
+
+### First start, wake path and owner duties
 
 **First start: the trust dialog.** A Claude Code coordinator opens at its
 folder-trust dialog, whose default answer is `No, exit`, and `mdstack status`
