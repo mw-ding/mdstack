@@ -2,7 +2,10 @@
 
 **Status: built (M62, [#1997](https://github.com/mw-ding/mdstack/issues/1997));
 every member landed, and the closing slice S1
-([#1996](https://github.com/mw-ding/mdstack/issues/1996)) ran C1–C6.**
+([#1996](https://github.com/mw-ding/mdstack/issues/1996)) ran C1–C3, C6 and
+C4's arrow check. The C4 visual render and the C5 dry run are deferred to
+[#2013](https://github.com/mw-ding/mdstack/issues/2013) by
+[owner decision](https://github.com/mw-ding/mdstack/issues/985#issuecomment-7014850164).**
 Outcome, closing-check results and lessons:
 [portable spec, M62 outcome](portable.md#m62-outcome-and-lessons).
 This spec was the opening slice S0 ([#1985](https://github.com/mw-ding/mdstack/issues/1985)).
@@ -85,7 +88,7 @@ minimum; its issue may add more.
 | D7 | #1992 | Runtime and harness support table; template catalog audience; `docs/runtimes/README.md`, `docs/runtimes/session.md`, `templates/README.md` | 100–160 | #1989 | default |
 | D8 | #1993 | Upgrades: 7.x to 8.0.0 owner migration, wrapper regeneration, version-labelled older recipes; `docs/guides/migration.md`, `docs/release.md` | 140–200 | #1989 | default |
 | D9 | #1994 | Contributor and community hygiene: `LICENSE`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `.github/ISSUE_TEMPLATE/`, `.github/PULL_REQUEST_TEMPLATE.md` | 150–200 | #1990–#1993 | default |
-| S1 | #1996 | Status and tracker sync, the owner's clean-profile dry run, closing checks C1–C6, acceptance ledger | 100–160 | Every admitted member landed | default |
+| S1 | #1996 | Status and tracker sync, closing checks C1–C6, acceptance ledger; the owner's clean-profile dry run is deferred to #2013 | 100–160 | Every admitted member landed | default |
 
 ### Member ACs
 
@@ -140,8 +143,8 @@ green `check-repo.py` alone proves none of C1–C3.
 | C1 | Full page reachability | Every tracked Markdown page under `docs/` is reachable by relative links from `README.md` or `docs/README.md`; the unreachable list is empty |
 | C2 | Link and anchor validity | Every relative link in tracked Markdown resolves to a tracked file, and every `#fragment` resolves to a heading anchor in its target |
 | C3 | Evidence accessibility | Every link on the newcomer path (README, D4–D9 pages) resolves for an unauthenticated reader; none points into a private repository as current proof |
-| C4 | Mermaid render at the final SHA | Every Mermaid block in `README.md` and `docs/architecture.md` renders on github.com at the final SHA, and each D3 arrow is compared against the anchor it cites |
-| C5 | Clean-profile proof | The owner runs D4's owner-shell block once against the final walkthrough, from a clean profile to a merged PR; its output is recorded as a builder-signed review at S1's head. S1 does not close without it |
+| C4 | Mermaid render at the final SHA | Every Mermaid block in `README.md` and `docs/architecture.md` renders on github.com at the final SHA, and each D3 arrow is compared against the anchor it cites. Arrows checked at S1; the visual render is deferred to #2013 |
+| C5 | Clean-profile proof | The owner runs D4's owner-shell block once against the final walkthrough, from a clean profile to a merged PR; its output is recorded as a builder-signed review. Deferred to #2013 by [owner decision](https://github.com/mw-ding/mdstack/issues/985#issuecomment-7014850164); S1 closes without it |
 | C6 | Member ledger | Every member row is `done` with its PR, or `dropped` with a recorded reason; PD1 and PD3 are visible in `LICENSE` and `SECURITY.md` |
 
 Not in the closing checks (PD4): a public-text or secret re-scan, a

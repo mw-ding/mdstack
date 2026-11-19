@@ -3420,8 +3420,8 @@ recorded as done for this opening slice, effective on merge. Publication
 dispositions (#1995) left M62.
 
 Statuses below are synced by #1996: every admitted member landed with the PR
-shown, and no member was added after S0. The closing checks, the owner's
-clean-profile run and lessons are in
+shown, and no member was added after S0. The closing checks, the deferral of
+the owner's clean-profile run and lessons are in
 [M62 outcome and lessons](#m62-outcome-and-lessons).
 
 | ID | Issue | Scope | Depends on | Tier | Status |
@@ -3436,7 +3436,7 @@ clean-profile run and lessons are in
 | D7 | #1992 | Runtime and harness support (PR #2005) | #1989 | default | done |
 | D8 | #1993 | Upgrades and v8 migration (PR #2006) | #1989 | default | done |
 | D9 | #1994 | Contributor and community hygiene (PR #2010) | #1990–#1993 | default | done |
-| S1 | #1996 | Status sync, closing checks and the owner's clean-profile run (PR #2012) | Every admitted member landed | default | done |
+| S1 | #1996 | Status sync and closing checks; C4 render and C5 run deferred to #2013 (PR #2012) | Every admitted member landed | default | done |
 
 #### M62 outcome and lessons
 
@@ -3458,24 +3458,27 @@ off, and S1 reads it off again, so that route shows no form until an admin
 turns it on. One scope change: the clean-profile dry run moved from D4 to S1
 ([amendment](https://github.com/mw-ding/mdstack/issues/1989#issuecomment-6996456089)),
 because builder sessions cannot launch harnesses (#1465) and one owner run
-against the final pages covers what D5–D9 changed after D4. Rounds: D3
+against the final pages covers what D5–D9 changed after D4. At close, the
+owner deferred that run and the C4 visual render to
+[#2013](https://github.com/mw-ding/mdstack/issues/2013) and closed M62
+without them ([decision](https://github.com/mw-ding/mdstack/issues/985#issuecomment-7014850164)). Rounds: D3
 passed in round 3 and D4 in round 2 (its round-1 finding was answered by that
 amendment); every other member passed in round 1.
 
-**Closing checks.** S1 ran C1–C6 of [public-docs.md §4](public-docs.md#4-closing-checks)
-at its head and records the commands, outputs and SHA in the acceptance
+**Closing checks.** S1 ran C1–C3, C6 and C4's arrow check from
+[public-docs.md §4](public-docs.md#4-closing-checks) at its head and records the commands, outputs and SHA in the acceptance
 ledger on #1996. In summary: C1, every tracked page under `docs/` is reachable
 from `README.md` or `docs/README.md`. C2, every relative link and `#fragment`
 in tracked Markdown resolves. C3, every external link on the newcomer path
 answers an unauthenticated reader, and none points into a private repository.
-Legacy `mw-ding/eng-crew` links redirect to this public repository. C4, the
-Mermaid blocks (all three are in `docs/architecture.md`, none in the README)
-were checked on github.com at that head, and D3's edges E1–E23 against their
-cited anchors. 22 matched; E22 (install to coordinator, rendered briefs)
+Legacy `mw-ding/eng-crew` links redirect to this public repository. C4: D3's
+edges E1–E23 were compared against their cited anchors. 22 matched; E22 (install to coordinator, rendered briefs)
 cited only the upgrade's re-render, so S1 adds the `mdstack up` render step
-as its source. C5 is the owner's run of D4's owner-shell block against the
-final walkthrough. It is recorded as a builder-signed review on S1's PR, and
-S1 does not merge without it. C6 is the member table above, with PD1 and PD3
+as its source. The visual render of the three Mermaid blocks (all in
+`docs/architecture.md`, none in the README) was not run, because the session
+sandbox blocks a browser; it is deferred to #2013. C5, the owner's run of
+D4's owner-shell block against the final walkthrough, is deferred to #2013 by
+owner decision, and S1 closes without it. C6 is the member table above, with PD1 and PD3
 visible in `LICENSE` and `SECURITY.md`. The scans behind C1–C3 are scratch
 helpers, not shipped: `check-repo.py` still strips fragments and skips
 external URLs.
@@ -3483,13 +3486,15 @@ external URLs.
 **Source delivery, release and installation.** Every M62 unit is on `main`.
 None is in a release: v8.0.0 (2026-11-18) predates all of them, and their
 fragments wait in `changes/unreleased/`. Completing M62 is not a release
-cut. Beyond the owner's C5 run, no installed crew is claimed.
+cut. No installed crew or first-run proof is claimed until #2013 records
+one.
 
 **Lessons.** No lesson file was added. From the milestone itself:
 
-- A proof that needs the owner's shell belongs once in the closing slice,
-  against the final pages. Running it at D4 would have blocked D5–D9 on the
-  owner and still needed a rerun.
+- A proof that needs the owner's shell belongs once, against the final
+  pages, not in an early member: running it at D4 would have blocked D5–D9.
+  Even in the closing slice it waits on the owner, who chose to close M62
+  and track the run in #2013 rather than hold the milestone.
 - A green `check-repo.py` proves no anchor or external link. D4 and S1 each
   wrote a scratch fragment scan; folding one into `check-repo.py` needs its
   own scope.
