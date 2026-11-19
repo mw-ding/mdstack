@@ -3471,7 +3471,9 @@ answers an unauthenticated reader, and none points into a private repository.
 Legacy `mw-ding/eng-crew` links redirect to this public repository. C4, the
 Mermaid blocks (all three are in `docs/architecture.md`, none in the README)
 were checked on github.com at that head, and D3's edges E1–E23 against their
-cited anchors. C5 is the owner's run of D4's owner-shell block against the
+cited anchors. 22 matched; E22 (install to coordinator, rendered briefs)
+cited only the upgrade's re-render, so S1 adds the `mdstack up` render step
+as its source. C5 is the owner's run of D4's owner-shell block against the
 final walkthrough. It is recorded as a builder-signed review on S1's PR, and
 S1 does not merge without it. C6 is the member table above, with PD1 and PD3
 visible in `LICENSE` and `SECURITY.md`. The scans behind C1–C3 are scratch
