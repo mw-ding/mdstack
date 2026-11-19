@@ -1,7 +1,11 @@
 # Spec: public onboarding and documentation
 
-**Status: open (M62, [#1997](https://github.com/mw-ding/mdstack/issues/1997)).**
-This is the opening slice S0 ([#1985](https://github.com/mw-ding/mdstack/issues/1985)).
+**Status: built (M62, [#1997](https://github.com/mw-ding/mdstack/issues/1997));
+every member landed, and the closing slice S1
+([#1996](https://github.com/mw-ding/mdstack/issues/1996)) ran C1–C6.**
+Outcome, closing-check results and lessons:
+[portable spec, M62 outcome](portable.md#m62-outcome-and-lessons).
+This spec was the opening slice S0 ([#1985](https://github.com/mw-ding/mdstack/issues/1985)).
 It records the owner's decisions, the member rows and the numbered closing
 checks that S1 runs. Member statuses live in
 [portable spec, M62](portable.md#m62-public-onboarding-and-documentation).

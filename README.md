@@ -198,6 +198,9 @@ gaps: the [support table](docs/runtimes/README.md#support) and the
   [closed milestones](https://github.com/mw-ding/mdstack/milestones?state=closed);
   platform merge enforcement and its limits are in
   [docs/merge-enforcement.md](docs/merge-enforcement.md).
+- **M62 (public onboarding and documentation):** the walkthrough, guides,
+  license and community files are on `main`, not in a release; 8.0.0
+  predates them ([M62 outcome](docs/specs/portable.md#m62-outcome-and-lessons)).
 
 The crew builds this repository itself through the normal PR pipeline.
 
