@@ -9,8 +9,8 @@
 
 `runtime.name = "session"` runs one interactive coordinator session,
 with short-lived workers as native subagents or external harness CLI runs
-(roadmap 17.13, [#340](https://github.com/mw-ding/eng-crew/issues/340), after
-[#179](https://github.com/mw-ding/eng-crew/issues/179)). This describes the
+(roadmap 17.13, [#340](https://github.com/mw-ding/mdstack/issues/340), after
+[#179](https://github.com/mw-ding/mdstack/issues/179)). This describes the
 single-session mode used to build mdstack on 2026-10-29: a Claude Code
 coordinator, subagent builders and an independent Codex reviewer.
 
@@ -271,7 +271,7 @@ uses the [gap declaration](README.md#gap-declaration) format.
 
 A hosted or hand-dispatched session gets no runtime-filled run block, so the
 coordinator builds it with the same helper `mdstack spawn` uses for tmux
-([#647](https://github.com/mw-ding/eng-crew/issues/647)) and never
+([#647](https://github.com/mw-ding/mdstack/issues/647)) and never
 hand-writes run parameters:
 
 ```sh
@@ -292,7 +292,7 @@ the pass ([worker brief rules](../roles.md#worker-brief-template)).
 
 The Grok Bot B1, B2 and V2 prompts follow this recipe for every build, fix,
 review and validate worker turn, with the claim, engine and worktree filled
-([#778](https://github.com/mw-ding/eng-crew/issues/778)).
+([#778](https://github.com/mw-ding/mdstack/issues/778)).
 
 ## Recovery and support boundary
 

@@ -3471,7 +3471,9 @@ ledger on #1996. In summary: C1, every tracked page under `docs/` is reachable
 from `README.md` or `docs/README.md`. C2, every relative link and `#fragment`
 in tracked Markdown resolves. C3, every external link on the newcomer path
 answers an unauthenticated reader, and none points into a private repository.
-Legacy `mw-ding/eng-crew` links redirect to this public repository. C4: D3's
+Legacy `mw-ding/eng-crew` issue links on those pages stopped resolving for
+an unauthenticated reader (404; only the repository root still redirects), so
+S1 points them at the same issues in this repository. C4: D3's
 edges E1–E23 were compared against their cited anchors. 22 matched; E22 (install to coordinator, rendered briefs)
 cited only the upgrade's re-render, so S1 adds the `mdstack up` render step
 as its source. The visual render of the three Mermaid blocks (all in

@@ -2,8 +2,8 @@
 
 What every runtime must provide so the core protocol keeps its guarantees,
 whichever runtime runs the crew (portable mdstack, roadmap 13.8,
-[#120](https://github.com/mw-ding/eng-crew/issues/120); contract set decided on
-[#130](https://github.com/mw-ding/eng-crew/issues/130)). Terms are in
+[#120](https://github.com/mw-ding/mdstack/issues/120); contract set decided on
+[#130](https://github.com/mw-ding/mdstack/issues/130)). Terms are in
 [concepts.md](../concepts.md). This page adds no rule, gate, cap, marker field
 or label; the [protocol](../protocol.md) still owns them. Each binding
 ([grok-bot.md](grok-bot.md); [tmux.md](tmux.md), shipped in M14 and M14.1) fills in
@@ -124,7 +124,7 @@ to report:
 | `alive` | The run exists and is working or waiting on a known wake | None |
 | `dead` | The run existed and has exited without a final status | Restart in a fresh worktree |
 | `missing` | A run is recorded as in flight but none exists with its recorded identity | Restart in a fresh worktree |
-| `ambiguous` | The runtime cannot tell (no progress signal, probe failed) | Re-check, then escalate to the coordinator after a bounded time; never restart, except the tmux binding's two kill-and-respawns: a window whose launch options should have prevented its dialog, once (the coordinator brief's dialog rule), and a stuck synthesizer after a failed nudge, once per PR ([Q7](tmux.md#q7-failure), [#312](https://github.com/mw-ding/eng-crew/issues/312)) |
+| `ambiguous` | The runtime cannot tell (no progress signal, probe failed) | Re-check, then escalate to the coordinator after a bounded time; never restart, except the tmux binding's two kill-and-respawns: a window whose launch options should have prevented its dialog, once (the coordinator brief's dialog rule), and a stuck synthesizer after a failed nudge, once per PR ([Q7](tmux.md#q7-failure), [#312](https://github.com/mw-ding/mdstack/issues/312)) |
 
 A run is identified by a unique handle plus its start time, both recorded at
 spawn. A probe that finds a different handle or start time classifies the run
@@ -149,7 +149,7 @@ so another crew's run never starts in it
 ([working-copy claims](multi-device.md#working-copy-claims)).
 
 Teardown never removes a worktree whose work has not landed (decision
-[#160 row 3](https://github.com/mw-ding/eng-crew/issues/160#issuecomment-6531125583)).
+[#160 row 3](https://github.com/mw-ding/mdstack/issues/160#issuecomment-6531125583)).
 It removes one only when either holds:
 
 - **Provably landed.** The worktree has no uncommitted or untracked paths
@@ -193,7 +193,7 @@ Only one runtime instance may act on a repo at a time
 ownership to another runtime and back
 ([handoff design](../handoff.md), #157). Who owns the repo is recorded on
 the tool of record (the ownership record lands with
-[#210](https://github.com/mw-ding/eng-crew/issues/210)). A runtime:
+[#210](https://github.com/mw-ding/mdstack/issues/210)). A runtime:
 
 - **Guards.** It reads the ownership record at the start of every wake and
   again right before each push, post and land. When it is not the owning
