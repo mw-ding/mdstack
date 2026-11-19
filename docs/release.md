@@ -9,27 +9,27 @@
 
 How a version of the [deliverables](deliverables.md) is cut, approved and
 published, how installed environments take it, and how to roll back
-(roadmap R1.1, [#145](https://github.com/mw-ding/eng-crew/issues/145);
-umbrella [#110](https://github.com/mw-ding/eng-crew/issues/110);
+(roadmap R1.1, [#145](https://github.com/mw-ding/mdstack/issues/145);
+umbrella [#110](https://github.com/mw-ding/mdstack/issues/110);
 [portable spec P9](specs/portable.md#2-requirements)).
 
 This page adds no rule, gate, cap, marker field or label. Its release gate
 row is in the [gate registry](protocol.md#gate-registry), added by
 [R1.3](#follow-up-issues) under the
 [gate contract](protocol.md#gate-contract). Implemented: the release
-workflow ([#218](https://github.com/mw-ding/eng-crew/issues/218), PR #243),
-the bundle build ([#236](https://github.com/mw-ding/eng-crew/issues/236),
+workflow ([#218](https://github.com/mw-ding/mdstack/issues/218), PR #243),
+the bundle build ([#236](https://github.com/mw-ding/mdstack/issues/236),
 PR #245) and the bundle attach
-([#246](https://github.com/mw-ding/eng-crew/issues/246), PR #248). `v1.0.0`
+([#246](https://github.com/mw-ding/mdstack/issues/246), PR #248). `v1.0.0`
 was tagged and released by hand on `b2144a2`, and `v2.0.0` was cut through
 `release.yml` after the CHANGELOG cut in PR #273 (both
-[#219](https://github.com/mw-ding/eng-crew/issues/219)).
+[#219](https://github.com/mw-ding/mdstack/issues/219)).
 
 ## Decisions
 
 Release on cut merge is the approved design
-([#274](https://github.com/mw-ding/eng-crew/issues/274)), implemented by
-[#387](https://github.com/mw-ding/eng-crew/issues/387). Dispatch remains the
+([#274](https://github.com/mw-ding/mdstack/issues/274)), implemented by
+[#387](https://github.com/mw-ding/mdstack/issues/387). Dispatch remains the
 manual fallback.
 
 | Question | Choice | Alternatives considered |
@@ -37,9 +37,9 @@ manual fallback.
 | Trigger | Landing the CHANGELOG cut PR: `release.yml` runs on a `push` to `main` touching `CHANGELOG.md`; `workflow_dispatch` remains for dry runs and manual fallback | Milestone close: an outward action as a side effect of tracker hygiene, and not every milestone is a release. A release label: overloads `crew:*` state tags, which the protocol keeps for change state |
 | Who starts the release | The synthesizer lands the approved cut PR; the workflow completes the release without a coordinator dispatch or run watch | A separate dispatch after landing the cut: an extra owner action |
 | Who approves | The owner's per-PR merge-ok on the cut PR at its head (`pass=steer cmd=merge-ok sha=<head>`), or the coordinator's merge-ok there citing a recorded [release delegation](#release-delegation) ([#1435](https://github.com/mw-ding/mdstack/issues/1435)); the publish job verifies it and the `RELEASE_OWNER` actor check | A standing merge grant: never covers a cut PR. A per-cut chat reply every time: the owner gave the same go repeatedly |
-| CHANGELOG cut | A normal crew PR runs `scripts/changelog-cut.py <version>` ([#217](https://github.com/mw-ding/eng-crew/issues/217)) and lands through §7 with the owner's per-PR merge-ok to trigger the release | The workflow committing the cut to `main`: a direct push bypasses review and breaks invariant 4 (only the synthesizer lands). A workflow-opened PR: PRs opened with the workflow token start no CI, so §7 could never pass |
+| CHANGELOG cut | A normal crew PR runs `scripts/changelog-cut.py <version>` ([#217](https://github.com/mw-ding/mdstack/issues/217)) and lands through §7 with the owner's per-PR merge-ok to trigger the release | The workflow committing the cut to `main`: a direct push bypasses review and breaks invariant 4 (only the synthesizer lands). A workflow-opened PR: PRs opened with the workflow token start no CI, so §7 could never pass |
 | What the workflow writes | A tag, a GitHub Release and the release-issue notice and closure; never a commit | none |
-| Release workflow PR | `crew:sensitive` ([#184](https://github.com/mw-ding/eng-crew/issues/184)); until that class lands, the owner's per-change merge-ok is stated on the PR | Standing doc-only merge-ok: never covers `.github/` |
+| Release workflow PR | `crew:sensitive` ([#184](https://github.com/mw-ding/mdstack/issues/184)); until that class lands, the owner's per-change merge-ok is stated on the PR | Standing doc-only merge-ok: never covers `.github/` |
 
 ## Steps
 
@@ -69,7 +69,7 @@ manual fallback.
    `scripts/release-*.py` or `scripts/changelog-cut.py`) with its entry
    written directly into the new version section instead of a fragment
    ([CONTRIBUTING: CHANGELOG](../CONTRIBUTING.md#changelog),
-   [#616](https://github.com/mw-ding/eng-crew/issues/616)). Any other change
+   [#616](https://github.com/mw-ding/mdstack/issues/616)). Any other change
    goes in its own PR.
    See [Cut freeze](#cut-freeze) for what holds while it is open.
 3. **Trigger.** The synthesizer lands the cut PR. `release.yml` runs on
@@ -79,7 +79,7 @@ manual fallback.
    cut it then refuses at once unless the run's actor and triggering actor
    are `RELEASE_OWNER`, naming the fix: dispatch as the owner account, or
    have the synthesizer merge the cut PR
-   ([#615](https://github.com/mw-ding/eng-crew/issues/615)).
+   ([#615](https://github.com/mw-ding/mdstack/issues/615)).
 4. **Validate job** (read-only token). At the pushed merge commit it runs
    release-specific checks only and fails closed unless:
    - the top versioned `CHANGELOG.md` section is `[X.Y.Z]` and
@@ -157,7 +157,7 @@ merge-ok covers it.
 A cut validated on a stale merge ref is not validated: a fragment that lands
 after the cut's base leaves `changes/unreleased/` non-empty at the merge
 commit, and `validate` refuses publishing (v5.0.0,
-[#918](https://github.com/mw-ding/eng-crew/issues/918); 7.2.0, #1424 and
+[#918](https://github.com/mw-ding/mdstack/issues/918); 7.2.0, #1424 and
 main-red #1432). The [§7 merge gate](protocol.md#7-merge-gate-synthesizer)
 closes it with two rules
 ([#1433](https://github.com/mw-ding/mdstack/issues/1433)); on tmux
@@ -188,7 +188,7 @@ cut PR's per-PR merge-ok and actor check; it supplies no new approval path.
 ## Release operations
 
 Release is a backend concern ([interfaces: release](interfaces.md#release),
-[#585](https://github.com/mw-ding/eng-crew/issues/585)), so a project or
+[#585](https://github.com/mw-ding/mdstack/issues/585)), so a project or
 pack on any backend gets the release gate from its profile instead of
 rebuilding it. The optional [`[release]` table](profile.md#release) names
 the CHANGELOG, the fragment directory, the versioning scheme and the release
@@ -224,7 +224,7 @@ helper success adds no approval, CI waiver or release permission.
 Summary of the registry row that [R1.3](#follow-up-issues) added; the
 [gate registry](protocol.md#gate-registry) holds the current wording. It
 gates publishing, not merging; the §7 gates are unchanged. The row is
-backend-neutral ([#585](https://github.com/mw-ding/eng-crew/issues/585));
+backend-neutral ([#585](https://github.com/mw-ding/mdstack/issues/585));
 the GitHub binding of each term is in the table above.
 
 | Gate | Satisfied by | Who / how fast | Fail-open | Binding |
@@ -264,7 +264,7 @@ change.
 **Enforcement gap.** This repo is private on the GitHub Free plan, which
 cannot add required reviewers to an environment, and the bots share the
 owner-level account on some runtimes
-([merge enforcement](merge-enforcement.md), [#80](https://github.com/mw-ding/eng-crew/issues/80)).
+([merge enforcement](merge-enforcement.md), [#80](https://github.com/mw-ding/mdstack/issues/80)).
 The publish job checks the cut PR's head-bound owner merge-ok marker and
 `RELEASE_OWNER` actor before tagging or publishing; environment approval is
 not the release go. With `RELEASE_OWNER` unset, publishing refuses. Shared
@@ -317,8 +317,8 @@ nothing pushes a version into an environment.
 
 | Step | Mechanism | Owner |
 |---|---|---|
-| Record | The install writes the bundle's `VERSION` (a tag, or a hash under a [commit release id](#commit-release-id)) next to the live copy | Bootstrap ([#144](https://github.com/mw-ding/eng-crew/issues/144)) |
-| Learn | Each coordinator compares its recorded version with the latest GitHub Release in its triage window; bootstrap's `mdstack doctor` reports it too ([#160](https://github.com/mw-ding/eng-crew/issues/160) row 17). The live Grok Bot coordinator learns the same way; the publish job's release-issue notice is a courtesy, not the mechanism | Coordinator |
+| Record | The install writes the bundle's `VERSION` (a tag, or a hash under a [commit release id](#commit-release-id)) next to the live copy | Bootstrap ([#144](https://github.com/mw-ding/mdstack/issues/144)) |
+| Learn | Each coordinator compares its recorded version with the latest GitHub Release in its triage window; bootstrap's `mdstack doctor` reports it too ([#160](https://github.com/mw-ding/mdstack/issues/160) row 17). The live Grok Bot coordinator learns the same way; the publish job's release-issue notice is a courtesy, not the mechanism | Coordinator |
 | Decide | Minor or patch: the coordinator upgrades. Major: the owner OKs it after reading the `**Breaking:**` entries and the major's section of the [migration guide](guides/migration.md) | Coordinator / owner |
 | Take | Fetch the bundle at the tag (from GitHub, or the `url` or `mirror` [release source](bootstrap.md#release-sources-design) in `[install]`), check `SHA256SUMS` (a `git` source instead checks the tag against its pinned commit and builds the bundle from it), re-render with the project profile, run `check-skill-drift.py --project` against the live dir, deploy, record `VERSION`. Under a user-level install ([mdstack install](runtimes/tmux.md#mdstack-install)), `mdstack upgrade --version` (or `--latest`) also re-renders every other project the install serves, then moves `~/.mdstack/releases/current`, so the `~/.mdstack/bin/mdstack` launcher follows; the previous tag rolls back. Grok Bot keeps the [mirror hold gate](runtimes/grok-bot.md#mirror-hold-gate) record for the deploy | Coordinator via bootstrap upgrade |
 | Before bootstrap | Check out the tag in an mdstack clone, or extract the release bundle ([README: Install](../README.md#install)), and run the same render, drift check and deploy by hand | Coordinator |
@@ -332,9 +332,9 @@ The `--project` forms in this page are the low-level scripts', which keep it.
 ## Upstreaming the session tooling
 
 The first non-Grok session built its helpers outside the repo, unversioned
-([#144](https://github.com/mw-ding/eng-crew/issues/144) problem list). Each
+([#144](https://github.com/mw-ding/mdstack/issues/144) problem list). Each
 becomes a deliverable `crew` subcommand, a module after
-[#224](https://github.com/mw-ding/eng-crew/issues/224), so they land after
+[#224](https://github.com/mw-ding/mdstack/issues/224), so they land after
 that split and touch no shared lines.
 
 | Helper role | What it does | Becomes |
@@ -365,7 +365,7 @@ merge gates retain their meaning; this additive surface is a minor change.
 
 | ID | Issue | Scope | Depends on |
 |---|---|---|---|
-| R1.2 | [#217](https://github.com/mw-ding/eng-crew/issues/217) | `scripts/changelog-cut.py`: `[Unreleased]` to `[x.y.z] - <date>` | this design |
-| R1.3 | [#218](https://github.com/mw-ding/eng-crew/issues/218) | `release.yml`, validate and publish jobs, dry-run in CI, release gate row; `crew:sensitive` | R1.2 |
-| R1.4 | [#219](https://github.com/mw-ding/eng-crew/issues/219) | Retro-tag `v1.0.0`; cut `v2.0.0` after M14 and the #139 smoke | R1.3, #139 |
+| R1.2 | [#217](https://github.com/mw-ding/mdstack/issues/217) | `scripts/changelog-cut.py`: `[Unreleased]` to `[x.y.z] - <date>` | this design |
+| R1.3 | [#218](https://github.com/mw-ding/mdstack/issues/218) | `release.yml`, validate and publish jobs, dry-run in CI, release gate row; `crew:sensitive` | R1.2 |
+| R1.4 | [#219](https://github.com/mw-ding/mdstack/issues/219) | Retro-tag `v1.0.0`; cut `v2.0.0` after M14 and the #139 smoke | R1.3, #139 |
 | proposed | not filed yet | Deliverables manifest with an unclassified-path check; bundle build; helper upstreaming | listed in the #145 PR |

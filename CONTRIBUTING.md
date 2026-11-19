@@ -167,7 +167,7 @@ fragment is left.
 No new shared append-hotspot files: one file per item, or a generated
 aggregate. A file that most PRs edit at the same place makes each merge put
 the next PR in conflict, which costs a builder merge-up and a re-check
-([#325](https://github.com/mw-ding/eng-crew/issues/325)). Per-item files
+([#325](https://github.com/mw-ding/mdstack/issues/325)). Per-item files
 already exist for the changelog ([fragments](#changelog)) and for script usage
 (a script's module docstring). The index files follow the same rule:
 

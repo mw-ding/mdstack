@@ -3419,19 +3419,91 @@ The decisions, writing rules, member ACs and closing checks C1–C6 are in
 recorded as done for this opening slice, effective on merge. Publication
 dispositions (#1995) left M62.
 
+Statuses below are synced by #1996: every admitted member landed with the PR
+shown, and no member was added after S0. The closing checks, the deferral of
+the owner's clean-profile run and lessons are in
+[M62 outcome and lessons](#m62-outcome-and-lessons).
+
 | ID | Issue | Scope | Depends on | Tier | Status |
 |---|---|---|---|---|---|
 | S0 | #1985 | [public-docs.md](public-docs.md) and this section (PR #1998) | Owner plan-ok | default | done |
-| D1 | #1986 | Docs information architecture | #1985 | trivial | open |
-| D2 | #1987 | README | #1986 | trivial | open |
-| D3 | #1988 | Architecture Mermaid view | #1986 | default | open |
-| D4 | #1989 | First-run walkthrough and clean-profile dry run | #1987, #1988 | default | open |
-| D5 | #1990 | Configuration guide | #1989 | default | open |
-| D6 | #1991 | Operating a crew | #1989 | default | open |
-| D7 | #1992 | Runtime and harness support | #1989 | default | open |
-| D8 | #1993 | Upgrades and v8 migration | #1989 | default | open |
-| D9 | #1994 | Contributor and community hygiene | #1990–#1993 | default | open |
-| S1 | #1996 | Status sync and closing checks | Every admitted member landed | default | open |
+| D1 | #1986 | Docs information architecture (PR #1999) | #1985 | trivial | done |
+| D2 | #1987 | README (PR #2000) | #1986 | trivial | done |
+| D3 | #1988 | Architecture Mermaid view (PR #2001) | #1986 | default | done |
+| D4 | #1989 | First-run walkthrough and owner-shell dry-run block (PR #2002) | #1987, #1988 | default | done |
+| D5 | #1990 | Configuration guide (PR #2003) | #1989 | default | done |
+| D6 | #1991 | Operating a crew (PR #2007) | #1989 | default | done |
+| D7 | #1992 | Runtime and harness support (PR #2005) | #1989 | default | done |
+| D8 | #1993 | Upgrades and v8 migration (PR #2006) | #1989 | default | done |
+| D9 | #1994 | Contributor and community hygiene (PR #2010) | #1990–#1993 | default | done |
+| S1 | #1996 | Status sync and closing checks; C4 render and C5 run deferred to #2013 (PR #2012) | Every admitted member landed | default | done |
+
+#### M62 outcome and lessons
+
+**Tracker.** S0 (#1985, PR #1998) and every admitted member landed: D1 #1986
+(PR #1999), D2 #1987 (PR #2000), D3 #1988 (PR #2001), D4 #1989 (PR #2002),
+D5 #1990 (PR #2003), D6 #1991 (PR #2007), D7 #1992 (PR #2005), D8 #1993
+(PR #2006) and D9 #1994 (PR #2010). Each issue is closed. No member
+was added after S0 and none was dropped. Publication dispositions (#1995)
+left M62 under PD4 and stay open, unplaced. #1996 closes on this change's
+merge, then #1997 and the M62 milestone close.
+
+**Applied decisions.** PD1: a root `LICENSE` with the standard MIT text,
+"Copyright (c) 2026 the mdstack authors" (D9), now in the release bundle.
+PD2: the README and pages call mdstack "a multi-agent engineering crew",
+and the pilot "Eng Crew" image left the newcomer path (D2, D3). PD3:
+`SECURITY.md` routes reports to GitHub private vulnerability reporting only
+(D9). The repository setting itself is an owner/admin action: D9 recorded it
+off, and S1 reads it off again, so that route shows no form until an admin
+turns it on. One scope change: the clean-profile dry run moved from D4 to S1
+([amendment](https://github.com/mw-ding/mdstack/issues/1989#issuecomment-6996456089)),
+because builder sessions cannot launch harnesses (#1465) and one owner run
+against the final pages covers what D5–D9 changed after D4. At close, the
+owner deferred that run and the C4 visual render to
+[#2013](https://github.com/mw-ding/mdstack/issues/2013) and closed M62
+without them ([decision](https://github.com/mw-ding/mdstack/issues/985#issuecomment-7014850164)). Rounds: D3
+passed in round 3 and D4 in round 2 (its round-1 finding was answered by that
+amendment); every other member passed in round 1.
+
+**Closing checks.** S1 ran C1–C3, C6 and C4's arrow check from
+[public-docs.md §4](public-docs.md#4-closing-checks) at its head and records the commands, outputs and SHA in the acceptance
+ledger on #1996. In summary: C1, every tracked page under `docs/` is reachable
+from `README.md` or `docs/README.md`. C2, every relative link and `#fragment`
+in tracked Markdown resolves. C3, every external link on the newcomer path
+answers an unauthenticated reader, and none points into a private repository.
+Legacy `mw-ding/eng-crew` issue links on those pages resolved only
+intermittently for an unauthenticated reader (the renamed repository's issue
+pages answered 404 in one run and 200 in the next), so S1 points them at the
+same issues in this repository. C4: D3's
+edges E1–E23 were compared against their cited anchors. 22 matched; E22 (install to coordinator, rendered briefs)
+cited only the upgrade's re-render, so S1 adds the `mdstack up` render step
+as its source. The visual render of the three Mermaid blocks (all in
+`docs/architecture.md`, none in the README) was not run, because the session
+sandbox blocks a browser; it is deferred to #2013. C5, the owner's run of
+D4's owner-shell block against the final walkthrough, is deferred to #2013 by
+owner decision, and S1 closes without it. C6 is the member table above, with PD1 and PD3
+visible in `LICENSE` and `SECURITY.md`. The scans behind C1–C3 are scratch
+helpers, not shipped: `check-repo.py` still strips fragments and skips
+external URLs.
+
+**Source delivery, release and installation.** Every M62 unit is on `main`.
+None is in a release: v8.0.0 (2026-11-18) predates all of them, and their
+fragments wait in `changes/unreleased/`. Completing M62 is not a release
+cut. No installed crew or first-run proof is claimed until #2013 records
+one.
+
+**Lessons.** No lesson file was added. From the milestone itself:
+
+- A proof that needs the owner's shell belongs once, against the final
+  pages, not in an early member: running it at D4 would have blocked D5–D9.
+  Even in the closing slice it waits on the owner, who chose to close M62
+  and track the run in #2013 rather than hold the milestone.
+- A green `check-repo.py` proves no anchor or external link. D4 and S1 each
+  wrote a scratch fragment scan; folding one into `check-repo.py` needs its
+  own scope.
+- A page can document a route that depends on a repository setting, but it
+  cannot turn the setting on. Record the setting and leave the switch to the
+  owner, as D9 did for private vulnerability reporting.
 
 ## 6. Decisions
 

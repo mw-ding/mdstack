@@ -2,7 +2,7 @@
 
 Operator module for onboarding a repo onto a local tmux crew, split out of the
 [onboarding runbook](../runbook-new-repo.md) under the M26 modular
-organization principle ([#676](https://github.com/mw-ding/eng-crew/issues/676)).
+organization principle ([#676](https://github.com/mw-ding/mdstack/issues/676)).
 It holds the tmux prerequisites, the target-repo setup, the run procedure
 and the troubleshooting table. The runbook keeps the parent
 [tmux runtime](../runbook-new-repo.md#tmux-runtime) entry with the runtime

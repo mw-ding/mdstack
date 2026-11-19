@@ -2,7 +2,7 @@
 
 mdstack's runbook entry point in the
 [essential doc set](project-doc-set.md#essential-doc-set)
-([#1219](https://github.com/mw-ding/eng-crew/issues/1219)): how to install,
+([#1219](https://github.com/mw-ding/mdstack/issues/1219)): how to install,
 run, release, operate and recover a crew. Navigation only. Each link goes to
 the doc that owns those steps, and this page adds no rule, step or default of
 its own.

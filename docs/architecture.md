@@ -101,7 +101,8 @@ boundary](runtimes/session.md#recovery-and-support-boundary)).*
 | E15 | Verdict: [protocol §4](protocol.md#4-marker-conventions), [§5](protocol.md#5-rounds-and-escalation) |
 | E16, E17, E19 | [protocol §7](protocol.md#7-merge-gate-synthesizer), [land rules](protocol.md#land-rules-and-merge-trains) |
 | E20 | [release: Steps](release.md#steps) 6–9; [`.github/workflows/release.yml`](../.github/workflows/release.yml) |
-| E21, E22 | [release: Update path](release.md#update-path), [`mdstack install`](runtimes/tmux.md#mdstack-install) |
+| E21 | [release: Update path](release.md#update-path), [`mdstack install`](runtimes/tmux.md#mdstack-install) |
+| E22 | [`mdstack up`](runtimes/tmux.md#mdstack-up) step 3: renders the installed templates into `<state-dir>/<owner>__<repo>/render/`, the briefs `mdstack up` and `mdstack spawn` start windows with; an upgrade re-renders them ([release: Update path](release.md#update-path)) |
 | E23 | PR steering by conversation or inline review comment, `/crew merge-ok` at head: [protocol §9](protocol.md#9-steering-crew-commands), [§7](protocol.md#7-merge-gate-synthesizer) |
 
 ## Roles
