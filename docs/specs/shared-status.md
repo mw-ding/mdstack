@@ -167,8 +167,12 @@ receipt, then the directory synced. A run that loads a receipt validates
 `sequence + 1`, or 1 for `create`) and has content identity
 `content_sha256`. Anything else refuses `receipt-invalid` with no write.
 
-`mdstack status register --project FILE` is the only path that creates a
-registration or a slot; the timer never registers. In order:
+`mdstack status register [--repo KEY]` is the only path that creates a
+registration or a slot; the timer never registers. Since 8.0.0 an owner
+shell names the profile with `--repo` or `MDSTACK_CONFIG`; crew windows and
+the timer still pass `--project FILE`
+([owner shell](../runtimes/tmux.md#user-level-and-project-level-config-1316)).
+In order:
 
 1. Run the §5 read phase with no receipt required.
 2. A receipt for this `destination` and `instance_id` with a matching binding
@@ -197,7 +201,7 @@ stale, and a delayed write can land only there.
 
 ## 5. Publication and the zero-write boundary (S.2, S.4)
 
-`mdstack status publish --project FILE [--check]` writes one record: it is
+`mdstack status publish [--repo KEY] [--check]` writes one record: it is
 what the timer runs. `--check` runs only the read phase and prints the
 record it would publish, or the refusal, writing nothing.
 
@@ -272,7 +276,7 @@ the same interval meets the lock or the interval check and writes nothing.
 
 ## 6. Aggregate view: `status --all` (S.5)
 
-`mdstack status --all --project FILE` is read-only: it never takes the lock
+`mdstack status --all [--repo KEY]` is read-only: it never takes the lock
 or writes the destination or the state dir, and it needs no running tmux
 session. Plain `mdstack status` keeps its current output and exits. It reads
 every page of the configured destination and prints one row per instance,

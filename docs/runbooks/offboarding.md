@@ -16,7 +16,7 @@ Nothing in this module runs by itself; each command is an operator step.
 ## Rollback and offboarding
 
 From a host terminal outside the crew session, preview a bootstrap-managed
-install with `mdstack bootstrap [--project <config.toml>]
+install with `mdstack bootstrap [--repo <key>]
 --uninstall --dry-run`, then apply with `--uninstall --yes`. This pauses open
 crew PRs and ready issues, stops tmux while preserving run files and worktrees,
 removes unchanged untracked install targets and their exclude entries, and archives
