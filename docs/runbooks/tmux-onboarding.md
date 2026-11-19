@@ -17,11 +17,14 @@ The runbook's Steps 0 to 8 describe the Grok Bot wiring after bootstrap. This
 module runs the same pipeline as a local tmux crew instead: one tmux session per repo, one window
 per agent, driven by the `mdstack` CLI. The design and every command's exact
 behaviour are in the [tmux binding](../runtimes/tmux.md#usage); this is the
-operator's path. Below, `mdstack` means `<mdstack>/cli/mdstack`, and every
-command also takes `--project "$CREW_PROJECT"`. Every window gets
-`CREW_PROJECT`, the absolute path of the `config.toml` given to `mdstack up`; in
-your own shell, export it first (`export CREW_PROJECT=<project>/config.toml`,
-absolute).
+operator's path; the first run from install to a merged PR, with a copyable
+config, is the [getting-started walkthrough](../guides/getting-started.md).
+Below, `mdstack` is the launcher `mdstack install` puts on your `PATH`. Owner
+commands take no `--project` (8.0.0): they read `$MDSTACK_CONFIG`, else
+`~/.mdstack/config.toml`, and refuse `--project` with exit 2; `--repo KEY`
+picks one repo of a team file. Crew windows keep `--project "$CREW_PROJECT"`:
+every window gets `CREW_PROJECT`, the absolute path of the config `mdstack up`
+used ([migration guide](../guides/migration.md)).
 
 ## tmux prerequisites
 
@@ -50,7 +53,7 @@ absolute).
   lists it as the `claude role trust` human step until then (#408).
 - An extracted release bundle ([README: Install](../../README.md#install)) or
   an mdstack checkout at `<mdstack>`, and a clone of the target repo at
-  `<project>`.
+  `paths.checkout` (`~/<repo>` by default).
 - In a nested sandbox (an agent session that is itself sandboxed), the org
   pack's sandbox variable, passed as `CREW_SANDBOX_ENV=<NAME>=<value>` in the
   shell that runs `mdstack up` ([Troubleshooting](#tmux-troubleshooting)).
@@ -59,10 +62,13 @@ Next: [Set up the target repo](#set-up-the-target-repo).
 
 ## Set up the target repo
 
-1. **Profile.** Write `<project>/config.toml` from
-   [profiles/tmux.toml](../../profiles/tmux.toml) plus `[repo]` and `[paths]`.
-   `paths.state_dir`, `paths.worktree_root`, `paths.toolchain_bin` and
-   `paths.live_dir` default to placeholders: set each to a real local path.
+1. **Profile.** Write `~/.mdstack/config.toml` (or the file `$MDSTACK_CONFIG`
+   names) from [profiles/tmux.toml](../../profiles/tmux.toml) plus `[repo]`,
+   `identities.owners` and `paths.toolchain_bin`, as in
+   [Write the config](../guides/getting-started.md#2-write-the-config).
+   Any of `paths.state_dir`, `paths.worktree_root`, `paths.toolchain_bin` and
+   `paths.live_dir` left unset falls back to a placeholder: set each to a real
+   local path.
    `mdstack` refuses (exit 1) while a path it uses still resolves to a
    `<placeholder>`, including one inherited from the default profile because
    the key is missing (#265), so a stray copy such as the `config.toml` inside
@@ -75,8 +81,10 @@ Next: [Set up the target repo](#set-up-the-target-repo).
    ([profile.md: Keys](../profile.md#keys)). Preview and apply with
    [bootstrap](../runbook-new-repo.md#bootstrap-recommended). For the [manual fallback](../runbook-new-repo.md#manual-fallback),
    validate and resolve the profile; `mdstack up` renders in either path.
-2. **Labels.** Create the ten `crew:*` labels as in
-   [Step 1](../runbook-new-repo.md#step-1-create-the-crew-labels).
+2. **Labels, milestone and reviewer.** `mdstack doctor --fix --milestone M1`
+   creates the `crew:*` labels and an open `M1` milestone and invites a
+   separate reviewer login; the manual equivalents are
+   [Step 1](../runbook-new-repo.md#step-1-create-the-crew-labels) to Step 3.
 3. **CI.** At least one check must run on every PR: review starts on each new
    head whatever its CI, but `sam` lands only when the CI rollup at head is
    green ([CI and review handoff](../runtimes/tmux.md#mdstack-poll)). Branch protection is

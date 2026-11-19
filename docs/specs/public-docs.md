@@ -75,13 +75,13 @@ minimum; its issue may add more.
 | D1 | #1986 | Information architecture: user, operator, contributor, reference and history routes; `docs/README.md`, `docs/runbook.md`, `docs/metrics/README.md` | 100–160 | #1985 | trivial |
 | D2 | #1987 | README: product and roles, prerequisites, compact launch path, support and version; `README.md` | 150–200 | #1986 | trivial |
 | D3 | #1988 | Architecture: one canonical deployment, wake and release Mermaid view; pilot image off the newcomer path; `docs/architecture.md`, `docs/diagrams/README.md` | 120–180 | #1986 | default |
-| D4 | #1989 | First-run walkthrough, v8 config to first merged PR, with a clean-profile dry run; `docs/guides/getting-started.md`, `docs/runbooks/tmux-onboarding.md`, `docs/runbooks/profile-install.md` | 160–200 | #1987, #1988 | default |
+| D4 | #1989 | First-run walkthrough, v8 config to first merged PR, with a copyable owner-shell dry-run block; `docs/guides/getting-started.md`, `docs/runbooks/tmux-onboarding.md`, `docs/runbooks/profile-install.md` | 160–200 | #1987, #1988 | default |
 | D5 | #1990 | Configuration guide: identities, engines, team and repo selection, concurrency, flavors; new `docs/guides/configuration.md` | 100–180 | #1989 | default |
 | D6 | #1991 | Operating a crew: start, attach modes, pause and resume, status, logs, shutdown, upgrade, recovery; `docs/runbook.md`, `docs/runbooks/tmux-onboarding.md` | 100–180 | #1989 | default |
 | D7 | #1992 | Runtime and harness support table; template catalog audience; `docs/runtimes/README.md`, `docs/runtimes/session.md`, `templates/README.md` | 100–160 | #1989 | default |
 | D8 | #1993 | Upgrades: 7.x to 8.0.0 owner migration, wrapper regeneration, version-labelled older recipes; `docs/guides/migration.md`, `docs/release.md` | 140–200 | #1989 | default |
 | D9 | #1994 | Contributor and community hygiene: `LICENSE`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `.github/ISSUE_TEMPLATE/`, `.github/PULL_REQUEST_TEMPLATE.md` | 150–200 | #1990–#1993 | default |
-| S1 | #1996 | Status and tracker sync, closing checks C1–C6, acceptance ledger | 100–160 | Every admitted member landed | default |
+| S1 | #1996 | Status and tracker sync, the owner's clean-profile dry run, closing checks C1–C6, acceptance ledger | 100–160 | Every admitted member landed | default |
 
 ### Member ACs
 
@@ -103,9 +103,10 @@ minimum; its issue may add more.
 - **D4.** One walkthrough owns the copyable config, the identity choice
   (one account with emulated verdicts, or separate review identities), the
   first issue and the expected review, CI, permission and merge results, with
-  recovery links. Owner examples use v8.0.0 commands. A dry run from a clean
-  profile to a merged PR is recorded with its proof; it may need one owner-shell
-  run.
+  recovery links. Owner examples use v8.0.0 commands. The PR gives a copyable
+  owner-shell block that follows the walkthrough verbatim from a clean profile
+  to a merged PR, and the evidence to paste back; the recorded run moves to S1
+  ([amendment](https://github.com/mw-ding/mdstack/issues/1989#issuecomment-6996456089)).
 - **D5.** A task-ordered guide links the authoritative schema pages and
   explains speed and caps separately from review flavor.
 - **D6.** Start, reattach, targeted versus bare attach, pause and resume,
@@ -136,7 +137,7 @@ green `check-repo.py` alone proves none of C1–C3.
 | C2 | Link and anchor validity | Every relative link in tracked Markdown resolves to a tracked file, and every `#fragment` resolves to a heading anchor in its target |
 | C3 | Evidence accessibility | Every link on the newcomer path (README, D4–D9 pages) resolves for an unauthenticated reader; none points into a private repository as current proof |
 | C4 | Mermaid render at the final SHA | Every Mermaid block in `README.md` and `docs/architecture.md` renders on github.com at the final SHA, and each D3 arrow is compared against the anchor it cites |
-| C5 | Clean-profile proof | D4's dry-run steps match the final walkthrough; a step changed after the proof is rerun and the rerun recorded |
+| C5 | Clean-profile proof | The owner runs D4's owner-shell block once against the final walkthrough, from a clean profile to a merged PR; its output is recorded as a builder-signed review at S1's head. S1 does not close without it |
 | C6 | Member ledger | Every member row is `done` with its PR, or `dropped` with a recorded reason; PD1 and PD3 are visible in `LICENSE` and `SECURITY.md` |
 
 Not in the closing checks (PD4): a public-text or secret re-scan, a

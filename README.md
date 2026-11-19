@@ -132,10 +132,12 @@ Everything installed lives in `~/.mdstack/`
 1. **Install** as [above](#install).
 2. **Write `~/.mdstack/config.toml`** from
    [profiles/tmux.toml](profiles/tmux.toml) plus your `[repo]` and
-   identities, and check it:
-   `python3 <mdstack>/core/crew-config.py validate ~/.mdstack/config.toml`.
+   identities ([copyable block](docs/guides/getting-started.md#2-write-the-config)),
+   and check it resolves:
+   `python3 <mdstack>/core/crew-config.py resolve --project ~/.mdstack/config.toml`.
    Owner commands take no `--project`: they use `$MDSTACK_CONFIG`, else this
-   file. Create the `crew:*` labels
+   file. Create the `crew:*` labels and a milestone with
+   `mdstack doctor --fix --milestone M1`
    ([Step 1](docs/runbook-new-repo.md#step-1-create-the-crew-labels)).
 3. **Bootstrap:** `mdstack bootstrap --dry-run`, review it, then run it
    without `--dry-run`
