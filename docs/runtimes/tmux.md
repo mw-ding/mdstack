@@ -773,8 +773,10 @@ shared helpers in `environments/terminal/crew.d/_shared.py`, and
 `mdstack --help` lists the commands. Every tmux call goes through
 `environments/terminal/sessions/tmux/adapter.py`, so the tests
 (`dev/tests/environments/test-crew-<cmd>.py`, one file per command) run it against a fake
-`tmux` on `PATH`. Run it from an mdstack checkout. Each command's usage
-line is in its own section below.
+`tmux` on `PATH`. Owners run the `mdstack` launcher that
+[mdstack install](#mdstack-install) puts on `PATH`; the usage lines show
+`cli/mdstack`, the same entry point in a checkout or bundle. Each command's
+usage line is in its own section below.
 
 Every command that resolves the profile (all but `mdstack guard`) refuses, exit
 1, while the **resolved** value of a `paths.*` key it uses is still a
@@ -1027,6 +1029,8 @@ way (unless `mdstack down` runs inside that process group), then kills the
 session. If any
 window holds unlanded work, it keeps that worktree, names the windows, keeps
 the session and exits 1. With no session and no watcher running it is a no-op.
+It ends window 0 too: to stop work but keep the coordinator and the watcher,
+use [mdstack pause](#mdstack-pause).
 
 After the land-lock refusal, both forms first stop the armed watcher, the
 live PID in `wake/watcher.pid` or else the `wake/watcher.lock` holder's
@@ -1198,7 +1202,10 @@ running bundle's tag.
 
 `mdstack upgrade --version vX.Y.Z` (or `--latest`, the latest GitHub
 release) then works like an end-user upgrade: it fetches and verifies the
-bundle into `releases/`, upgrades `--project`, then every other project whose
+bundle into `releases/`, upgrades the project it resolves (for an owner,
+the installed team's repo, `--repo <key>` in a multi-repo team:
+[owner shell](#user-level-and-project-level-config-1316)), then every other
+project whose
 `install.json`, under the same state root, runs from that `releases/`
 directory, and only then flips `releases/current`, so the launcher follows
 with no `PATH` change. Bootstrap records the project path in `install.json`;
