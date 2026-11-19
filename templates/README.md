@@ -1,9 +1,19 @@
-# Routine and listener templates
+# Template catalog
 
-One file per routine, each with a `json` trigger block and a prompt block.
-Copy a template onto the bot, replace every placeholder, and keep the wiring
-doc ([wiring.md](runtimes/grok-bot/wiring.md)) in sync. These are templates only: nothing here
-creates or changes a live routine. For the roles and markers they rely on, see
+Source templates for role briefs, routines and seed documents. Who uses
+them depends on the runtime ([support table](../docs/runtimes/README.md#support)):
+
+| Tree | Audience | How it is used |
+|---|---|---|
+| Core (top level) | Coordinator, builder and reviewer roles; scripts | Filled per task by the role or script named in each row; never a live routine |
+| `runtimes/tmux/` | Adopters running the shipped tmux runtime | Rendered by `crew-render`; `mdstack up` and `mdstack spawn` read the renders. Do not copy by hand |
+| `runtimes/session/` | Owners running an attended session coordinator | Rendered by `crew-render`; the coordinator appends the `mdstack brief` run block to each worker brief |
+| `runtimes/grok-bot/` | Operators of a Grok Bot deployment | Rendered, then copied onto the bot by a person: one routine per file, each with a `json` trigger block and a prompt block. Keep the [wiring doc](runtimes/grok-bot/wiring.md) in sync |
+| `policy/` | Template authors | Included by the runtime templates; never used alone |
+| `backends/` | Template authors | Renderer input for operation placeholders |
+
+Nothing here creates or changes a live routine, window or brief by itself.
+For the roles and markers the templates rely on, see
 [../docs/architecture.md](../docs/architecture.md) and the
 [docs index](../docs/README.md).
 
@@ -90,7 +100,7 @@ block; workers start without a runtime-set environment.
 | [coordinator.md](runtimes/session/coordinator.md) | Hosted or hand-started coordinator session: ownership guard (`mdstack ownership --runtime session`), dispatch caps and the `mdstack brief` recipe, and the [handoff](../docs/handoff.md) outgoing and incoming steps; with no control item, one paragraph replaces the guard and handoff sections | `<CoordinatorBot>` |
 | [builder.md](runtimes/session/builder.md) | One build or fix pass per run: the tmux builder contract, status in `$CREW_STATUS` | `<BuilderBot>` |
 | [reviewer.md](runtimes/session/reviewer.md) | One review, validate or recheck pass per run: the tmux reviewer contract | `<ReviewerBot>` |
-| [synthesizer.md](runtimes/session/synthesizer.md) | One land run per dispatch: the tmux synthesizer contract, land lock and merge trains | `<SynthesizerBot>` |
+| [synthesizer.md](runtimes/session/synthesizer.md) | One land run per dispatch: the tmux synthesizer contract and land lock; no merge trains, which are tmux-only | `<SynthesizerBot>` |
 
 ### Backend command mappings (`backends/`)
 

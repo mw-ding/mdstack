@@ -7,15 +7,44 @@ whichever runtime runs the crew (portable mdstack, roadmap 13.8,
 [concepts.md](../concepts.md). This page adds no rule, gate, cap, marker field
 or label; the [protocol](../protocol.md) still owns them. Each binding
 ([grok-bot.md](grok-bot.md); [tmux.md](tmux.md), shipped in M14 and M14.1) fills in
-a contract table against it. The [session binding](session.md)
-declares the gaps of an attended interactive coordinator; its profile
-selector and briefs are built (#914), its runner is not.
+a contract table against it. The [session binding](session.md) is partly
+built and attended-only: its selector, briefs, `mdstack brief`, `mdstack up`
+and `mdstack upgrade` are built, while worker lifecycle stays a manual
+procedure and its runner is design only. [Support](#support) lists what each
+runtime and harness ships.
 
 Naming: in the [four axes](../concepts.md#four-axes) a runtime is an
 **environment**; this directory keeps the older word and its paths. The
 terminal environment's code is in
 [../../environments/](../../environments/README.md) and harness adapters in
 [../../harnesses/](../../harnesses/README.md).
+
+## Support
+
+What ships today, per runtime, session backend and harness. Status is one
+of **shipped** (built and runs a crew unattended), **attended or manual**
+(built parts need a person at the lifecycle or setup step) and **design**
+(described, not built). Each gap is declared in the linked page's contract
+table or adapter, in the [gap format](#gap-declaration); this table
+summarizes them and changes none.
+
+| Component | Kind | Status | Declared gaps and limits | Page |
+|---|---|---|---|---|
+| tmux | Runtime | Shipped: the `mdstack` CLI, watcher, poll, leads and land | C1, C5, C7, C8 partial; C9 unsupported (manual pause before another runtime starts); no work moves while the machine sleeps | [tmux.md](tmux.md#runtime-contract) |
+| Multi-device tmux | tmux extension | Shipped in part: host inventory, runner hosts, placement, remote lifecycle, attach and wakes, proved on fakes and a lab host; the rest is design | Those of tmux; an unreachable host's runs are reconciled or abandoned with a tombstone | [multi-device.md](multi-device.md) |
+| session | Runtime | Attended or manual: selector, briefs, `mdstack brief`, `mdstack up`, `mdstack upgrade`, triage sweep. Design: the lifecycle runner, durable receipts, identity probes, worktree enforcement, locks, ownership guards, token-free wake | C1, C3, C5, C6, C8, C9 partial; unattended progress unsupported; no merge trains | [session.md](session.md#runtime-contract) |
+| Grok Bot | Runtime | Attended or manual: routine templates and rendered skills ship; a person creates and removes each routine on the bot | C1, C2, C3, C5, C6 partial; C9 unsupported (manual hold and routine removal); no merge train window | [grok-bot.md](grok-bot.md#runtime-contract) |
+| tmux | Session backend | Shipped (default) | None beyond the tmux runtime | [session-backends.md](session-backends.md#tmux-tmux) |
+| herdr | Session backend | Shipped, local only | C1, C3, C6, C8 partial; no in-place `mdstack upgrade`; no remote hosts | [session-backends.md](session-backends.md#herdr-capability-gaps) |
+| Claude Code | Harness | Shipped: role and coordinator launch, `Stop`-hook turn-end guard | Folder trust accepted once by the owner | [harness-adapters.md](harness-adapters.md#claude-code-claude-code) |
+| Codex | Harness | Shipped: role and coordinator launch | C1 partial: `mdstack up` does not install the turn-end `notify` recipe; the watcher's typed wake covers it | [harness-adapters.md](harness-adapters.md#codex-codex) |
+| Pi | Harness | Shipped with gaps: launch in `bypass` mode only | C1 partial: no turn-end guard, live wake timing unverified; C5 partial: custom extension dialogs not recognized | [harness-adapters.md](harness-adapters.md#pi-pi) |
+| Cursor | Harness | Shipped with gaps: launch in `bypass` mode only | C1 partial: no turn-end guard, wake timing unverified on the real CLI; C5 partial: trust and login screens not detected; effort not enforceable | [harness-adapters.md](harness-adapters.md#cursor-cursor) |
+| Muse | Harness | Shipped with gaps: launch in `bypass` mode only | C1 partial: no turn-end guard, live wake timing not exercised | [harness-adapters.md](harness-adapters.md#muse-muse) |
+| OpenCode | Harness | Review engine only: no interactive launch, so not a role or coordinator choice | Not spawned from a tier order | [harness-adapters.md](harness-adapters.md#opencode-opencode) |
+
+A harness or backend not listed is unsupported. Bootstrap install pointers
+for a harness add no runtime ([bootstrap Q4](../bootstrap.md#q4-install-targets)).
 
 ## Contract
 
