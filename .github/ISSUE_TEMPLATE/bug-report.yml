@@ -1,0 +1,44 @@
+name: Bug report
+description: Something in mdstack does not work as documented
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Security issue? Do not file it here: use private vulnerability reporting (see SECURITY.md).
+        A crew failure on a run you operate fits the Intake card form better.
+        Never paste tokens, keys, emails, private chat quotes or real box paths.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `mdstack --version`, or the commit you run from.
+    validations:
+      required: true
+  - type: input
+    id: runtime
+    attributes:
+      label: Runtime and harnesses
+      description: For example tmux with Claude Code and Codex.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: The command or step, and the output or behaviour you saw.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: Link the doc section that describes the expected behaviour, if any.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1.
+        2.

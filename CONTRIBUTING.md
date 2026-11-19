@@ -2,7 +2,39 @@
 
 This repo is the reviewed source of truth for the crew framework. Changes arrive
 by PR, built by the crew through the normal pipeline (spec R7). This page is the
-iteration process.
+iteration process. People are welcome too: start with the route below. By
+contributing you agree that your work is released under the [MIT license](LICENSE)
+and that you follow the [code of conduct](CODE_OF_CONDUCT.md).
+
+## Your first contribution
+
+1. **Find or open an issue.** Use the bug or feature form; a crew failure fits
+   the intake card. Report vulnerabilities privately per [SECURITY.md](SECURITY.md),
+   never in an issue.
+2. **Clone and set up.** You need Python 3.11+ and git; `gh` helps with PRs.
+   Everything else is Python stdlib, so there is nothing to install:
+
+   ```sh
+   git clone https://github.com/mw-ding/mdstack.git && cd mdstack
+   git switch -c <issue>-<short-slug>
+   ```
+
+3. **Make the change.** Read [AGENTS.md](AGENTS.md) first; its build posture
+   applies to your PR too. Keep to the issue's scope and add a
+   [changelog fragment](#changelog).
+4. **Run the targeted checks**, not the full suite:
+
+   ```sh
+   python3 scripts/check-repo.py
+   python3 scripts/check-changelog-pr.py --base origin/main
+   python3 scripts/run-tests.py dev/tests/<area>/test-<script>.py   # tests for each script you changed
+   ```
+
+   [AGENTS.md](AGENTS.md) lists which tests a change needs; see [Checks](#checks).
+5. **Open a PR** against `main` that closes the issue. The PR template asks
+   for the same sections as a crew PR body. CI runs the full suite, and the
+   normal review loop applies: CI, review, validation, then merge by the
+   synthesizer.
 
 ## From lesson to PR
 

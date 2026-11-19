@@ -16,8 +16,11 @@
 .markdownlint-cli2.yaml	internal	n/a	Repo process and CI: rules for building mdstack itself
 AGENTS.md	internal	n/a	Repo process and CI: rules for building mdstack itself
 CHANGELOG.md	deliverable	all	Bundle front page and release notes: shipped as is
+CODE_OF_CONDUCT.md	internal	n/a	Community conduct for repo contributors ([#1994](https://github.com/mw-ding/mdstack/issues/1994))
 CONTRIBUTING.md	internal	n/a	Repo process and CI: rules for building mdstack itself
+LICENSE	deliverable	all	MIT license: ships with every copy of the bundle ([#1994](https://github.com/mw-ding/mdstack/issues/1994))
 README.md	deliverable	all	Bundle front page and release notes: shipped as is
+SECURITY.md	internal	n/a	Vulnerability reporting route for the repository ([#1994](https://github.com/mw-ding/mdstack/issues/1994))
 actions/*.md	internal	n/a	Design contract: generic action vocabulary, CLI contract and per-environment mapping; implemented in M32 ([#1218](https://github.com/mw-ding/eng-crew/issues/1218))
 actions/contract.py	deliverable	all	Conformance kit: the actions/ contract tests `mdstack pack test` runs against a pack's adapters ([#1236](https://github.com/mw-ding/eng-crew/issues/1236))
 changes/**	internal	n/a	Unreleased CHANGELOG fragments: assembled into `CHANGELOG.md` at the cut, then deleted ([CONTRIBUTING](../CONTRIBUTING.md#changelog))
