@@ -26,7 +26,8 @@ under `docs/` is reachable from this index, directly or through a subindex
 [metrics](metrics/README.md) and [campaign scenarios](campaign-harness.md)).
 
 - **User** (you own a repo and want the team to work on it):
-  [guides/getting-started.md](guides/getting-started.md), or
+  [guides/getting-started.md](guides/getting-started.md) (then
+  [guides/configuration.md](guides/configuration.md) to tune it), or
   [../README.md](../README.md) and its [Quickstart](../README.md#quickstart-tmux),
   then [architecture.md](architecture.md) for how work flows,
   [flavors.md](flavors.md) for rigor and
@@ -133,6 +134,7 @@ kinds mixes them; lifecycle status stays in each doc.
 | [deliverables.md](deliverables.md) | Deliverable inventory and versioning | A, P, C | reference | Deliverables: inventory of every path as deliverable or internal, packaging as one bundle per release, SemVer breaking rules, compatibility promise to packs and installs, first versions (R1.1, #145) |
 | [express-lane.md](express-lane.md) | Express lane | O, C, B, V, S | rule, design | Express lane (design): opt-in `express` flavor where one builder builds, self-reviews and tests, and the change lands on green CI; scoped F4/I1 (and, under `same`, I2) exceptions, sensitive/spec exclusions, the `selfgate_engine` flip, self-gate loop with the reviewer rubric, `pass=selfgate` record, §7 express gate row, routing, trade-offs, per-lane metric columns, build issues (M18.2, #636) |
 | [flavors.md](flavors.md) | Rigor knobs and presets | O, C, B, V, S, P, A | rule, design | Crew flavors (design): rigor knobs, presets `thorough` / `standard` / `fast` / `solo`, the floor no flavor crosses, profile schema proposal and floor validator rules, project / item / change resolution with the path-based class rule, mapping of existing one-off knobs, metrics feedback loop with thresholds, suggestion issue and owner accept path, build issues (18.1, #156) |
+| [guides/configuration.md](guides/configuration.md) | Configuration guide | O, A | reference | Configuring a crew by task (#1990): which file applies, identities, engines and tiers, team and repo selection, concurrency and speed controls apart from the rigor flavor, linking the profile, runtime-options, team-files and flavors schemas |
 | [guides/connectors.md](guides/connectors.md) | Connector configuration guide | O, A | reference | Configuring connectors (#1238): one connector per concern in `[backends]`, validate and resolve, and the knowledge connector's three pieces (role source name in git, private config pointer, token in the environment) with no secrets in git |
 | [guides/getting-started.md](guides/getting-started.md) | Getting-started guide | O, A | reference | First tmux run (#1238): one-command bootstrap into the home root, first `mdstack up`, talking to the team head, adding an on-demand role with `mdstack up <role>` |
 | [guides/migration.md](guides/migration.md) | Migration guide | O, A, P | reference | 7.x to 8.0.0 first (#1965): owner commands without `--project`, `MDSTACK_CONFIG` and `--repo`, wrapper regeneration; then moving to 7.0.0 as version history (#1238, #1312): a fresh install, the old-to-new names and module paths, pack updates |
