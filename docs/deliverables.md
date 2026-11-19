@@ -98,7 +98,7 @@ conflicts on ([#325](https://github.com/mw-ding/eng-crew/issues/325)).
 | `docs/express-lane.md` | Deliverable | tmux | Profile and pack contract: express flavor design for the tmux binding ([#636](https://github.com/mw-ding/eng-crew/issues/636)) |
 | `docs/findings/**` | Internal | n/a | Maintainer docs: findings buffer, not loaded by roles |
 | `docs/flavors.md` | Deliverable | all | Profile and pack contract: flavor keys and the floor ([#156](https://github.com/mw-ding/eng-crew/issues/156)) |
-| `docs/guides/*.md` | Deliverable | all | Install and upgrade docs: getting-started, connector, pack author and migration guides ([#1238](https://github.com/mw-ding/eng-crew/issues/1238)) |
+| `docs/guides/*.md` | Deliverable | all | Install and upgrade docs: getting-started, configuration, connector, pack author and migration guides ([#1238](https://github.com/mw-ding/eng-crew/issues/1238)) |
 | `docs/handoff.md` | Deliverable | all | Coordinator procedure: runtime handoff the coordinator runs (#157) |
 | `docs/interfaces.md` | Deliverable | all | Protocol bundle (core): the text roles load and cite |
 | `docs/lessons/**` | Internal | n/a | Maintainer docs: lessons log, history not loaded by roles |

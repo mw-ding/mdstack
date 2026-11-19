@@ -188,6 +188,8 @@ up to its `max`; the engineering roles have none, so `up <role>` refuses them
 
 ## Next
 
+- Identities, engines, repos, concurrency and rigor, by task:
+  [configuration guide](configuration.md).
 - Pick tools other than GitHub, or add a knowledge source:
   [configuring connectors](connectors.md).
 - Rigor per project or item: [flavors](../flavors.md).
