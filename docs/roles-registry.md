@@ -84,9 +84,9 @@ all required:
 The role's first pass takes no inputs and its `window_name` uses only
 `{name}` and `{pass}`: an instance has no item. The tmux runtime:
 
-- `mdstack up --project <file>` starts `min` instances of each lifecycle role
+- `mdstack up` starts `min` instances of each lifecycle role
   after the pool leads (`roles = "tmux"` only).
-- `mdstack up <role> --project <file>`, with the session running, starts one
+- `mdstack up <role>`, with the session running, starts one
   more instance of a role whose `wake` has `manual`, through `mdstack spawn`.
   Instances are named `window_name`, then with `2`, `3` up to `max` appended.
   At `max` it refuses, exit 1; a role without a lifecycle or the `manual`

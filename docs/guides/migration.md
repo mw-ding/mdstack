@@ -1,11 +1,61 @@
-# Moving to 7.0.0: reinstall from scratch
+# Migration guide
+
+Each section moves an install from one release line to the next, newest
+first. Upgrades within a line follow
+[release.md: Update path](../release.md#update-path); the
+[CHANGELOG](../../CHANGELOG.md) entries are the record. Sections for older
+releases are version history: their commands are the forms that release
+took.
+
+## 7.x to 8.0.0: owner commands without `--project`
+
+8.0.0 removes `--project` from the owner CLI (#1965). An owner shell (no
+`CREW_ROLE`) uses the installed team: `$MDSTACK_CONFIG`, else
+`~/.mdstack/config.toml`, else the root's only `<team>.toml`. `--project`
+in any spelling, and a `<home>/start` written before 8.0.0, exit 2 before
+any read or write:
+
+```text
+mdstack: --project is disabled; mdstack uses the installed team (<path>). Set MDSTACK_CONFIG to override.
+```
+
+Crew windows are unchanged: they keep `--project` and `$CREW_PROJECT`
+([owner shell](../runtimes/tmux.md#user-level-and-project-level-config-1316)).
+
+1. **Upgrade:** from 7.16.0, `mdstack upgrade --latest --dry-run`, then
+   `--yes` ([bootstrap Q8](../bootstrap.md#q8-idempotency-upgrade-and-uninstall)).
+   The profile needs no edit. For a profile other than the default, set
+   `MDSTACK_CONFIG` to its path, which 7.x also reads.
+2. **Drop `--project` from owner commands and scripts:** shell aliases,
+   wrappers, cron jobs and hooks that call `mdstack`.
+
+   | 7.x | 8.0.0 |
+   |---|---|
+   | `mdstack up --project ~/.mdstack/config.toml` | `mdstack up` |
+   | `mdstack doctor --project <team file>#<repo>` | `mdstack doctor --repo <repo>` |
+   | `mdstack up --project <other config.toml>` | `MDSTACK_CONFIG=<other config.toml> mdstack up` |
+
+   A single-repo team needs no `--repo`. In a multi-repo team, `up`,
+   `start` and a bare `attach` take the whole team; every other command
+   needs `--repo <key>` (`--team-repo <key>` for `content` and `feedback`)
+   and exits 2 naming the keys without it. Give `MDSTACK_CONFIG` an
+   absolute path; it may name `<file>#<repo>`.
+3. **Regenerate the wrappers:** `mdstack layout --write` (with the same
+   `--owner-cmd` as before) rewrites `<home>/start` to set
+   `MDSTACK_CONFIG` ([mdstack layout](../runtimes/tmux.md#mdstack-layout)).
+4. **Check:** `mdstack doctor`, then `mdstack start`.
+
+Leave crew-side commands alone: role briefs, `$CREW_BIN` calls in crew
+windows, and the low-level tools (`core/crew-config.py`,
+`core/crew-render.py`, `scripts/changelog-cut.py`) keep `--project`.
+
+## 6.x or older to 7.0.0: reinstall from scratch (version history)
 
 7.0.0 is a fresh install. It carries no 6.x or older install forward: no
-compatibility shims, aliases, links or migration steps (#1312). The
-[CHANGELOG](../../CHANGELOG.md) 7.0.0 entries are the record, and
-[release.md](../release.md#update-path) owns upgrades between 7.x releases.
+compatibility shims, aliases, links or migration steps (#1312). The commands
+below are the 7.x forms; on 8.0.0, drop `--project` as above.
 
-## What to do, in order
+### What to do, in order
 
 1. **Stop the old crew:** `down --preserve` with the old install's CLI, and
    land or park any open work.
@@ -25,7 +75,7 @@ compatibility shims, aliases, links or migration steps (#1312). The
 6. Remove the old install by hand: the `<state>/eng-crew` link and the
    `eng-crew-<version>/` bundle.
 
-## Product names (7.0.0)
+### Product names (7.0.0)
 
 7.0.0 renames the product from `eng-crew` to `mdstack`, after the repo moved
 to `github.com/mw-ding/mdstack`. The old names are not accepted:
@@ -44,7 +94,7 @@ variables keep their names. 7.1 renames the profile to `config.toml` and
 moves the default layout under `~/.mdstack/` (#1316), with no fallback to
 `crew.toml` or the old `~/crew-home/` and `~/.crew/` defaults.
 
-## Old paths to modules
+### Old paths to modules
 
 6.0.0 moved each file to its module
 ([module layout](../specs/team.md#4-target-module-layout)); 7.0.0 removed
@@ -67,7 +117,7 @@ the old paths:
 An adapter left in `scripts/harness.d/` or `scripts/session.d/` is no longer
 discovered.
 
-## Packs
+### Packs
 
 - Rename `eng_crew_version` to `mdstack_version` in the pack manifest, or
   give a `pack.toml` `framework` range that includes 7.0.0, such as

@@ -44,7 +44,8 @@ The other routes start elsewhere: a **user** at
 |---|---|
 | Cut and publish a release | [release.md, Steps](release.md#steps) |
 | Upgrade an install to a new release | [release.md, Update path](release.md#update-path) and [bootstrap.md, Q8](bootstrap.md#q8-idempotency-upgrade-and-uninstall) |
-| Move from the old layout and the `crew` CLI name | [guides/migration.md](guides/migration.md) |
+| Move from 7.x to 8.0.0 (owner commands without `--project`) | [guides/migration.md](guides/migration.md#7x-to-800-owner-commands-without---project) |
+| Move from the old layout and the `crew` CLI name | [guides/migration.md](guides/migration.md#6x-or-older-to-700-reinstall-from-scratch-version-history) |
 
 ## Recover
 

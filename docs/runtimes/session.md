@@ -107,7 +107,7 @@ and runtime commands (`hosts`, `layout`) stay tmux-only.
 
 ## Upgrading
 
-`mdstack upgrade --project <config.toml>` runs on a session profile
+`mdstack upgrade` runs on a session profile
 (#1541): `--dry-run` previews the re-render, `--yes` applies it to
 `paths.live_dir` and `--version` or `--latest` fetch and verify a bundle,
 as for tmux ([bootstrap Q8](../bootstrap.md#q8-idempotency-upgrade-and-uninstall)).
@@ -127,7 +127,7 @@ existing render and state files as `target edited or unowned`. To fix that:
    `paths.live_dir` render, and any `mdstack` link, `VERSION` and
    `config.toml` in the state directory (`<paths.state_dir>/<owner>__<repo>`).
 3. From the release bundle you chose, run its own `cli/mdstack`, not the
-   moved link: `bootstrap --project <absolute config.toml> --dry-run`
+   moved link: `MDSTACK_CONFIG=<absolute config.toml> <bundle>/cli/mdstack bootstrap --dry-run`
    (`--version` fetches a release). Review the output, then repeat with
    `--yes`
    ([bootstrap Q8](../bootstrap.md#q8-idempotency-upgrade-and-uninstall)).
@@ -155,7 +155,7 @@ template blocks. `native` and `cli` profiles render as before.
 
 ## Starting the coordinator
 
-`mdstack up --project <config.toml>` on a session profile starts the
+`mdstack up` on a session profile starts the
 interactive coordinator only (#1548): window 0 of the tmux session
 `runtime.options.session` (default `crew-<owner>-<repo>`) runs the
 coordinator's [harness adapter](harness-adapters.md) with `CREW_ROLE=coordinator`,
