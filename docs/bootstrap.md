@@ -379,8 +379,8 @@ directory's git origin, else the current directory's.
   bundle seeded in `~/.mdstack/releases/` with
   `bootstrap --dry-run`, then `--yes`, which read `~/.mdstack/config.toml`.
   `paths.mdstack` names the state directory's install link.
-- **Later releases.** `mdstack upgrade --version vX.Y.Z --dry-run`, then `--yes`; each bundle lands beside the
-  last. After `mdstack install` (#1317), the same command, run through the
+- **Later releases.** `mdstack upgrade --version vX.Y.Z --dry-run`, then
+  `--yes`; each bundle lands beside the last. After `mdstack install` (#1317), the same command, run through the
   `~/.mdstack/bin/mdstack` launcher, also upgrades the other projects the
   install serves and then moves `releases/current`, so the launcher follows
   ([mdstack install](runtimes/tmux.md#mdstack-install)).

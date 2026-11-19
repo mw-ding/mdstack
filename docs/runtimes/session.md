@@ -127,7 +127,8 @@ existing render and state files as `target edited or unowned`. To fix that:
    `paths.live_dir` render, and any `mdstack` link, `VERSION` and
    `config.toml` in the state directory (`<paths.state_dir>/<owner>__<repo>`).
 3. From the release bundle you chose, run its own `cli/mdstack`, not the
-   moved link: `MDSTACK_CONFIG=<absolute config.toml> <bundle>/cli/mdstack bootstrap --dry-run`
+   moved link:
+   `MDSTACK_CONFIG=<absolute config.toml> <bundle>/cli/mdstack bootstrap --dry-run`
    (`--version` fetches a release). Review the output, then repeat with
    `--yes`
    ([bootstrap Q8](../bootstrap.md#q8-idempotency-upgrade-and-uninstall)).
