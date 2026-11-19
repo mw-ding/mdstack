@@ -1,7 +1,7 @@
 ---
 type: changed
 issue: 1993
-pr: 2005
+pr: 2006
 date: 2026-11-18
 box-skill: none
 ---
