@@ -31,7 +31,10 @@ The other routes start elsewhere: a **user** at
 
 | Task | Owner doc |
 |---|---|
-| Start, watch and stop a tmux crew | [runbooks/tmux-onboarding.md, Run the crew](runbooks/tmux-onboarding.md#run-the-crew) |
+| Start a tmux crew or reattach to it (`mdstack start`) | [runbooks/tmux-onboarding.md, Start and reattach](runbooks/tmux-onboarding.md#start-and-reattach) |
+| Attach: targeted views never start the crew; a bare `mdstack attach` can | [runbooks/tmux-onboarding.md, Attach modes](runbooks/tmux-onboarding.md#attach-modes) |
+| Check status and read a run's logs | [runbooks/tmux-onboarding.md, Status and logs](runbooks/tmux-onboarding.md#status-and-logs) |
+| Pause and resume work, or stop the crew safely | [runbooks/tmux-onboarding.md, Pause, resume and stop](runbooks/tmux-onboarding.md#pause-resume-and-stop) |
 | Every `mdstack` command | [runtimes/tmux.md, Usage](runtimes/tmux.md#usage) |
 | Land changes and run merge trains | [runtimes/tmux.md, mdstack train](runtimes/tmux.md#mdstack-train) |
 | Steer the crew (`/crew` commands) | [protocol.md §9](protocol.md#9-steering-crew-commands) |
@@ -43,6 +46,7 @@ The other routes start elsewhere: a **user** at
 | Task | Owner doc |
 |---|---|
 | Cut and publish a release | [release.md, Steps](release.md#steps) |
+| Upgrade a running tmux crew (`mdstack upgrade`) | [runbooks/tmux-onboarding.md, Upgrade](runbooks/tmux-onboarding.md#upgrade) |
 | Upgrade an install to a new release | [release.md, Update path](release.md#update-path) and [bootstrap.md, Q8](bootstrap.md#q8-idempotency-upgrade-and-uninstall) |
 | Move from 7.x to 8.0.0 (owner commands without `--project`) | [guides/migration.md](guides/migration.md#7x-to-800-owner-commands-without---project) |
 | Move from the old layout and the `crew` CLI name | [guides/migration.md](guides/migration.md#6x-or-older-to-700-reinstall-from-scratch-version-history) |
@@ -51,6 +55,7 @@ The other routes start elsewhere: a **user** at
 
 | Task | Owner doc |
 |---|---|
+| Restart a dead run, the coordinator, or a crew after a reboot | [runbooks/tmux-onboarding.md, Recover](runbooks/tmux-onboarding.md#recover) |
 | Fix a tmux crew that misbehaves | [runbooks/tmux-onboarding.md, tmux troubleshooting](runbooks/tmux-onboarding.md#tmux-troubleshooting) |
 | Recover duplicate or lost runs | [runtimes/tmux.md, Deduplication and recovery](runtimes/tmux.md#deduplication-and-recovery) |
 | Roll back a release | [release.md, Rollback](release.md#rollback) |
