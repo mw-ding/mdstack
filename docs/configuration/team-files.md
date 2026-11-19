@@ -128,8 +128,11 @@ Resolution is the [layer pipeline](../profile.md#layers-and-precedence), with `t
 `validate` and cross-key check still applies to the merged result. A problem
 in a repo section's value prints as `<file>[repos.<name>]:<key>: reason`.
 Name a repo with a project reference `<file>#<name>`. Every `--project` flag
-resolves one (`crew-config.py resolve`, `sensitive`, the `mdstack` commands), and
-a team file with one repo needs no `#<name>`. Commands that also need the
+resolves one (`crew-config.py resolve`, `sensitive`, `mdstack` in a crew
+window), and a team file with one repo needs no `#<name>`. Since 8.0.0 an
+owner shell's `mdstack` takes no `--project`: it uses the installed team and
+picks a repo with `--repo <name>`, or `MDSTACK_CONFIG=<file>#<name>`
+([owner shell](../runtimes/tmux.md#user-level-and-project-level-config-1316)). Commands that also need the
 repo's clone (`mdstack spawn`, `mdstack train`) find it at the repo section's
 `checkout` key, which sets that repo's `paths.checkout`: absolute, or relative
 to the team file's directory (to `paths.root` when set). Without it, the clone
@@ -158,7 +161,7 @@ Team runs take a team-global run ID and window slot under one root lock;
 their windows carry a one-to-one repo tag and their worktrees are
 `<worktree-root>/<owner>__<repo>/<run-id>/` (#1858,
 [team pools](../runtimes/tmux.md#team-pools)).
-`mdstack down --project <file>#<name>` stops the whole shared session.
+`mdstack down --repo <name>` stops the whole shared session.
 
 ## Multi-project routing
 
@@ -188,6 +191,6 @@ remains operator guidance for existing team-file deployments.
    compare the output with `resolve --project <old config.toml>`. Only
    provenance, `paths.state_dir` (now under `<team>/`),
    `runtime.options.session` and a `paths.checkout` you added should differ.
-5. Stop both crews (`mdstack down --project <old config.toml>`), move each
+5. Stop both crews (`MDSTACK_CONFIG=<old config.toml> mdstack down`), move each
    repo's state folder under `<state_dir>/<team>/`, and run
    `mdstack up --team <file>`.

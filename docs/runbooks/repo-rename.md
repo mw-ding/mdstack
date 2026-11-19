@@ -36,7 +36,7 @@ renames a repo itself: every step below is the owner's.
 1. **Dry run**, any time, with the crew running or not. It writes nothing:
 
    ```sh
-   cli/mdstack migrate --project ~/.mdstack/config.toml --rename-to <owner>/<new>
+   cli/mdstack migrate --rename-to <owner>/<new>
    ```
 
    Read the plan:
@@ -48,8 +48,7 @@ renames a repo itself: every step below is the owner's.
    - `owner:` lines are steps the crew never takes: the GitHub rename, each
      host root to move and the optional remote URL.
    - `blocked:` lines must be cleared before `--apply`.
-2. **Stop the crew:** `cli/mdstack down --preserve --project
-   ~/.mdstack/config.toml`. Wait for no open land lock.
+2. **Stop the crew:** `cli/mdstack down --preserve`. Wait for no open land lock.
 3. **Rename on GitHub**, as an identity with admin rights on the repo:
    `gh repo rename <new> -R <owner>/<old>`.
 4. **Check the redirect.** Each of these must answer for the new name:
@@ -72,9 +71,8 @@ renames a repo itself: every step below is the owner's.
      the checkout's remote.
    - Update pack pins and bookmarks that name the old URL when convenient.
      The redirect covers them meanwhile.
-7. **Restart:** `cli/mdstack layout --project ~/.mdstack/config.toml --write`, then
-   `cli/mdstack up --project ~/.mdstack/config.toml --coordinator-only`, then
-   `cli/mdstack doctor --project ~/.mdstack/config.toml`. The session now runs as
+7. **Restart:** `cli/mdstack layout --write`, then
+   `cli/mdstack up --coordinator-only`, then `cli/mdstack doctor`. The session now runs as
    `crew-<owner>-<new>`.
 
 ## Rollback
@@ -84,8 +82,7 @@ renames a repo itself: every step below is the owner's.
   `<new state>/migration/<stamp>/originals/`.
 - **To undo a finished rename:** stop the crew, run `gh repo rename <old> -R
   <owner>/<new>`, check the redirect from the new name, then run
-  `mdstack migrate --project ~/.mdstack/config.toml --rename-to <owner>/<old>
-  --apply`.
+  `mdstack migrate --rename-to <owner>/<old> --apply`.
 
 See [mdstack migrate](../runtimes/tmux.md#mdstack-migrate) for the full plan
 format.

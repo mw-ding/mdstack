@@ -25,9 +25,16 @@ and `SHA256SUMS` ([packaging](deliverables.md#packaging)), the
 ## Overview
 
 ```text
-mdstack bootstrap [--project <config.toml>] [--org-profile <pack>/profile.toml]
+mdstack bootstrap [--repo <key>] [--org-profile <pack>/profile.toml]
                [--version vX.Y.Z] [--dry-run] [--yes] [--smoke] [--uninstall]
 ```
+
+Since 8.0.0 an owner shell passes no `--project`: bootstrap uses the
+installed config (`$MDSTACK_CONFIG`, else `~/.mdstack/config.toml`), and
+`--repo` picks a team file's repo
+([owner shell](runtimes/tmux.md#user-level-and-project-level-config-1316),
+[migration](guides/migration.md#7x-to-800-owner-commands-without---project)).
+Where this design names `--project` for the project layer, read that file.
 
 | # | Step | Does | Fails closed when |
 |---|---|---|---|
@@ -157,8 +164,8 @@ The coordinator records item rigor at triage using the
 the first install; later runs reuse the recorded selection:
 
 ```sh
-mdstack bootstrap [--project <config.toml>] --harness claude-code --harness codex --dry-run
-mdstack bootstrap [--project <config.toml>] --harness claude-code --harness codex --yes
+mdstack bootstrap --harness claude-code --harness codex --dry-run
+mdstack bootstrap --harness claude-code --harness codex --yes
 ```
 
 With either selection, bootstrap deploys the preview to the state dir's
@@ -321,7 +328,7 @@ default (real GitHub objects and quota on every re-run).
 
 ## Q8. Idempotency, upgrade and uninstall
 
-Implemented for tmux and session: run the new bundle’s `mdstack upgrade --project FILE
+Implemented for tmux and session: run the new bundle’s `mdstack upgrade
 --dry-run`, then repeat with `--yes` after reviewing the diff. `--version`
 fetches and verifies the selected bundle through the existing bootstrap path.
 A version directory left by an earlier `--version` dry-run or timeout is
@@ -370,16 +377,15 @@ directory's git origin, else the current directory's.
 
 - **First managed install.** With no `install.json` yet, run the release
   bundle seeded in `~/.mdstack/releases/` with
-  `bootstrap --project ~/.mdstack/config.toml --dry-run`, then `--yes`.
+  `bootstrap --dry-run`, then `--yes`, which read `~/.mdstack/config.toml`.
   `paths.mdstack` names the state directory's install link.
-- **Later releases.** `mdstack upgrade --project ~/.mdstack/config.toml
-  --version vX.Y.Z --dry-run`, then `--yes`; each bundle lands beside the
-  last. After `mdstack install` (#1317), the same command, run through the
+- **Later releases.** `mdstack upgrade --version vX.Y.Z --dry-run`, then
+  `--yes`; each bundle lands beside the last. After `mdstack install` (#1317), the same command, run through the
   `~/.mdstack/bin/mdstack` launcher, also upgrades the other projects the
   install serves and then moves `releases/current`, so the launcher follows
   ([mdstack install](runtimes/tmux.md#mdstack-install)).
 - **Relocating a running crew.** `mdstack down --preserve`, then
-  `mdstack migrate --project OLD --to NEW` to preview and `--apply` to move
+  `MDSTACK_CONFIG=OLD mdstack migrate --to NEW` to preview and `--apply` to move
   ([mdstack migrate](runtimes/tmux.md#mdstack-migrate)), then the install step
   above, `mdstack layout --write` and `mdstack up --coordinator-only`. Claude Code
   memory and trust stay owner steps; nothing is written to `~/.claude/`.
