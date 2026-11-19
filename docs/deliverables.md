@@ -54,8 +54,11 @@ conflicts on ([#325](https://github.com/mw-ding/eng-crew/issues/325)).
 | `.markdownlint-cli2.yaml` | Internal | n/a | Repo process and CI: rules for building mdstack itself |
 | `AGENTS.md` | Internal | n/a | Repo process and CI: rules for building mdstack itself |
 | `CHANGELOG.md` | Deliverable | all | Bundle front page and release notes: shipped as is |
+| `CODE_OF_CONDUCT.md` | Internal | n/a | Community conduct for repo contributors ([#1994](https://github.com/mw-ding/mdstack/issues/1994)) |
 | `CONTRIBUTING.md` | Internal | n/a | Repo process and CI: rules for building mdstack itself |
+| `LICENSE` | Deliverable | all | MIT license: ships with every copy of the bundle ([#1994](https://github.com/mw-ding/mdstack/issues/1994)) |
 | `README.md` | Deliverable | all | Bundle front page and release notes: shipped as is |
+| `SECURITY.md` | Internal | n/a | Vulnerability reporting route for the repository ([#1994](https://github.com/mw-ding/mdstack/issues/1994)) |
 | `actions/*.md` | Internal | n/a | Design contract: generic action vocabulary, CLI contract and per-environment mapping; implemented in M32 ([#1218](https://github.com/mw-ding/eng-crew/issues/1218)) |
 | `actions/contract.py` | Deliverable | all | Conformance kit: the actions/ contract tests `mdstack pack test` runs against a pack's adapters ([#1236](https://github.com/mw-ding/eng-crew/issues/1236)) |
 | `changes/**` | Internal | n/a | Unreleased CHANGELOG fragments: assembled into `CHANGELOG.md` at the cut, then deleted ([CONTRIBUTING](../CONTRIBUTING.md#changelog)) |
