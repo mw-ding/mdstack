@@ -1,7 +1,11 @@
 # Spec: land, triage and bootstrap ergonomics
 
-**Status: open (M64, [#2030](https://github.com/mw-ding/mdstack/issues/2030)).**
-This spec is the opening slice S0
+**Status: built (M64, [#2030](https://github.com/mw-ding/mdstack/issues/2030));
+every member landed, and the closing slice S1
+([#2028](https://github.com/mw-ding/mdstack/issues/2028)) ran G1–G5.**
+Outcome, closing-check results and lessons:
+[portable spec, M64 outcome](portable.md#m64-outcome-and-lessons).
+This spec was the opening slice S0
 ([#2026](https://github.com/mw-ding/mdstack/issues/2026)). It records the
 settled fix and the numbered ACs for each member, the publication ledger
 that #1995 applies, and the closing checks that S1

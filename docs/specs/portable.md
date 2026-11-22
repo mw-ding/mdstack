@@ -3539,19 +3539,68 @@ The member fixes, ACs, publication ledger and closing checks G1–G5 are in
 [land-triage-ergonomics.md](land-triage-ergonomics.md); this table holds the
 statuses. S0 is recorded as done for this opening slice, effective on merge.
 
+Statuses below are synced by #2028: every admitted member landed with the PR
+shown, and no member was added after S0. The closing checks and lessons are in
+[M64 outcome and lessons](#m64-outcome-and-lessons).
+
 | ID | Issue | Scope | Depends on | Tier | Status |
 |---|---|---|---|---|---|
 | S0 | #2026 | [land-triage-ergonomics.md](land-triage-ergonomics.md) and this section | Owner plan-ok | default | done |
-| L1 | #1956 | Stack-land placeholder separator | #2026 | default | open |
-| C1 | #1959 | Session assigned-checkout isolation | #2026 | default | open |
-| T1 | #1960 | Optional per-item tracker comment read | #2026 | default | open |
-| B1 | #1962 | Verified exported pack install | #2026 | default | open |
-| H1 | #1968 | Named permission-dialog escalation | #2026 | default | open |
-| K1 | #2017 | Bundle-boundary link check | #2026 | default | open |
-| K2 | #2018 | Diagram edge-source rule | #2026 | default | open |
-| K3 | #2019 | Opened-PR number rule | #2026 | default | open |
-| P1 | #1995 | Publication ledger and re-scan | #2026 | default | open |
-| S1 | #2028 | Status sync and closing checks | Every admitted member landed | default | open |
+| L1 | #1956 | Stack-land placeholder separator (PR #2037) | #2026 | default | done |
+| C1 | #1959 | Session assigned-checkout isolation (PR #2040) | #2026 | default | done |
+| T1 | #1960 | Optional per-item tracker comment read (PR #2041) | #2026 | default | done |
+| B1 | #1962 | Verified exported pack install (PR #2042) | #2026 | default | done |
+| H1 | #1968 | Named permission-dialog escalation (PR #2055) | #2026 | default | done |
+| K1 | #2017 | Bundle-boundary link check (PR #2039) | #2026 | default | done |
+| K2 | #2018 | Diagram edge-source rule (PR #2035) | #2026 | default | done |
+| K3 | #2019 | Opened-PR number rule (PR #2064) | #2026 | default | done |
+| P1 | #1995 | Publication ledger and re-scan (PR #2038) | #2026 | default | done |
+| S1 | #2028 | Status sync and closing checks (this change) | Every admitted member landed | default | done |
+
+#### M64 outcome and lessons
+
+**Tracker.** S0 (#2026, PR #2034) and every admitted member landed:
+L1 #1956 (PR #2037), C1 #1959 (PR #2040), T1 #1960 (PR #2041), B1 #1962
+(PR #2042), H1 #1968 (PR #2055), K1 #2017 (PR #2039), K2 #2018 (PR #2035),
+K3 #2019 (PR #2064) and P1 #1995 (PR #2038). Each issue is closed. No member
+was added after S0 and none was dropped. #2028 closes on this change's merge,
+then the tracker #2030 and the M64 milestone close. Rounds: S0, B1, K1, K3 and
+P1 passed in round 1; L1, C1, T1, H1 and K2 in round 2. L1, C1 and T1 each
+spent a round on guard negative-control evidence alone, which led to the
+crew-wide steer on #2044.
+
+**Closing checks.** S1 ran G1–G5 from
+[land-triage-ergonomics.md §4](land-triage-ergonomics.md#4-closing-checks)
+at its head and records the commands, outputs and SHA on #2028. In summary:
+G1 is the member table above. G2: `test-render-parity.py` and
+`test-crew-render.py` pass. G3: L1's `land.stack_separator` is in
+[profile](../profile.md) and [interfaces](../interfaces.md); C1's session
+`isolation` in [runtime options](../configuration/runtime-options.md); T1's
+`tracker.read-comments` in [actions](../../actions/README.md),
+[session runtime](../runtimes/session.md) and the GitHub manifest as
+`unsupported`; B1's `pack.lock` export in [packs](../packs.md); each with its
+default. G4: the K1 (`encoded`), K2 and K3 (`applied`) lessons are indexed;
+the K1 and K2 rows, and the unrelated #2024 lesson, entered the index with
+S1's `check-repo.py --fix`. K1's negative control was rerun: restoring #2000's
+README link fails the `links` check. G5: P1's
+[re-scan record](https://github.com/mw-ding/mdstack/issues/1995#issuecomment-7075373206)
+is linked. Its boundary stands: no history rewrite, force-push, tracker
+deletion or retroactive removal; no PNG OCR or secret attestation; no
+tool-name clearance without the owner's external denylist.
+
+**Source delivery and release.** Every M64 unit is on `main`. None is in a
+release: v8.1.0 (2026-11-21) predates them, and their fragments wait in
+`changes/unreleased/`. Completing M64 is not a release cut.
+
+**Lessons.** K1–K3 each added a lesson file. From the milestone itself:
+
+- A guard test needs its negative control run and shown, not asserted:
+  three member PRs each spent a review round on that alone.
+- A publication re-scan can only bound the paths it names: P1 left
+  redirecting `eng-crew` links in `actions/` and `scripts/README.md`, outside
+  its boundary, as a follow-up.
+- A closing slice regenerates the lessons index: members that add lessons
+  do not touch it, so S1's `--fix` is where their rows land.
 
 ## 6. Decisions
 
