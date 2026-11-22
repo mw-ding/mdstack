@@ -236,8 +236,24 @@ class LandLock(Base):
             time.sleep(.1)
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
 
+    def test_fake_tmux_reads_never_rewrite_state(self):  # #2011: a holder's poll undid the test's window removal
+        state = json.dumps({"crew-acme-widgets": {"0": "ash", "1": "sam"}}, indent=2)
+        with open(self.state_file, "w") as f:
+            f.write(state)
+        for args in (["list-windows", "-t", "=crew-acme-widgets"], ["has-session", "-t", "=crew-acme-widgets"],
+                     ["display-message", "-p", "-t", "=crew-acme-widgets:1"],
+                     ["capture-pane", "-p", "-t", "=crew-acme-widgets:1"]):
+            r = subprocess.run(["tmux", *args], capture_output=True, text=True, env=self.env)
+            self.assertEqual(r.returncode, 0, args + [r.stderr])
+            with open(self.state_file) as f:
+                self.assertEqual(f.read(), state, args)  # byte for byte: not even reformatted
+        subprocess.run(["tmux", "kill-window", "-t", "=crew-acme-widgets:1"], check=True, env=self.env)
+        with open(self.state_file) as f:  # negative control: a mutating call still persists
+            self.assertEqual(json.load(f), {"crew-acme-widgets": {"0": "ash"}})
+        self.assertFalse([n for n in os.listdir(self.tmp) if n.startswith("tmux.json.")])  # no temp file left
+
     def test_missing_window_reaps_lock_even_when_pane_process_survives(self):
-        owner = subprocess.Popen(["sleep", "30"])
+        owner = subprocess.Popen(["sleep", "600"])  # outlives a loaded run; killed on cleanup
         self.addCleanup(owner.wait)
         self.addCleanup(owner.kill)
         start = subprocess.run(["ps", "-o", "lstart=", "-p", str(owner.pid)], capture_output=True,
@@ -258,7 +274,12 @@ class LandLock(Base):
         self.assertEqual(self.lock("acquire").returncode, 1)  # unreadable pane, window still present
         with open(self.state_file, "w") as f:
             json.dump({"crew-acme-widgets": {"0": "ash"}}, f)
-        r = self.lock("acquire")
+        deadline = time.monotonic() + 15  # wait on the reap, not one acquire: the holder may be exiting on its own
+        while True:
+            r = self.lock("acquire")
+            if r.returncode == 0 or time.monotonic() > deadline:
+                break
+            time.sleep(.1)
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIsNone(owner.poll())  # removal of the window is enough to reap its detached holder
 
