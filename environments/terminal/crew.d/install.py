@@ -30,6 +30,14 @@ def launcher_text(root):
             'exec %s "$@"\n' % shlex.quote(str(root / "releases" / "current" / "cli" / "mdstack")))
 
 
+def write_launcher(launcher, root):
+    launcher.parent.mkdir(parents=True, exist_ok=True)
+    tmp = launcher.with_name("." + launcher.name + ".tmp")
+    tmp.write_text(launcher_text(root))
+    tmp.chmod(0o755)
+    os.replace(tmp, launcher)
+
+
 def path_hint(root):
     shown = str(root / "bin")
     if shown.startswith(os.path.expanduser("~") + os.sep):
@@ -162,11 +170,7 @@ def install(args):
         elif step == "link":
             flip(releases, bundle)
         elif step == "launcher":
-            launcher.parent.mkdir(parents=True, exist_ok=True)
-            tmp = launcher.with_name("." + launcher.name + ".tmp")
-            tmp.write_text(launcher_text(root))
-            tmp.chmod(0o755)
-            os.replace(tmp, launcher)
+            write_launcher(launcher, root)
         else:
             (directory / launcher.name).symlink_to(launcher)
         print("crew install: %s %s %s" % ("would write" if args.dry_run else "wrote", step, detail))
