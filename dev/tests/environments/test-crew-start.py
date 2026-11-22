@@ -305,13 +305,13 @@ class StartMatrix(Base):
             with self.subTest(entry=entry):
                 self.reset()
                 super().write_profile(runtime="session")
-                r = self.run_entry(entry)
+                r = self.run_entry(entry, leads=True)  # the shipped inputs: the fixture has no session binding
                 self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
                 self.assertEqual(self.names().count("new-session"), 1)
                 self.assertNotIn("new-window", self.names())
                 self.assertEqual(self.joins(), [["attach-session", "-t", TARGET]])
                 os.remove(self.log)
-                r = self.run_entry(entry)
+                r = self.run_entry(entry, leads=True)
                 self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
                 self.assertNotIn("new-session", self.names())
                 self.assertEqual(self.joins(), [["attach-session", "-t", TARGET]])
