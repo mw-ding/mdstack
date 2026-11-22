@@ -95,6 +95,13 @@
       "harnesses/test-harness-adapters.py:test_declared_rows_per_shipped_adapter"
      ]
     },
+    "PERMISSION_PROMPTS": {
+     "oracle": true,
+     "tests": [
+      "environments/test-crew-watch.py:test_scan_bypass_permission_prompt_names_class_and_line",
+      "environments/test-crew-watch.py:test_watch_names_a_bypass_permission_dialog"
+     ]
+    },
     "BUSY": {
      "oracle": true,
      "tests": [
@@ -221,6 +228,13 @@
       "harnesses/test-harness-adapters.py:test_declared_rows_per_shipped_adapter"
      ]
     },
+    "PERMISSION_PROMPTS": {
+     "oracle": true,
+     "tests": [
+      "environments/test-crew-watch.py:test_scan_bypass_permission_prompt_names_class_and_line",
+      "environments/test-crew-watch.py:test_watch_names_a_bypass_permission_dialog"
+     ]
+    },
     "BUSY": {
      "oracle": true,
      "tests": [
@@ -339,6 +353,12 @@
      "gap": "Custom extension dialogs are not recognized by the probe",
      "tests": []
     },
+    "PERMISSION_PROMPTS": {
+     "default": true,
+     "tests": [
+      "environments/test-crew-watch.py:test_scan_bypass_permission_prompt_names_class_and_line"
+     ]
+    },
     "BUSY": {
      "gap": "Gap: none declared, so `mdstack upgrade` reads no mid-turn screen text from this pane",
      "tests": []
@@ -444,6 +464,12 @@
     "PROMPTS": {
      "gap": "Gap: Cursor-specific trust/login screen detection has not been verified",
      "tests": []
+    },
+    "PERMISSION_PROMPTS": {
+     "default": true,
+     "tests": [
+      "environments/test-crew-watch.py:test_scan_bypass_permission_prompt_names_class_and_line"
+     ]
     },
     "BUSY": {
      "gap": "Gap: none declared, so `mdstack upgrade` reads no mid-turn screen text from this pane",
@@ -554,6 +580,12 @@
       "environments/test-crew-watch.py:test_muse_versioned_coordinator_wakes_but_dialog_does_not"
      ]
     },
+    "PERMISSION_PROMPTS": {
+     "default": true,
+     "tests": [
+      "environments/test-crew-watch.py:test_scan_bypass_permission_prompt_names_class_and_line"
+     ]
+    },
     "BUSY": {
      "gap": "Gap: none declared, so `mdstack upgrade` reads no mid-turn screen text from this pane",
      "tests": []
@@ -639,6 +671,12 @@
     },
     "PROMPTS": {
      "unsupported": "with no interactive launch"
+    },
+    "PERMISSION_PROMPTS": {
+     "default": true,
+     "tests": [
+      "environments/test-crew-watch.py:test_scan_bypass_permission_prompt_names_class_and_line"
+     ]
     },
     "BUSY": {
      "unsupported": "with no interactive launch"

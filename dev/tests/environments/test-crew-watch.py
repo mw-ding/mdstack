@@ -336,6 +336,11 @@ class Watch(LivenessBase):
                 self.assertEqual([(w["reason"], w["action"]) for w in wakes], [("dialog", "escalate")])
                 self.assertEqual((wakes[0].get("class"), wakes[0].get("prompt")),
                                  ("permission-dialog", want) if want else (None, None))
+        self.set_pane(10, screen="Do you trust this workspace?\nUse Up/Down or 1/2, then Enter. Esc quits.")
+        with mock.patch.dict(os.environ, self.env):  # an adapter without PERMISSION_PROMPTS (Muse): today's wake
+            wake, = self.mod.scan(self.state, "crew-acme-widgets", NOW, 900, {"offsets": {}, "keys": {}},
+                                  permission_mode="bypass")
+        self.assertEqual((wake["reason"], wake.get("class")), ("dialog", None))
         self.set_pane(10, screen=screen("claude-proceed"))
         with mock.patch.dict(os.environ, self.env):
             wake, = self.mod.scan(self.state, "crew-acme-widgets", NOW, 900, {"offsets": {}, "keys": {}},
