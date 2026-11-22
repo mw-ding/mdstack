@@ -195,6 +195,25 @@ class Commands(Base):
         self.comments.write_text(json.dumps([[marker("claimed"), marker("takeover", "tmux@local", "grok-bot@box")]]))
         self.assertEqual(self.crew("ownership", "--project", self.project, "--action", "write").returncode, 1)
 
+    def test_team_change_takeover_refuses_the_losing_runtime(self):  # #1979 R4 (2)
+        """An owner decision moving the repo to team md is carried out as the takeover handoff: from the takeover post
+        on, and after its ack, the losing runtime (tmux@local) refuses every action; the decision comment alone moves
+        nothing; the winning runtime (tmux@md) owns after the ack."""
+        claimed, decision = marker("claimed"), {"user": {"login": "acme-owner"}, "body": "Team md takes over this repo."}
+        takeover, acked = marker("takeover", "tmux@local", "tmux@md"), marker("acked", "tmux@local", "tmux@md")
+        self.comments.write_text(json.dumps([[claimed, decision]]))
+        self.assertEqual(self.crew("ownership", "--project", self.project, "--action", "write").returncode, 0)
+        for seq in ([claimed, decision, takeover], [claimed, decision, takeover, acked]):
+            self.comments.write_text(json.dumps([seq]))
+            for action in ("start", "write", "land"):
+                r = self.crew("ownership", "--project", self.project, "--action", action)
+                self.assertEqual(r.returncode, 1, (len(seq), action))
+                self.assertIn("read-only; refusing " + action, r.stdout)
+        p = Path(self.project)
+        p.write_text(p.read_text().replace('instance = "local"', 'instance = "md"'))
+        for action in ("start", "write", "land"):
+            self.assertEqual(self.crew("ownership", "--project", self.project, "--action", action).returncode, 0)
+
     def test_poll_reports_once_and_guard_allows_stop(self):
         for _ in range(2):
             r = self.crew("poll", "--once", "--project", self.project)
