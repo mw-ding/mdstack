@@ -1,7 +1,11 @@
 # Spec: 8.x reliability fixes
 
-**Status: design (M63, [#2029](https://github.com/mw-ding/mdstack/issues/2029)); no member has landed.**
-This spec is the opening slice S0 ([#2025](https://github.com/mw-ding/mdstack/issues/2025)).
+**Status: built (M63, [#2029](https://github.com/mw-ding/mdstack/issues/2029));
+every member landed, and the closing slice S1
+([#2027](https://github.com/mw-ding/mdstack/issues/2027)) ran the acceptance ledger.**
+Outcome, ledger summary and lessons:
+[portable spec, M63 outcome](portable.md#m63-outcome-and-lessons).
+This spec was the opening slice S0 ([#2025](https://github.com/mw-ding/mdstack/issues/2025)).
 It records each member's settled fix, its numbered acceptance criteria and the
 order between members that touch the same code. Member statuses live in
 [portable spec, M63](portable.md#m63-8x-reliability-fixes). Plan-ok:
@@ -137,8 +141,10 @@ are its minimum. Every member keeps the repository rules: one PR, a
   session-runtime crew. (4) The launch line exports `GH_TOKEN` only when a
   GitHub backend is bound; tmux GitHub renders are unchanged.
 - **R11 (#1958).** Fix: the linkage-check sentence renders only for a
-  GitHub change backend; the post-open fragment step only when the profile
-  declares `[release]`; a new `builder.local_checks` string replaces the
+  GitHub change backend; the post-open fragment step only for a GitHub
+  change backend or a profile that declares `[release]` (settled at S1: the
+  shipped GitHub profiles declare no `[release]`, so a `[release]`-only
+  condition would break AC (2)); a new `builder.local_checks` string replaces the
   local-check list, and when unset a GitHub render keeps today's text while
   another backend renders "the project's own checks from its `AGENTS.md`".
   (1) A non-GitHub render without `[release]` omits all three. (2) Existing
