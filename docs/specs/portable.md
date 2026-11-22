@@ -3532,7 +3532,7 @@ lessons are in [M63 outcome and lessons](#m63-outcome-and-lessons).
 | R9 | #1950 | Suite admission for a waited-on item (PR #2062) | #2025 | default | done |
 | R10 | #1957 | Session `up` parity (PR #2060) | #2025 | default | done |
 | R11 | #1958 | Backend-aware builder brief (PR #2059) | #2025 | default | done |
-| S1 | #2027 | Status sync and acceptance ledger (PR TBD) | Every admitted member landed | default | done |
+| S1 | #2027 | Status sync and acceptance ledger (PR #2074) | Every admitted member landed | default | done |
 
 #### M63 outcome and lessons
 
