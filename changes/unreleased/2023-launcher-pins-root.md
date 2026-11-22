@@ -1,7 +1,7 @@
 ---
 type: fixed
 issue: 2023
-pr: TBD
+pr: 2067
 date: 2026-11-22
 box-skill: none
 ---
