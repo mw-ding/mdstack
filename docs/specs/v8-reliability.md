@@ -51,9 +51,11 @@ are its minimum. Every member keeps the repository rules: one PR, a
   launcher, else `paths.root`, else `user_root()`).
 - **R7 → R4 (route readiness).** Both edit the readiness `want` table in
   `route.py`. R7 is the smaller change and lands first; R4 merges up.
-- **No order, rebase on conflict:** R1 and R10 (different functions in
-  `_shared.py`), R5 and R9 (different functions in `lead.py`), R5 and R4/R7
-  (merge-up routing versus readiness in `route.py`).
+- **No fixed order:** R1 and R10 (different functions in `_shared.py`), R5
+  and R9 (different functions in `lead.py`), R5 and R4/R7 (merge-up routing
+  versus readiness in `route.py`). The member landing second merges up with
+  the declared update strategy and its builder resolves any conflict; a
+  published branch is never rebased or force-pushed.
 
 ### Member ACs
 
