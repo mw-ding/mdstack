@@ -3514,21 +3514,69 @@ The settled fixes, member ACs and the order between members are in
 [v8-reliability.md](v8-reliability.md); this table holds the statuses. S0 is
 recorded as done for this opening slice, effective on merge.
 
+Statuses below are synced by #2027: every admitted member landed with the PR
+shown, and no member was added after S0 or dropped. The acceptance ledger and
+lessons are in [M63 outcome and lessons](#m63-outcome-and-lessons).
+
 | ID | Issue | Scope | Depends on | Tier | Status |
 |---|---|---|---|---|---|
 | S0 | #2025 | [v8-reliability.md](v8-reliability.md) and this section (PR #2033) | Owner plan-ok | default | done |
-| R1 | #2024 | 7.x bootstrap re-exec of `upgrade --project` | #2025 | default | open |
-| R2 | #2023 | Launcher pins its install root | #2024 | default | open |
-| R3 | #1961 | Primary host root defaults to `paths.root` | #2023 | default | open |
-| R4 | #1979 | Team change through the handoff record; foreign-team PRs skipped | #1970 | default | open |
-| R5 | #2015 | Merge-up delta review reaches the reviewer lead | #2025 | default | open |
-| R6 | #2011 | Deterministic land-lock reap test | #2025 | default | open |
-| R7 | #1970 | Release-cut review readiness | #2025 | default | open |
-| R8 | #1941 | Research artifacts under `.crew/` | #2025 | default | open |
-| R9 | #1950 | Suite admission for a waited-on item | #2025 | default | open |
-| R10 | #1957 | Session `up` parity | #2025 | default | open |
-| R11 | #1958 | Backend-aware builder brief | #2025 | default | open |
-| S1 | #2027 | Status sync and acceptance ledger | Every admitted member landed | default | open |
+| R1 | #2024 | 7.x bootstrap re-exec of `upgrade --project` (PR #2051) | #2025 | default | done |
+| R2 | #2023 | Launcher pins its install root (PR #2067) | #2024 | default | done |
+| R3 | #1961 | Primary host root defaults to `paths.root` (PR #2068) | #2023 | default | done |
+| R4 | #1979 | Team change through the handoff record; foreign-team PRs skipped (PR #2070) | #1970 | default | done |
+| R5 | #2015 | Merge-up delta review reaches the reviewer lead (PR #2065) | #2025 | default | done |
+| R6 | #2011 | Deterministic land-lock reap test (PR #2058) | #2025 | default | done |
+| R7 | #1970 | Release-cut review readiness (PR #2046) | #2025 | default | done |
+| R8 | #1941 | Research artifacts under `.crew/` (PR #2047) | #2025 | default | done |
+| R9 | #1950 | Suite admission for a waited-on item (PR #2062) | #2025 | default | done |
+| R10 | #1957 | Session `up` parity (PR #2060) | #2025 | default | done |
+| R11 | #1958 | Backend-aware builder brief (PR #2059) | #2025 | default | done |
+| S1 | #2027 | Status sync and acceptance ledger (PR #2074) | Every admitted member landed | default | done |
+
+#### M63 outcome and lessons
+
+**Tracker.** S0 (#2025, PR #2033) and every admitted member landed:
+R1 #2024 (PR #2051), R2 #2023 (PR #2067), R3 #1961 (PR #2068), R4 #1979
+(PR #2070), R5 #2015 (PR #2065), R6 #2011 (PR #2058), R7 #1970 (PR #2046),
+R8 #1941 (PR #2047), R9 #1950 (PR #2062), R10 #1957 (PR #2060) and
+R11 #1958 (PR #2059). Each issue is closed. No member was added after S0 and
+none was dropped. The declared orders held: R1, R2 and R3 landed in that
+order, and R7 before R4. #2027 closes on this change's merge, then the
+tracker #2029 and the M63 milestone close. Rounds: R1–R8 and R10 passed in
+round 1; S0, R9 and R11 in round 2.
+
+**Acceptance ledger.** S1 ran the tests each member AC names at its head and
+records the commands, results and SHA on #2027. The 19 test files named by
+R1–R11 (bootstrap, upgrade, user-install, host, ownership, review-ready,
+route, reviewer-pool, land-lock, kill, tmux-briefs, lead, schedule, attach,
+start, up, worker-tmux-guard, crew-render and render-parity) pass under
+`scripts/run-tests.py`. R6 AC (2) was rerun too: 50 back-to-back runs of the
+reap test pass alongside that load. No check was left unrun.
+
+**Settled at S1.** R11's fragment-step condition: the post-open fragment step
+renders for a GitHub change backend or a declared `[release]`, as #2059
+built it. The S0 wording (`[release]` only) contradicted R11 AC (2), since the
+shipped GitHub profiles declare no `[release]`;
+[v8-reliability.md](v8-reliability.md) now says so.
+
+**Source delivery and release.** Every M63 unit is on `main`. None is in a
+release: v8.1.0 (2026-11-21) predates them, and their fragments wait in
+`changes/unreleased/`. Per the tracker, they ship in the next release after
+S1; completing M63 is not a release cut.
+
+**Lessons.** R1 added a lesson file, indexed at M64's S1. From the milestone
+itself:
+
+- An exemption from one ceiling must re-check the others: R9's first head
+  cleared the whole `ceiling_hit()` result for a suite wait, so an exceeded or
+  unknown `max_load` admitted too. Test both ceilings at once.
+- A negative-control capture must keep the guard's exit status and mutate one
+  condition at a time: R11's first capture piped the failing test through
+  `grep`, printed `exit: 0`, and stopped at the first of three assertions.
+- A spec condition can contradict its own byte-identical AC when the shipped
+  profiles lack the table it keys on. Check a condition against the shipped
+  profiles before S0 settles it.
 
 ### M64: land, triage and bootstrap ergonomics
 
