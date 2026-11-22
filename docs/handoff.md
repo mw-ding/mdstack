@@ -59,6 +59,23 @@ prompt stop of wake sources →  [A/handoff] stopped                        lift
 When the outgoing runtime cannot act (quota out, crashed, unreachable), the
 owner commands a **takeover** in the incoming runtime instead of steps 1–2.
 
+### Team change
+
+An owner decision that moves a repo to another team is a handoff, not a
+prose decision (#1979). The incoming coordinator carries it out with the
+`takeover` handoff on the repo's control item; the decision comment alone
+moves nothing, because no guard reads it. From the `takeover` post on, the
+losing runtime's `mdstack ownership` refuses every action, `write`
+included, and after `acked` it reports `lost`.
+
+Both crews may post as one login under the same persona names, so a
+signature cannot tell their PRs apart. Review readiness on tmux therefore
+also needs a run record in this crew's state that names the PR: a builder's
+`done: #<item> #<pr> <head>` line or a `builder-pr<n>-` claim. A builder
+that adopts an open PR (build pass step 1) writes its `done:` line for it at
+the end of that pass. The route skips a PR with neither as `foreign team`;
+this adds no marker field, label or merge-gate rule.
+
 ## Owner assumption
 
 The owner's assumption for #213 (2026-11-03): "When we say handoff it means

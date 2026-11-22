@@ -242,6 +242,14 @@ Owner-only settings, such as `release_delegation`
 ([release](release.md#release-delegation)), keep their own restrictions:
 no role sets or edits them (#372).
 
+## Team change (coordinator)
+
+An owner decision that moves a repo to another team is carried out with
+the existing `takeover` handoff on the repo's control item
+([handoff](handoff.md#team-change)). The decision comment alone moves
+nothing: no ownership guard reads it, so the losing crew keeps dispatching
+until the handoff record names the new owner (#1979).
+
 ## Roles
 
 Pick the role by the area the change lives in.
