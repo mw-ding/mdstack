@@ -3505,6 +3505,31 @@ one.
   cannot turn the setting on. Record the setting and leave the switch to the
   owner, as D9 did for private vulnerability reporting.
 
+### M63: 8.x reliability fixes
+
+Opening spec slice #2025 (S0) and closing slice #2027 (S1) bookend
+[#2029](https://github.com/mw-ding/mdstack/issues/2029), under the
+[owner's plan-ok](https://github.com/mw-ding/mdstack/issues/985#issuecomment-7074684349).
+The settled fixes, member ACs and the order between members are in
+[v8-reliability.md](v8-reliability.md); this table holds the statuses. S0 is
+recorded as done for this opening slice, effective on merge.
+
+| ID | Issue | Scope | Depends on | Tier | Status |
+|---|---|---|---|---|---|
+| S0 | #2025 | [v8-reliability.md](v8-reliability.md) and this section | Owner plan-ok | default | done |
+| R1 | #2024 | 7.x bootstrap re-exec of `upgrade --project` | #2025 | default | open |
+| R2 | #2023 | Launcher pins its install root | #2024 | default | open |
+| R3 | #1961 | Primary host root defaults to `paths.root` | #2023 | default | open |
+| R4 | #1979 | Team change through the handoff record; foreign-team PRs skipped | #1970 | default | open |
+| R5 | #2015 | Merge-up delta review reaches the reviewer lead | #2025 | default | open |
+| R6 | #2011 | Deterministic land-lock reap test | #2025 | default | open |
+| R7 | #1970 | Release-cut review readiness | #2025 | default | open |
+| R8 | #1941 | Research artifacts under `.crew/` | #2025 | default | open |
+| R9 | #1950 | Suite admission for a waited-on item | #2025 | default | open |
+| R10 | #1957 | Session `up` parity | #2025 | default | open |
+| R11 | #1958 | Backend-aware builder brief | #2025 | default | open |
+| S1 | #2027 | Status sync and acceptance ledger | Every admitted member landed | default | open |
+
 ## 6. Decisions
 
 | Date | Decision | Source |
