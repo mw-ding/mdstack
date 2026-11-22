@@ -2,7 +2,8 @@
 """Tests for scripts/run-tests.py (offline, temp dir only).
 
 Covers pass and fail exit codes, failing-file output capture, per-file
-duration and slowest lines, serial files, a missing file, tmux isolation of
+duration and slowest lines, serial files, slow-first start order, the
+summary's CPU seconds, a missing file, tmux isolation of
 each file (a decoy server on its own -S socket survives a bare kill-server)
 and the per-file failure log. Run in CI.
 """
@@ -89,6 +90,66 @@ class RunTestsTest(unittest.TestCase):
             code = mod.main([s, a])
         self.assertEqual(code, 0)
         self.assertEqual(order, ["test-a.py", "test-serial.py"])
+
+    def test_slow_first_files_start_first_in_their_order(self):  # #2082
+        spec = importlib.util.spec_from_file_location("run_tests", RUNNER)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        files = [self.write(n, "") for n in ("test-a.py", "test-b.py", "test-c.py", "test-d.py")]
+        mod.SLOW_FIRST = ("test-d.py", "test-gone.py", "test-b.py")
+        order = []
+        real = mod.run_one
+        mod.run_one = lambda path: (order.append(os.path.basename(path)), real(path))[1]
+        with contextlib.redirect_stdout(io.StringIO()):
+            code = mod.main(["-j", "1", *files])
+        self.assertEqual(code, 0)
+        self.assertEqual(order, ["test-d.py", "test-b.py", "test-a.py", "test-c.py"])
+
+    def test_full_run_precompiles_and_named_files_do_not(self):  # #2082
+        spec = importlib.util.spec_from_file_location("run_tests", RUNNER)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        os.makedirs(os.path.join(self.tmp.name, "tests", "mod"))
+        test = self.write(os.path.join("tests", "mod", "test-a.py"), "")
+        mod.TESTS = os.path.join(self.tmp.name, "tests")
+        calls = []
+        mod.precompile = lambda: calls.append("precompile")
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(mod.main([test]), 0)
+            self.assertEqual(calls, [])
+            self.assertEqual(mod.main([]), 0)
+        self.assertEqual(calls, ["precompile"])
+
+    def test_precompile_writes_bytecode_outside_dot_dirs(self):  # #2082
+        spec = importlib.util.spec_from_file_location("run_tests", RUNNER)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        for d in ("pkg/sub", ".hidden"):
+            os.makedirs(os.path.join(self.tmp.name, d))
+        kept = self.write("pkg/sub/mod-a.py", "X = 1\n")
+        hidden = self.write(".hidden/mod-b.py", "X = 1\n")
+        mod.ROOT = self.tmp.name
+        mod.precompile()
+        self.assertTrue(os.path.exists(importlib.util.cache_from_source(kept)))
+        self.assertFalse(os.path.exists(importlib.util.cache_from_source(hidden)))
+
+    def test_default_jobs_is_one_and_a_half_cpus_capped_at_eight(self):  # #2082
+        spec = importlib.util.spec_from_file_location("run_tests", RUNNER)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        real = os.cpu_count
+        self.addCleanup(setattr, os, "cpu_count", real)
+        for cpus, jobs in ((None, 1), (1, 1), (2, 3), (4, 6), (5, 7), (16, 8)):
+            os.cpu_count = lambda: cpus
+            self.assertEqual(mod.default_jobs(), jobs, cpus)
+
+    def test_summary_reports_the_files_cpu_seconds(self):  # #2082
+        busy = self.write("test-busy.py", "import time\nt = time.process_time()\n"
+                                          "while time.process_time() - t < 0.5:\n    pass\n")
+        code, out = self.run_runner(busy)
+        self.assertEqual(code, 0, out)
+        cpu = float(re.search(r"\n1 files, 0 failed, [\d.]+s wall, -j \d+, ([\d.]+)s cpu\n", out).group(1))
+        self.assertGreaterEqual(cpu, 0.5, out)
 
     def test_each_file_gets_private_tmux_tmpdir_without_tmux_vars(self):
         probe = (
