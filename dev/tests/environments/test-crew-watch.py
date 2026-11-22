@@ -321,6 +321,28 @@ class Watch(LivenessBase):
         self.assertEqual(self.mod.reason(wakes[0]), "dialog: ben-7 ambiguous, silent 30s, escalate")
         self.assertEqual(self.scan(NOW + 900, self.seen), [])  # once per dialog, and no stale wake behind it
 
+    def test_scan_bypass_permission_prompt_names_class_and_line(self):  # #1968
+        self.beat(NOW - 30)
+        cases = [("claude-proceed", "bypass", "Do you want to proceed?"),
+                 ("codex-approval", "bypass", "Would you like to run the following command?"),
+                 ("claude-trust", "bypass", None), ("codex-trust", "bypass", None),
+                 ("claude-proceed", "auto", None), ("claude-proceed", None, None)]
+        for name, mode, want in cases:
+            with self.subTest(name=name, mode=mode):
+                self.set_pane(10, screen=screen(name))
+                with mock.patch.dict(os.environ, self.env):
+                    wakes = self.mod.scan(self.state, "crew-acme-widgets", NOW, 900, {"offsets": {}, "keys": {}},
+                                          permission_mode=mode)
+                self.assertEqual([(w["reason"], w["action"]) for w in wakes], [("dialog", "escalate")])
+                self.assertEqual((wakes[0].get("class"), wakes[0].get("prompt")),
+                                 ("permission-dialog", want) if want else (None, None))
+        self.set_pane(10, screen=screen("claude-proceed"))
+        with mock.patch.dict(os.environ, self.env):
+            wake, = self.mod.scan(self.state, "crew-acme-widgets", NOW, 900, {"offsets": {}, "keys": {}},
+                                  permission_mode="bypass")
+        self.assertEqual(self.mod.reason(wake), "dialog: ben-7 ambiguous, silent 30s, escalate, "
+                                                "permission-dialog: Do you want to proceed?")
+
     def test_scan_stuck_screen_wakes_at_once_working_screen_does_not(self):  # #289
         self.beat(NOW - 30)
         for name, want in [(n, [("dialog", "ambiguous")]) for n in STUCK] + [(n, []) for n in WORKING]:
