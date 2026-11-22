@@ -23,6 +23,8 @@ that reviewer's verdicts too.
 A fresh review starts only once the head's published, builder-signed record for its operation is readable (#1878):
 the PR body for the opened head, else a `fix`, `ci-fix` or `merge-up` note at head after the newest verdict or reset;
 until then the reviewer lead parks it as a `waiting: #<n> evidence` wait that a new builder note at head wakes.
+A builder `done:` for an approved merge-up whose head has no signed builder note yet waits the same way: poll can
+see the push before the note, so delta review is decided once the note reads back (#2015).
 Synthesizers remain alive while land requests lack completion or other inbox messages lack acknowledgment, and through
 a merged PR's close-out while their own spawn PR lacks completion (its direct-land main CI check, #1339);
 the inbox check and reap share the queue lock with send's inbox append.
@@ -918,6 +920,8 @@ def route_record(args, values, state, w):
         snapshot = commands()["poll"].pr_snapshot(own, values=values)
         pending = open_rereview(pr, head)
         if not pending and not delta and approved_merge_up(own, repo, values["repo.default_branch"]):
+            if getattr(args, "reviewer_lead", False) and not head_notes(pr, head, values["identities.builder.name"]):
+                raise NotReady(n, "builder merge-up at %s without its signed note yet; delta unknown" % head)  # #2015
             return True
         if pending or delta or snapshot["verdict"] is None or snapshot["fixed"]:
             review(args, state, pr, head, "review", snapshot["round"])

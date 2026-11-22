@@ -674,7 +674,10 @@ in reserved window 3, outside the reviewer cap. The router records durable
 `work` events for new heads, builder completion, pass completion and worker
 liveness. Coordinator recovery uses `mdstack lead handoff reviewer
 review|validate|recheck '#PR' HEAD ROUND`; add a rereview steer id as a fourth
-reference for a fresh request at the same head. The coordinator never
+reference for a fresh request at the same head. `mdstack lead handoff reviewer
+rereview '#PR' HEAD` starts a review of that head at the live round through
+the same admission and deduplication; it supplies no verdict, merge-ok or gate
+input (#2015). The coordinator never
 spawns or reclaims reviewer workers directly in this binding.
 
 The lead calls `mdstack reviewer-pool`. Dispatch
@@ -693,7 +696,10 @@ output before its steer. Passing review replay starts missing validation
 even after review cleanup. `recheck escalate` starts normal review and then
 validation; a completed recheck needs no extra validation. Identical
 merge-ups continue through synthesizer verdict portability, preserving the
-current protocol. Findings travel to the builder lead with retained refs.
+current protocol. A builder's `done:` for an approved merge-up whose head has
+no signed builder note yet waits as `waiting: #<n> evidence`: poll can see the
+push before the note, so the lead decides delta review only once the note
+reads back (#2015). Findings travel to the builder lead with retained refs.
 
 A failed Actions run whose observed jobs all have zero steps is `ci-infra`:
 coordinator handles the incident, validation may proceed, and no builder

@@ -1,0 +1,36 @@
+🛠️ Ben · Merge up · @ 5d284f9 · ✅ pass
+
+TL;DR: I merged `main` (`2019c8dc`, #2001 / D3) into the branch. A conflict in README.md is resolved, and the patch differs from the approved head, so a delta review is required. Train 48 dropped this PR for that conflict (merge_up=builder).
+
+1. B=8ff96c86c76eb3b72d97ef9319fc0eff84cfe7ea
+   H=00a87bcfa8e7b11dbd3ce0058b312b233df50670
+   U=2019c8dc29e67278c0e1e454fbee2c1dc8a64146
+   new-head=5d284f97a32a908d0e905912cd9d63ee7187d5cc
+2. Merge paths: README.md (conflicted). The other paths from #2001 merged cleanly: changes/unreleased/1988-architecture-deployment-view.md, docs/README.md, docs/architecture.md, docs/diagrams/README.md.
+3. How the conflict was resolved: in "How it works", #2001 replaced the pilot image with a link to its canonical diagram (`docs/architecture.md#deployment-wakes-and-releases`). This PR had already removed the image and added the role table and a general `docs/architecture.md` link. The resolution keeps the role table, uses #2001's canonical diagram link, and points to the stage and module diagrams in the same page. No other README text changed against H.
+4. Strict B/H versus U/new-head comparison: content differs, because the patch differs from H in the README hunk above. A delta review is needed.
+
+Evidence: targeted checks at the merge commit before push. README.md is the only conflicted file. check-repo covers its markdown and links, the scratch scan covers its anchors (including the new `#deployment-wakes-and-releases` link), and test-release-bundle.py covers the bundle's offline README link check that failed in round 1:
+
+~~~text
+$ python3 scripts/check-repo.py
+check-repo: OK (blockers, campaign, deliverables, denylist, deps, design-headers, docs, evidence, fragments, index, lessons, links, markdown, markers, memory, routines, scenarios, script-docs, secrets, shapes, spec-status, test-layout)
+$ python3 .crew/anchors.py   # scratch README link/anchor scan
+bad 0
+$ python3 scripts/check-changelog-pr.py --base origin/main --head HEAD --event pull_request --pr 2000
+check-changelog-pr: OK (new fragment added)
+$ python3 scripts/run-tests.py dev/tests/scripts/test-release-bundle.py
+1 files, 0 failed, 39.6s wall, -j 8
+$ git diff --no-color --no-renames origin/main...HEAD | python3 core/crew-config.py sensitive --project "$CREW_PROJECT" --diff
+{"label": null, "matches": {}}
+~~~
+
+The full suite runs in PR CI at this head.
+
+Next: synthesizer or delta reviewer.
+
+Engine: claude-code claude-opus-5-5 medium
+
+Run: 57m 33s · tokens n/a · opus (medium)
+<!-- crew:v1 role=builder pass=merge-up pr=2000 sha=5d284f97a32a908d0e905912cd9d63ee7187d5cc round=n/a verdict=n/a -->
+— 🛠️ Ben (Builder) · Claude Code · claude-opus-5-5

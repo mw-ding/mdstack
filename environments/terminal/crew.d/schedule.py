@@ -95,6 +95,8 @@ def demand(state, values, role, team=False):
                 kind, ref = work_pass(event)
                 if kind:
                     item.update(kind=kind, refs=[ref])
+        elif role == "reviewer" and m["kind"] == "rereview":
+            item["kind"] = "review"  # a coordinator rereview is ranked and granted as the review it starts (#2015)
         items.append(item)
     if role == "builder":
         items += [dict(kind=e["pass"], issue=e["issue"], pr=e["pr"], ts=e["queued"], queued=True, head=e.get("head"))

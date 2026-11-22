@@ -1,7 +1,9 @@
 """Reviewer lead's serialized inbox dispatch: fresh passes, replay and slot reclaim; admission is
 `mdstack schedule decide --pool reviewer` (docs/scheduling.md#model). A team lead runs it per message repo; its acks and
 dispositions go to its status at the team root (#1858). A fresh review whose head lacks its builder record is a
-`waiting: #<n> evidence id=<id>` wait, not a claim (#1878).
+`waiting: #<n> evidence id=<id>` wait, not a claim (#1878). A coordinator `rereview '#PR' HEAD` handoff starts a review
+of that head at the live round through the same admission and deduplication; it carries no verdict, merge-ok or gate
+input (#2015).
 
 Usage: mdstack reviewer-pool --project FILE [--org-profile FILE]
 """
@@ -132,11 +134,14 @@ def run(args):
                     with open(refs[0] + ".tmp", "w") as f:
                         json.dump(wake, f)
                     os.replace(refs[0] + ".tmp", refs[0])
-            elif message["kind"] in ("review", "validate", "recheck"):
-                pr, head, round_ = refs[:3]
+            elif message["kind"] in ("review", "validate", "recheck", "rereview"):
+                pr, head, round_ = (refs + [None])[:3]
                 live = commands()["route"].gh("pr", "view", pr.lstrip("#"), "-R",
                          "%s/%s" % (values["repo.owner"], values["repo.name"]), "--json",
                          "number,state,headRefOid,isDraft,labels,reviews,statusCheckRollup")
+                if message["kind"] == "rereview":  # coordinator `rereview '#PR' HEAD`: a review at the live round (#2015)
+                    round_ = str(commands()["poll"].pr_snapshot(commands()["route"].own_view(values, live),
+                                                               values=values)["round"])
                 if live["state"] != "OPEN" or live["headRefOid"] != head:
                     with open(status, "a") as out:
                         out.write("done: " + message["id"] + "\n")
@@ -161,7 +166,8 @@ def run(args):
                                m.get("sha") == head and m.get("round") == round_ for m in commands()["route"].markers(text)):
                         continue
                 try:
-                    commands()["route"].review(args, state, live, head, message["kind"], int(round_))
+                    commands()["route"].review(args, state, live, head, "review" if message["kind"] == "rereview" else
+                                               message["kind"], int(round_))
                 except commands()["route"].NotReady as e:
                     print(e)
                     with open(status, "a") as out:
