@@ -650,7 +650,9 @@ def triage_items(data):
 
 def triage_native(values, project, org, tracker):
     """The non-GitHub tracker's `tracker.list-items` binding run for one tracker id: (open, closed). RuntimeError when
-    unbound, failed or unreadable, so the scan records the tracker unreadable."""
+    unbound, failed or unreadable, so the scan records the tracker unreadable. A bound `tracker.read-comments` then
+    replaces each open item's comments (#1960); an item whose read fails or prints no array loses its comments, so
+    the scan records it unreadable."""
     renderer = crew_render.Renderer(values, os.path.join(ROOT, "templates"), overlay=crew_render.pack_overlay(
         project, org, values))
     try:
@@ -667,9 +669,27 @@ def triage_native(values, project, org, tracker):
     if r.returncode:
         raise RuntimeError("tracker.list-items failed: %s" % r.stderr.strip())
     try:
-        return triage_items(json.loads(r.stdout))
+        items = triage_items(json.loads(r.stdout))
     except ValueError as e:
         raise RuntimeError("tracker.list-items %s" % e) from e
+    try:
+        cmd, kept = renderer.op("tracker", "read-comments")
+        renderer.kept = kept | {"n"}
+        cmd = renderer.line(cmd)
+    except crew_render.Unsupported:
+        return items
+    except ValueError as e:
+        raise RuntimeError("tracker.read-comments unbound (%s)" % e) from e
+    for item in items[0]:
+        argv = [a.replace("<n>", str(item["number"])) for a in shlex.split(cmd)]
+        try:
+            r = subprocess.run(argv, stdin=subprocess.DEVNULL, capture_output=True, text=True)
+            if r.returncode:
+                raise ValueError(r.stderr.strip())
+            item["comments"] = [triage_comment(c) for c in triage_array(json.loads(r.stdout))]
+        except (OSError, ValueError):
+            del item["comments"]
+    return items
 
 
 def triage_poll(values, state, project, read=gh_json, org=None, native=triage_native):

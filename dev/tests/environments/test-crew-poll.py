@@ -1269,6 +1269,10 @@ class NativeTriage(Base):
             sys.exit("ex: no tracker DOWN")
         with open(os.environ["EX_ITEMS"] + ".log", "a") as f:
             f.write(json.dumps(sys.argv[1:]) + "\\n")
+        if sys.argv[1] == "comments":  # #1960: one item's comments, or a failed read for an item without any
+            comments = json.load(open(os.environ["EX_ITEMS"] + ".comments")).get(sys.argv[2])
+            sys.exit("ex: no comments") if comments is None else print(json.dumps(comments))
+            sys.exit(0)
         print(open(os.environ["EX_ITEMS"]).read())
         """)
 
@@ -1318,6 +1322,46 @@ class NativeTriage(Base):
                                                         os.path.join(self.tmp, "state")])
         with open(os.path.join(self.state, "wake", "queue.jsonl")) as f:
             self.assertEqual([json.loads(line)["refs"] for line in f], [["OPS#OPS-1"]])
+
+    def test_read_comments_per_open_item_yields_the_github_fixture_queue(self):  # #1960 AC1
+        opened, closed = fixture("triage-open.json"), fixture("triage-closed.json")
+        with open(self.env["EX_ITEMS"], "w") as f:  # listed without comments, as a tracker CLI that omits them
+            json.dump([{k: v for k, v in i.items() if k != "comments"} for i in opened] +
+                      [dict(i, state="closed") for i in closed], f)
+        with open(self.env["EX_ITEMS"] + ".comments", "w") as f:  # #20 has none: its read fails, as gh's lacks them
+            json.dump({str(i["number"]): i["comments"] for i in opened if "comments" in i}, f)
+        pack = os.path.join(self.project_dir, "pack")
+        for rel, old, new in (("manifest.toml", 'read-comments = "unsupported"', 'read-comments = "supported"'),
+                              ("render/backends/example.toml", "\nlist-items = ",
+                               '\nread-comments = "ex comments <n>"\nlist-items = ')):
+            with open(os.path.join(pack, rel)) as f:
+                text = f.read()
+            self.assertIn(old, text)
+            with open(os.path.join(pack, rel), "w") as f:
+                f.write(text.replace(old, new, 1))
+        with open(self.project) as f:
+            text = f.read()
+        with open(self.project, "w") as f:  # the fixture's owner; the default tracker id, so refs match gh's
+            f.write(text.replace('owners = ["acme-owner"]', 'owners = ["owner"]')
+                    .replace('trackers = ["OPS", "DOWN"]\n', ""))
+        r = self.crew("poll", "--triage-only", "--project", self.project)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        with open(os.path.join(self.state, "triage", "queue.json")) as f:
+            native = json.load(f)
+        with open(self.env["EX_ITEMS"] + ".log") as f:  # once per open item, never a closed one
+            reads = [json.loads(line) for line in f][1:]
+        self.assertEqual(reads, [["comments", str(i["number"])] for i in opened])
+
+        gh_state = os.path.join(self.tmp, "gh-state")
+        values = {"repo.owner": "acme", "repo.name": "widgets", "identities.owners": ["owner"],
+                  "identities.coordinator.gh_user": "acme-bot", "identities.coordinator.name": "Ash"}
+        load_crew().triage_poll(values, gh_state, self.project, read=lambda *a, retry=(): [] if a[0] == "api" else
+                                fixture("triage-open.json" if a[5] == "open" else "triage-closed.json"))
+        with open(os.path.join(gh_state, "triage", "queue.json")) as f:
+            github = json.load(f)
+        self.assertEqual(native["repos"], {"acme/widgets": "ok"})
+        self.assertEqual(native["items"], github["items"])
+        self.assertEqual(len(native["items"]), 6)
 
     def test_triage_only_needs_triage_enabled_and_plain_poll_stays_tmux_only(self):
         with open(self.project) as f:

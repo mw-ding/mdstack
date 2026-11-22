@@ -305,6 +305,11 @@ close an item, after re-reading it.
   held work the calling procedure does not allow, or closing an umbrella
   through incidental linkage; `stale` when the item changed since the read.
 
+Tracker reads are backend operations, not actions: the triage scan reads
+`tracker.list-items` and, when a backend binds it, the conditional
+`tracker.read-comments` per open item
+([interfaces](../docs/interfaces.md#tracker), #1960).
+
 ### A15 `run-check`
 
 Run a permitted check, repro, capture or drift step at a pinned head and

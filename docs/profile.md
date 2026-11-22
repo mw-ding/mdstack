@@ -330,7 +330,10 @@ concern, in the interfaces order:
 [asynchronous land](interfaces.md#asynchronous-land-design) needs; a `sync` backend leaves them out. `change` also accepts
 `read-branch-head` and `tracker` accepts `unlabel`, which only
 `mdstack handoff` runs, with `repo.control_item` and a non-GitHub tracker or
-change backend ([handoff](handoff.md#handoff-live-reads)). `read-diff` is
+change backend ([handoff](handoff.md#handoff-live-reads)). `tracker` also
+accepts `read-comments`, which only the non-GitHub triage scan runs, per
+open listed item
+([session triage](runtimes/session.md#triage-sweep-routine), #1960). `read-diff` is
 conditional too: `resolve` refuses a profile with
 [content rules](#content-rules-879) whose effective `change.read-diff` is
 `unsupported` or undeclared.
