@@ -1,7 +1,7 @@
 ---
 type: fixed
 issue: 1970
-pr: TBD
+pr: 2046
 date: 2026-11-21
 box-skill: none
 ---
