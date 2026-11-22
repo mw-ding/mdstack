@@ -284,12 +284,18 @@ class ReviewReadiness(pool_tests.ReviewerPool):
 
     def test_operation_matrix(self):  # D1.5
         body = self.live["body"]
+        cut = dict(body=body.replace("Closes #7", "Release issue: #7\nRefs #7"), closingIssuesReferences=[])
         rows = lambda: [  # noqa: E731 (notes are numbered per fixture)
             ("initial: signed body", [], True, {}, 1, True),
             ("initial: body by another login", [], True, dict(author={"login": "acme-other"}), 1, False),
             ("initial: no builder marker", [], True, dict(body=body.split("<!--")[0] + "— 🛠️ Ben (Builder) · c · m"), 1, False),
             ("initial: marker names no linked item", [], True, dict(body=body.replace("issue=7", "issue=8")), 1, False),
             ("initial: no inline proof", [], True, dict(body=body.replace("~~~", "")), 1, False),
+            ("initial: release cut linkage", [], True, cut, 1, True),  # #1970
+            ("initial: release cut, Refs only", [], True, dict(cut, body=cut["body"].replace("Release issue: #7\n", "")),
+             1, False),  # #1970 control: a non-cut PR with no closing reference
+            ("initial: release cut, other issue", [], True, dict(cut, body=cut["body"].replace("#7", "#8")), 1, False),
+            ("initial: release cut, closing keyword", [], True, dict(cut, body="Fixes #9\n" + cut["body"]), 1, False),
             ("unknown operation", [], True, dict(commits=[]), 1, False),
             ("ci-fix before verdict: none", [], False, {}, 1, False),
             ("ci-fix before verdict: round 0", [self.note("ci-fix", "0")], False, {}, 1, True),
