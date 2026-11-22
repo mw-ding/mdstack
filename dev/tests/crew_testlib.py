@@ -65,7 +65,12 @@ FAKE_TMUX = textwrap.dedent("""\
             state[session] = {str(int(opts["base-index"]) + i): n for i, n in enumerate(names)}
     elif cmd == "kill-session":
         state.pop(target)
-    json.dump(state, open(path, "w"))
+    # A read never writes back, and a write replaces the file whole: a detached poller (the land-lock holder) can
+    # neither undo a test's edit with the state it read before it nor show a reader a truncated file (#2011).
+    if cmd in ("new-session", "new-window", "set-option", "kill-window", "kill-session"):
+        with open(path + ".%d" % os.getpid(), "w") as f:
+            json.dump(state, f)
+        os.replace(f.name, path)
     """)
 
 # A tmux wrapper with a composer model in $FAKE_COMPOSER: `-l` text joins the draft's last line, C-u clears a line
