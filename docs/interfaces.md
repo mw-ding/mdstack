@@ -424,7 +424,7 @@ the binding nothing changes.
 
 ### Declaration
 
-Three optional keys join the `[land]` table above. They are independent of
+Four optional keys join the `[land]` table above. They are independent of
 `mode`: a `sync` backend may declare a stack land beside its individual
 land.
 
@@ -433,12 +433,13 @@ land.
 | `stack` | bool (`false`) | The backend lands a linear stack atomically through `change.land-stack`, read back by `change.stack-status` |
 | `stack_tests_against_tip` | bool (`false`) | The stack land tests the combined stack on the current tip and refuses on red; its readback names the check |
 | `stack_status` | `stack` \| `per-change` (`stack`) | `per-change` reads the stack back from each member's `change.land-status`, mapped by `[land.status]` (with `change.read-landed` for a revision it does not capture), instead of `change.stack-status` (#1722) |
+| `stack_separator` | `" "` \| `","` (`" "`) | Joins the member ids in `<stack-changes>` and the revision ids in `<stack-revisions>`; `","` passes a review tool whose stack-land flag takes one comma-separated list a single argument. `<stack>` stays space-separated (#1956) |
 
 `resolve` fails when `stack = true` is declared with `change.land-stack`
 unsupported, or with its readback unsupported: `change.stack-status`, or
 `change.land-status` under `per-change`. It fails when
-`stack_tests_against_tip = true` or `stack_status` is declared without
-`stack = true`, and when `per-change` is declared with
+`stack_tests_against_tip = true`, `stack_status` or `stack_separator` is
+declared without `stack = true`, and when `per-change` is declared with
 `stack_tests_against_tip = true`, since three landed statuses are no receipt
 of a combined test. A `sync` stack binding may declare `change_placeholder`,
 which fills every per-member stack command; `[land.status]` is valid under
@@ -456,7 +457,7 @@ or runs the stack land; `mdstack land stack` refuses a tmux profile.
 
 Instead of `<stack>`, `land-stack` may name the stack the way a review tool
 does: `<stack-top>` (the last member's id, the representative change),
-`<stack-changes>` (member ids, space-separated, base first) and
+`<stack-changes>` (member ids, base first, joined by `stack_separator`) and
 `<stack-revisions>` (each member's revision id, same order). A request must
 carry `<stack>` or `<stack-revisions>`, so it is pinned to the checked heads,
 and the backend refuses it when any member's revision id is no longer
