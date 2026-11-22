@@ -425,23 +425,20 @@ class Host(Base):
                 self.assertEqual(mod.commands()["host"].run(args), 1)
         self.assertFalse(os.path.exists(self.ssh_log))
 
-    def test_primary_command_checkout(self):
-        """#1723: a primary with checkout = "command" prepares by running its own declaration (no git fetch) and
-        checks the receipt (never the command, never git) against the project checkout; missing, failed or
-        mismatched stays not ready."""
-        root = os.path.join(self.tmp, "primary-root")
+    def primary_command_checkout(self, extra, root):
+        """host-a as a primary with checkout = "command" plus extra lines; (host(action) -> (code, out),
+        declare(argv, path) writing the declaration under root). git must not run."""
         with open(self.project) as f:
             text = f.read()
         with open(self.project, "w") as f:
             f.write(text.replace("[hosts.host-a]\nprimary = true\n",
-                                 '[hosts.host-a]\nprimary = true\ncheckout = "command"\nroot = "%s"\n' % root))
+                                 '[hosts.host-a]\nprimary = true\ncheckout = "command"\n' + extra))
         with open(os.path.join(self.tmp, "bin", "git"), "w") as f:
             f.write("#!/bin/sh\necho 'git must not run' >&2\nexit 1\n")
         loader = importlib.machinery.SourceFileLoader("crew_cli", CREW)
         mod = importlib.util.module_from_spec(importlib.util.spec_from_loader("crew_cli", loader))
         loader.exec_module(mod)
         doctor, decl = mod.commands()["doctor"], os.path.join(root, "checkout", "acme__widgets.json")
-        ran = os.path.join(self.tmp, "ran.log")
 
         def declare(argv, path=self.project_dir):
             os.makedirs(os.path.dirname(decl), exist_ok=True)
@@ -456,7 +453,15 @@ class Host(Base):
                     mock.patch.object(doctor, "run", return_value=0), \
                     mock.patch.object(doctor, "sh", side_effect=lambda *cmd: (1 if cmd[0] == "git" else 0, "")):
                 return mod.commands()["host"].run(args), out.getvalue()
+        return host, declare
 
+    def test_primary_command_checkout(self):
+        """#1723: a primary with checkout = "command" prepares by running its own declaration (no git fetch) and
+        checks the receipt (never the command, never git) against the project checkout; missing, failed or
+        mismatched stays not ready."""
+        root = os.path.join(self.tmp, "primary-root")
+        host, declare = self.primary_command_checkout('root = "%s"\n' % root, root)
+        ran = os.path.join(self.tmp, "ran.log")
         code, out = host("check")
         self.assertEqual(code, 1, out)
         self.assertIn("fail project checkout: acme__widgets checkout command has not run; run mdstack host prepare\n"
