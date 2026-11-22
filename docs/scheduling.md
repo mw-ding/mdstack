@@ -94,8 +94,8 @@ its top-ranked item. The first failed condition is the item's defer reason.
 
 A suite wait waives only `max_suites`. When a counted builder's newest
 status line is a typed `waiting: #<m> KIND id=<id>` with nothing after it,
-the walk may admit `#<m>` past `max_suites` while every other condition
-holds. The grant's reason is `suite-wait`, and its decision log line carries
+the walk may admit `#<m>` past `max_suites` while every other condition,
+`max_load` included, holds. The grant's reason is `suite-wait`, and its decision log line carries
 the wait (`window`, `line`). This keeps a builder that holds a slot while it
 waits on another item from blocking that item (#1950). No cap value changes.
 

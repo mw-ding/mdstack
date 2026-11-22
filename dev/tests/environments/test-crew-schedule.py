@@ -520,11 +520,12 @@ class Decide(unittest.TestCase):
         wait = dict(window="ben-1933", ref="#1949", line="waiting: #1949 fix id=s1")
         caps = {"builder": 3, "reviewer": 2}
 
-        def run(pool, waits, ceiling_values=values):
+        def run(pool, waits, ceiling_values=values, **load):
             snap = dict(suites=2, load=0.1, cpus=8, suite_waits=waits)
-            ceiling = self.schedule.ceiling_hit(snap, ceiling_values)
+            snap = dict(snap, **load)
+            ceiling, past = (self.schedule.ceiling_hit(snap, ceiling_values, w) for w in (None, "max_suites"))
             return self.schedule.walk(pool, ranked, dict(self.snap, caps=caps, workers=holders, **snap), [],
-                                      dict(target=5, starts=[]), self.opts, self.alive, ceiling)
+                                      dict(target=5, starts=[]), self.opts, self.alive, ceiling, None, past)
         admitted = run("reviewer", [wait])
         self.assertEqual(walked(admitted), [("admit", "#1949", ["suite-wait"])])
         self.assertEqual(admitted[0]["wait"], dict(window="ben-1933", line="waiting: #1949 fix id=s1"))
@@ -534,6 +535,11 @@ class Decide(unittest.TestCase):
             self.assertEqual(walked(run("reviewer", waits)), [("defer", "#1949", ["max_suites"])], waits)
         self.assertEqual(walked(run("reviewer", [wait], {"runtime.options.max_load": 0.5})),
                          [("defer", "#1949", ["max_load"])])  # only max_suites is waived
+        both = dict(values, **{"runtime.options.max_load": 0.5})  # load 0.1 x 8 cpus = 0.8: max_load hit too
+        for load in (0.1, "unknown"):
+            self.assertEqual(walked(run("reviewer", [wait], both, load=load)), [("defer", "#1949", ["max_load"])], load)
+        self.assertEqual(walked(run("reviewer", [wait], dict(values, **{"runtime.options.max_load": 1.0}))),
+                         [("admit", "#1949", ["suite-wait"])])  # 0.8 < 1.0: only max_suites is hit
         state = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, state)
         os.makedirs(os.path.join(state, "schedule"))

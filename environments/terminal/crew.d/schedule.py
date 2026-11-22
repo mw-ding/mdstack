@@ -573,17 +573,18 @@ def live_reservations(reservations, workers, now):
     return [r for r in reservations if (now - parse(r["time"])).total_seconds() < RESERVATION_TTL and not started(r)]
 
 
-def ceiling_hit(snap, values):
-    """The optional hard ceiling a start would exceed (an unobserved input counts as exceeded), else None."""
+def ceiling_hit(snap, values, waive=None):
+    """The optional hard ceiling a start would exceed (an unobserved input counts as exceeded), else None; a `waive`d
+    ceiling is not checked (a suite wait waives only `max_suites`, #1950)."""
     max_suites, max_load = values.get("runtime.options.max_suites"), values.get("runtime.options.max_load")
-    if max_suites is not None and (snap["suites"] == UNKNOWN or snap["suites"] >= max_suites):
+    if max_suites is not None and waive != "max_suites" and (snap["suites"] == UNKNOWN or snap["suites"] >= max_suites):
         return "max_suites"
     if max_load is not None and (UNKNOWN in (snap["load"], snap["cpus"]) or snap["load"] * snap["cpus"] >= max_load):
         return "max_load"
     return None
 
 
-def walk(pool, ranked, snap, reserved, target_doc, opts, leads, ceiling=None, repo=None):
+def walk(pool, ranked, snap, reserved, target_doc, opts, leads, ceiling=None, repo=None, past_suites="max_suites"):
     """Walk the crew's ranked demand (docs/scheduling.md#model). The caller's items are admitted (already reserved
     ones again, as `reserved`) or deferred with the first failed condition; the other pool's would-be grants are
     holds for this walk only, dropped as `lead-down` when that pool's lead is down. A pool with no busy worker or
@@ -593,7 +594,8 @@ def walk(pool, ranked, snap, reserved, target_doc, opts, leads, ceiling=None, re
     caller is the lane (repo, pool): another repo's would-be grants are holds too, `leads` is keyed by lane, and caps,
     floors, target and ramp count team totals (team §9.4). A team class 8 build waits (`class-7`) while any eligible
     team class 7 build has not started; a one-repo walk keeps class 8 as fill-in by rank order. The `max_suites`
-    ceiling alone is waived for an item a counted builder's un-woken wait names (`suite_waits`), admitted with reason
+    ceiling alone is waived for an item a counted builder's un-woken wait names (`suite_waits`): `past_suites`, the
+    ceiling hit with `max_suites` waived, still applies (not given: no waiver), and a grant is admitted with reason
     `suite-wait` and that wait (#1950)."""
     caller = pool if repo is None else (repo, pool)
     suite_waits = {(w.get("repo"), w["ref"]): w for w in snap.get("suite_waits", [])}
@@ -627,9 +629,10 @@ def walk(pool, ranked, snap, reserved, target_doc, opts, leads, ceiling=None, re
                 actions.append(dict(act, action="defer", reasons=["class-7"]))
             continue
         wait = suite_waits.get((item.get("repo"), item["ref"])) if ceiling == "max_suites" else None
+        hit = past_suites if wait else ceiling
+        wait = wait if hit is None else None
         fails = [why for why, ok in (("cap", used[p] < snap["caps"][p]), ("target", total < target_doc["target"]),
-                                     ("ramp", starts < opts["schedule_ramp"]), (ceiling, ceiling is None or wait))
-                 if not ok]
+                                     ("ramp", starts < opts["schedule_ramp"]), (hit, hit is None)) if not ok]
         if fails and not (floor[p] and fails[0] != "cap"):
             if mine:
                 actions.append(dict(act, action="defer", reasons=fails[:1]))
@@ -723,7 +726,8 @@ def evaluate(args, values, session, state, now):
     else:
         leads = read(lead_states, session, state, values, members(args, values) if team else None)
         actions = walk(args.pool, rank(snap), snap, reserved, doc, target_options(values),
-                       {} if leads == UNKNOWN else leads, ceiling_hit(snap, values), repo)
+                       {} if leads == UNKNOWN else leads, ceiling_hit(snap, values), repo,
+                       ceiling_hit(snap, values, "max_suites"))
     return snap, reserved, doc, actions, refusal
 
 
