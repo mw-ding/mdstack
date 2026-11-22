@@ -27,7 +27,7 @@ import shlex
 import tempfile
 import time
 from crew_shared import (
-    brief_src, BUSY, commands, coordinator_harness, crew_render, dialog, ENGINE_CMD, harness, harnesses, identity,
+    brief_src, BUSY, commands, coordinator_dir, coordinator_harness, coordinator_launch, crew_render, dialog, ENGINE_CMD, harness, harnesses, identity,
     LAUNCH, POINTER, proc, profile, receipts, require_ownership, role_notes, runs, stop_pane, tmux, unacked, wait_harness,
     window_env)
 
@@ -109,7 +109,8 @@ def reload(values, session, state, args, windows):
         if stop_pane(session, index):
             raise RuntimeError("process group survived stop: " + name)
         brief.write_text(text)
-        cwd = (rec.get("worktree") if rec else None) or str(Path(args.project).absolute().parent)
+        cwd = (rec.get("worktree") or str(Path(args.project).absolute().parent)) if rec else \
+            coordinator_dir(values, args.project)
         engine, model, effort = (rec["engine"], rec["model"], rec["effort"]) if name in records else (
             commands()["spawn"].pick_engine(values, "default") if name in leads else
             (values["engines.coordinator"], "", ""))
@@ -119,7 +120,8 @@ def reload(values, session, state, args, windows):
         env = window_env(values, state, role, name, str(brief), args.project)
         if name in leads:
             env.update(CREW_ROLE=role + "-lead", CREW_POOL=role)
-        tmux.respawn(session, index, cwd, env, LAUNCH % (shlex.join(argv), POINTER))
+        tmux.respawn(session, index, cwd, env, LAUNCH % (shlex.join(argv), POINTER) if rec else
+                     coordinator_launch(values, shlex.join(argv), "fresh"))
         wait_harness(session, index, name, ENGINE_CMD[engine], args.timeout)
         if rec:
             rec.update(identity(session, index))

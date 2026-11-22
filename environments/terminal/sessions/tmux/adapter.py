@@ -55,9 +55,11 @@ def has_session(name):
 
 
 def new_session(name, window, cwd, env, command, private_env=None):
-    """Detached session; private environment crosses stdin, never argv or a file."""
-    flags = [x for k, v in env.items() for x in ("-e", "%s=%s" % (k, v))]
-    args = ["new-session", "-d", "-s", name, "-n", window, "-c", cwd, *flags]
+    """Detached session; private environment crosses stdin, never argv or a file. env is exported by window 0's command,
+    never set with -e on the session, so another window in it inherits none of it (#1957)."""
+    if env:
+        command = "export %s; %s" % (" ".join(shlex.quote("%s=%s" % kv) for kv in env.items()), command)
+    args = ["new-session", "-d", "-s", name, "-n", window, "-c", cwd]
     r = tmux(*args, "sleep 60" if private_env else command)
     if r.returncode:
         raise RuntimeError("tmux new-session failed: " + r.stderr.strip())

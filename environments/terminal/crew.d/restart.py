@@ -23,7 +23,7 @@ import shlex
 import subprocess
 import time
 from crew_shared import (
-    BANDS, brief_src, commands, coordinator_harness, coordinator_window, CREW_BIN, crew_render, ENGINE_CMD, fetch, finished,
+    BANDS, brief_src, commands, coordinator_dir, coordinator_harness, coordinator_launch, coordinator_window, CREW_BIN, crew_render, ENGINE_CMD, fetch, finished,
     harness, harnesses, heartbeat, identity, kill_run, LAUNCH, load, main, own_pane, POINTER, probe, profile, receipts, remote_run, repo_id, ROLES, runs,
     sandbox_env, refuse_paused, show_icon, stop_pane, team_module, tmux, unlanded, wait_harness, window_alias, window_env)
 
@@ -59,7 +59,7 @@ def relaunch_coordinator(values, session, state, args):
     if problem:
         print("crew: refusing coordinator relaunch: " + problem)
         return 1
-    project_dir = os.path.dirname(os.path.abspath(args.project))
+    project_dir = coordinator_dir(values, args.project)
     cmd = shlex.join(coordinator_harness(engine, project_dir, state, values["runtime.options.permission_mode"], values,
                                          resume))
     env = {"CREW_ROLE": "coordinator", "CREW_STATE": state, "CREW_IDENTITY": values["identities.coordinator.gh_user"],
@@ -69,8 +69,7 @@ def relaunch_coordinator(values, session, state, args):
     if stop_pane(session, 0):
         print("crew: refusing coordinator relaunch: window 0's process group survived the stop")
         return 1
-    tmux.respawn(session, 0, project_dir, env,
-                 LAUNCH.removesuffix(' "%s"') % cmd if resume == "ask" else LAUNCH % (cmd, POINTER))
+    tmux.respawn(session, 0, project_dir, env, coordinator_launch(values, cmd, resume))
     try:
         wait_harness(session, 0, coordinator_window(values), ENGINE_CMD[engine], args.timeout)
     except RuntimeError as e:

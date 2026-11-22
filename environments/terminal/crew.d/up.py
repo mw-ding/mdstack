@@ -37,8 +37,8 @@ import shlex
 import subprocess
 import sys
 from crew_shared import (
-    brief_src, commands, coordinator_harness, coordinator_window, CREW_BIN, crew_render, HERE, harnesses, kill_run,
-    LAUNCH, load, NAMES, paused, POINTER, profile, ownership_module, proc, receipts, refuse_paused, repo_id, require_ownership,
+    brief_src, commands, coordinator_dir, coordinator_harness, coordinator_launch, coordinator_window, CREW_BIN, crew_render, HERE, harnesses, kill_run,
+    load, NAMES, paused, profile, ownership_module, proc, receipts, refuse_paused, repo_id, require_ownership,
     role_notes, ROLES, ROOT, runs, sandbox_env, show_icon, stop_pid, team_module, tmux, work_context)
 
 
@@ -329,8 +329,8 @@ def start(values, session, state, project_dir, env):
     window = coordinator_window(values)
     private = {values["runtime.options.slack_webhook_env"]: os.environ[values["runtime.options.slack_webhook_env"]]} \
         if values["backends.owner-channel.name"] == "slack" else None
-    line = LAUNCH.removesuffix(' "%s"') % cmd if launch(values, "resume") == "ask" else LAUNCH % (cmd, POINTER)
-    tmux.new_session(session, window, project_dir, env, line, private_env=private)
+    tmux.new_session(session, window, project_dir, env, coordinator_launch(values, cmd, launch(values, "resume")),
+                     private_env=private)
     show_icon(values, session, 0, "coordinator")
     print("crew: started %s (window 0 %s, %s); attach with: %s" % (
         session, window, values["engines.coordinator"], attach_hint(session)))
@@ -349,7 +349,10 @@ def up_attach(args, verb="up --attach", ref=None):
     if args.role or args.team and ref is None:
         print("crew: refusing %s: it takes --project, not %s" % (verb, "a ROLE" if args.role else "--team"))
         return 2
-    _, session, _ = profile(argparse.Namespace(project=ref or args.project, org_profile=args.org_profile))
+    values, session, _ = profile(argparse.Namespace(project=ref or args.project, org_profile=args.org_profile),
+                                 runtimes=("tmux", "session"))
+    if values["runtime.name"] == "session":
+        session = session_name(values)
     client = tmux.client_socket()
     if client and os.path.realpath(client) != os.path.realpath(tmux.socket_path()):
         print("crew: refusing %s: this tmux client is on another server (%s), not the crew's (%s); detach and "
@@ -406,7 +409,10 @@ def up(args):
         print("crew: preflight ok; launch.coordinator = none, so no session started (render: %s)" %
               os.path.join(state, "render"))
         return 0
-    project_dir = os.path.dirname(os.path.abspath(args.project))
+    project_dir = coordinator_dir(values, args.project)
+    if not os.path.isdir(project_dir):
+        print("crew: refusing to start: runtime.options.launch.cwd %s is not a directory" % project_dir)
+        return 1
     coordinator = harnesses.ADAPTERS[values["engines.coordinator"]]
     if hasattr(coordinator, "coordinator_setup"):  # Claude Code: the Stop-hook turn-end guard
         coordinator.coordinator_setup(project_dir, state)
@@ -440,11 +446,17 @@ def start_roles(args, values, state):
     return 0
 
 
+def session_name(values):
+    """A session profile's tmux session, bound on the owner's default server (#1548); profile() binds none."""
+    session = values.get("runtime.options.session") or "crew-%s-%s" % (values["repo.owner"], values["repo.name"])
+    tmux.bind(session, "default")
+    return session
+
+
 def session_up(args, values, state):
     """mdstack up on a session profile (#1548): start, or report the attach line of, the interactive coordinator in its
     own tmux session; no role windows, lead pools or lifecycle instances, and no tmux Stop-hook guard."""
-    session = values.get("runtime.options.session") or "crew-%s-%s" % (values["repo.owner"], values["repo.name"])
-    tmux.bind(session, "default")
+    session = session_name(values)
     if tmux.has_session(session):
         print("crew: %s already running; attach with: %s" % (session, attach_hint(session)))
         return 0
@@ -466,7 +478,10 @@ def session_up(args, values, state):
         print("crew: preflight ok; launch.coordinator = none, so no session started (render: %s)" %
               os.path.join(state, "render"))
         return 0
-    project_dir = os.path.dirname(os.path.abspath(args.project))
+    project_dir = coordinator_dir(values, args.project)
+    if not os.path.isdir(project_dir):
+        print("crew: refusing to start: runtime.options.launch.cwd %s is not a directory" % project_dir)
+        return 1
     if start(values, session, state, project_dir, {"CREW_BRIEF": brief, "CREW_PROJECT": os.path.abspath(args.project)}):
         return 1
     print("crew: session runtime; workers are dispatched per pass (docs/runtimes/session.md)")
