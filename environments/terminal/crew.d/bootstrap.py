@@ -500,6 +500,16 @@ def propose_project(args, project):
     return True
 
 
+def up_step(reference):
+    """The tmux start step in a form an 8.x owner shell accepts, which has no --project (#1965, #2024)."""
+    config = crew_render.crew_config
+    file, repo = config.split_ref(reference)
+    installed, installed_repo = config.split_ref(os.path.abspath(config.installed_config()))
+    if os.path.realpath(file) != os.path.realpath(installed) or installed_repo not in (None, repo):
+        return "Run MDSTACK_CONFIG=%s mdstack up" % reference
+    return "Run mdstack up" + (" --repo " + repo if repo else "")
+
+
 def bootstrap(args):
     if args.version:
         if args.dev:
@@ -534,7 +544,7 @@ def bootstrap(args):
     human = report.getvalue().partition("Steps only a person can take:\n")[2].splitlines()
     pending = [line.removeprefix("- ") for line in human]
     pending += (["Create the routines from the rendered files (docs/bootstrap.md Q4)"]
-                if values["runtime.name"] == "grok-bot" else ["Run mdstack up --project " + reference])
+                if values["runtime.name"] == "grok-bot" else [up_step(reference)])
     manifest = state / "install.json"
     previous = json.loads(manifest.read_text()) if manifest.exists() else {}
     harnesses = args.harness if args.harness is not None else previous.get("harnesses", [])

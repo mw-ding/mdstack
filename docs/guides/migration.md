@@ -24,8 +24,14 @@ Crew windows are unchanged: they keep `--project` and `$CREW_PROJECT`
 
 1. **Upgrade:** from 7.16.0, `mdstack upgrade --latest --dry-run`, then
    `--yes` ([bootstrap Q8](../bootstrap.md#q8-idempotency-upgrade-and-uninstall)).
-   The profile needs no edit. For a profile other than the default, set
-   `MDSTACK_CONFIG` to its path, which 7.x also reads.
+   This plain command works when the target is the first release after
+   8.1.0 or later: from it on, 8.x accepts the 7.x bootstrap's verified
+   `upgrade --project` re-exec (#2024). Upgrading straight to 8.0.0 or 8.1.0
+   refuses that re-exec with the `--project is disabled` line above; run
+   `MDSTACK_INTERNAL=1 mdstack upgrade --latest --dry-run` (or
+   `--version v8.1.0`), then the same with `--yes`. The profile needs no
+   edit. For a profile other than the default, set `MDSTACK_CONFIG` to its
+   path, which 7.x also reads.
 2. **Drop `--project` from owner commands and scripts:** shell aliases,
    wrappers, cron jobs and hooks that call `mdstack`.
 

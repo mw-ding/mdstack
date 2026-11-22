@@ -930,6 +930,11 @@ def owner_shell():
     return not OWNER_PROJECT and not os.environ.get("CREW_ROLE") and not os.environ.get(INTERNAL)
 
 
+def bootstrap_reexec(args):
+    """A 7.x bootstrap's verified re-exec of `upgrade --project FILE`: it sets the bundle sha but not INTERNAL (#2024)."""
+    return args.cmd == "upgrade" and bool(os.environ.get("CREW_BOOTSTRAP_BUNDLE_SHA256"))
+
+
 def owner_options(parser, seen=None):
     """Hide every --project from help, default it to UNSET, and add the repo selector --repo KEY (--team-repo KEY where
     the command's own --repo means something else, as for content and feedback)."""
@@ -1001,7 +1006,7 @@ def main(argv=None):
     if owner:
         owner_options(ap)
     args = ap.parse_args(argv)
-    if owner and getattr(args, "project", UNSET) is not UNSET:
+    if owner and getattr(args, "project", UNSET) is not UNSET and not bootstrap_reexec(args):
         print("mdstack: --project is disabled; mdstack uses the installed team (%s). Set MDSTACK_CONFIG to override."
               % os.path.abspath(crew_render.crew_config.installed_config()), file=sys.stderr)
         return 2
