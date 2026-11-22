@@ -3530,6 +3530,29 @@ recorded as done for this opening slice, effective on merge.
 | R11 | #1958 | Backend-aware builder brief | #2025 | default | open |
 | S1 | #2027 | Status sync and acceptance ledger | Every admitted member landed | default | open |
 
+### M64: land, triage and bootstrap ergonomics
+
+Opening spec slice #2026 (S0) and closing slice #2028 (S1) bookend
+[#2030](https://github.com/mw-ding/mdstack/issues/2030), under the
+[owner's M63/M64 decision](https://github.com/mw-ding/mdstack/issues/985#issuecomment-7074684349).
+The member fixes, ACs, publication ledger and closing checks G1–G5 are in
+[land-triage-ergonomics.md](land-triage-ergonomics.md); this table holds the
+statuses. S0 is recorded as done for this opening slice, effective on merge.
+
+| ID | Issue | Scope | Depends on | Tier | Status |
+|---|---|---|---|---|---|
+| S0 | #2026 | [land-triage-ergonomics.md](land-triage-ergonomics.md) and this section | Owner plan-ok | default | done |
+| L1 | #1956 | Stack-land placeholder separator | #2026 | default | open |
+| C1 | #1959 | Session assigned-checkout isolation | #2026 | default | open |
+| T1 | #1960 | Optional per-item tracker comment read | #2026 | default | open |
+| B1 | #1962 | Verified exported pack install | #2026 | default | open |
+| H1 | #1968 | Named permission-dialog escalation | #2026 | default | open |
+| K1 | #2017 | Bundle-boundary link check | #2026 | default | open |
+| K2 | #2018 | Diagram edge-source rule | #2026 | default | open |
+| K3 | #2019 | Opened-PR number rule | #2026 | default | open |
+| P1 | #1995 | Publication ledger and re-scan | #2026 | default | open |
+| S1 | #2028 | Status sync and closing checks | Every admitted member landed | default | open |
+
 ## 6. Decisions
 
 | Date | Decision | Source |
