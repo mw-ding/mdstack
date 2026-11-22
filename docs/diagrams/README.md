@@ -24,8 +24,9 @@ diagram's [E1–E23 table](../architecture.md#deployment-wakes-and-releases)
 is the example.
 
 A PR that adds or changes a canonical diagram adds or updates those rows.
-Its review compares every changed edge with its cited anchor: the actor at
-each end, the direction, and the channel or destination. An edge with no
+Its review compares every edge of that diagram, not only the changed ones,
+with its cited anchor: the actor at each end, the direction, and the
+channel or destination. An edge with no
 anchor, or one its anchor contradicts, is an unmet acceptance criterion. No
 check can verify a topology, so this is a review rule.
 

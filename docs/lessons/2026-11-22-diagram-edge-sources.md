@@ -33,7 +33,8 @@ source: Docs change #2001 (closes #1988, M62 D3), its two changes-requested revi
   requires an edge table beside every canonical diagram, each row citing
   the code or doc anchor it depicts, with the deployment diagram's E1–E23
   table as the example. The review of a diagram change compares every
-  changed edge's ends, direction and channel with its anchor; an
+  edge of that diagram, not only the changed ones, by its ends, direction
+  and channel with its anchor; an
   uncited or contradicted edge is an unmet acceptance criterion.
 - **Status:** applied: the rule is on `main` in `docs/diagrams/README.md`
   (#2018), and the E1–E23 table is in `docs/architecture.md`. No
