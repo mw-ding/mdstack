@@ -767,6 +767,29 @@ class Watch(LivenessBase):
         return subprocess.Popen([sys.executable, CREW, "watch", "--project", self.project, "--interval", "0.05",
                                  "--source-interval", "0", *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=self.env)
 
+    def test_watch_names_a_bypass_permission_dialog(self):  # #1968, through the shipped entry point
+        with open(self.project) as f:
+            profile = f.read()
+        dialog = r"dialog: ben-7 ambiguous, silent \d+s, escalate"
+        cases = [("claude-proceed", "bypass", dialog + ", permission-dialog: Do you want to proceed\\?"),
+                 ("codex-approval", "bypass", dialog + ", permission-dialog: Would you like to run the following command\\?"),
+                 ("claude-trust", "bypass", dialog), ("codex-trust", "bypass", dialog), ("claude-proceed", "auto", dialog)]
+        for name, mode, want in cases:
+            with self.subTest(name=name, mode=mode):
+                with open(self.project, "w") as f:
+                    f.write(profile + '[runtime.options]\npermission_mode = "%s"\n' % mode)
+                for left in ("watch-state.json", "queue.jsonl"):  # each case wakes afresh, its queue drained
+                    if os.path.exists(os.path.join(self.state, "wake", left)):
+                        os.remove(os.path.join(self.state, "wake", left))
+                self.set_pane(10, screen=screen(name))
+                p = self.watch()
+                out, err = p.communicate(timeout=30)
+                self.assertEqual((p.returncode, err), (0, "mdstack: config %s\n" % self.project))
+                self.assertRegex(out, "^%s\n$" % want)
+                w = self.queue_lines()[-1]
+                self.assertEqual((w["reason"], w.get("class"), "prompt" in w),
+                                 ("dialog", "permission-dialog", True) if "permission-dialog" in want else ("dialog", None, False))
+
     def test_watch_blocks_then_exits_with_reason_and_queue(self):
         p = self.watch()
         pidfile = os.path.join(self.state, "wake", "watcher.pid")
