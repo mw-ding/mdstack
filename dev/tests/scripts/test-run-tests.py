@@ -105,6 +105,34 @@ class RunTestsTest(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(order, ["test-d.py", "test-b.py", "test-a.py", "test-c.py"])
 
+    def test_full_run_precompiles_and_named_files_do_not(self):  # #2082
+        spec = importlib.util.spec_from_file_location("run_tests", RUNNER)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        os.makedirs(os.path.join(self.tmp.name, "tests", "mod"))
+        test = self.write(os.path.join("tests", "mod", "test-a.py"), "")
+        mod.TESTS = os.path.join(self.tmp.name, "tests")
+        calls = []
+        mod.precompile = lambda: calls.append("precompile")
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(mod.main([test]), 0)
+            self.assertEqual(calls, [])
+            self.assertEqual(mod.main([]), 0)
+        self.assertEqual(calls, ["precompile"])
+
+    def test_precompile_writes_bytecode_outside_dot_dirs(self):  # #2082
+        spec = importlib.util.spec_from_file_location("run_tests", RUNNER)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        for d in ("pkg/sub", ".hidden"):
+            os.makedirs(os.path.join(self.tmp.name, d))
+        kept = self.write("pkg/sub/mod-a.py", "X = 1\n")
+        hidden = self.write(".hidden/mod-b.py", "X = 1\n")
+        mod.ROOT = self.tmp.name
+        mod.precompile()
+        self.assertTrue(os.path.exists(importlib.util.cache_from_source(kept)))
+        self.assertFalse(os.path.exists(importlib.util.cache_from_source(hidden)))
+
     def test_summary_reports_the_files_cpu_seconds(self):  # #2082
         busy = self.write("test-busy.py", "import time\nt = time.process_time()\n"
                                           "while time.process_time() - t < 0.5:\n    pass\n")

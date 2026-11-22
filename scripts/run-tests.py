@@ -13,16 +13,21 @@ bare `tmux` call can never reach the caller's server (#1156), and with
 `MDSTACK_INTERNAL=1`, so `mdstack --project` is accepted as in a crew window (#1965). -j sets the
 worker count (default: CPU count, at most 8). Files named in SLOW_FIRST start
 first, slowest first, so the longest files never start last (#2082); the rest
-follow in path order. Files in SERIAL run one at a time after the parallel batch. The runner prints one line per file as it
-finishes (status and duration), then the K slowest files, then the full output
-of every failing file, then a summary line with the file and failure counts,
-the wall time, the worker count and the CPU seconds the files used. A failing file's output is also written, as soon as it
+follow in path order. Files in SERIAL run one at a time after the parallel batch.
+With no FILE, before any file starts, the runner writes bytecode for the repo's
+Python files: `mdstack` turns off bytecode writing (`crew-remote.py`), so
+otherwise every CLI call a test makes recompiles each module it loads (#2082).
+The runner prints one line per file as it finishes (status and duration), then
+the K slowest files, then the full output of every failing file, then a summary
+line with the file and failure counts, the wall time, the worker count and the
+CPU seconds the files used. A failing file's output is also written, as soon as it
 finishes, to `<log-dir>/<file name>.log` (default: a fresh temp directory, kept),
 named on its FAIL line. Exit code: 1 if any file fails, else 0.
 CI runs the full suite this way in the `repo-guard` job of
 `.github/workflows/ci.yml`. Python 3 standard library only.
 """
 import argparse
+import compileall
 import concurrent.futures
 import glob
 import os
@@ -55,6 +60,12 @@ SLOW_FIRST = (
 def short_tmp_root():
     # tmux socket paths are length-limited and macOS TMPDIR is long.
     return "/tmp" if os.path.isdir("/tmp") else None
+
+
+def precompile():
+    for name in sorted(os.listdir(ROOT)):
+        if not name.startswith(".") and os.path.isdir(os.path.join(ROOT, name)):
+            compileall.compile_dir(os.path.join(ROOT, name), quiet=2)
 
 
 def find(name):
@@ -105,6 +116,8 @@ def main(argv=None):
     parallel = start_order([f for f in files if os.path.basename(f) not in SERIAL])
     serial = [f for f in files if os.path.basename(f) in SERIAL]
 
+    if not args.files:
+        precompile()
     results = []
     log_dir = args.log_dir
 
