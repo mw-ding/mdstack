@@ -408,6 +408,7 @@ class Up(Base):
         self.assertEqual((env["CREW_ROLE"], env["CREW_PROJECT"]), ("coordinator", self.project))
         self.crew("down", "--project", self.project)
         os.remove(self.log)
+        os.remove(self.state_file)
         self.write_profile(runtime="session")
         self.launch('cwd = "missing"')
         r = self.crew("up", "--project", self.project)
