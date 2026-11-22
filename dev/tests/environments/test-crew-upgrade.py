@@ -64,6 +64,29 @@ class Upgrade(bootstrap_tests.Bootstrap):
         return subprocess.run([sys.executable, str(self.cli), "upgrade", "--project", self.project, *args],
                               input="", capture_output=True, text=True, env=self.env)
 
+    def test_7x_bootstrap_reexec_from_an_owner_shell(self):  # #2024 AC1, AC2
+        """7.16.0's fetch re-execs `<8.x>/cli/mdstack upgrade --project FILE ... --wait-timeout N --timeout N` from an
+        owner shell (no CREW_ROLE, no MDSTACK_INTERNAL), adding only the verified bundle sha to the environment."""
+        owner = {k: v for k, v in self.env.items() if k not in ("CREW_ROLE", "MDSTACK_INTERNAL", "TMUX", "TMUX_PANE")}
+        reexec = dict(owner, CREW_BOOTSTRAP_BUNDLE_SHA256="0" * 64)
+        argv = [sys.executable, str(self.cli), "upgrade", "--project", self.project, "--dry-run",
+                "--wait-timeout", "300.0", "--timeout", "15.0"]
+        before = self.manifest.read_bytes()
+        r = subprocess.run(argv, input="", capture_output=True, text=True, env=reexec)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("crew bootstrap: dry-run; no install written", r.stdout)
+        steps = [line for line in r.stdout.splitlines() if line.startswith("Human step: ")]
+        self.assertTrue(steps, r.stdout)
+        self.assertFalse([line for line in steps if "--project" in line], steps)  # AC3: a step 8.x accepts
+        self.assertEqual(self.manifest.read_bytes(), before)
+        for env, cmd in ((owner, "upgrade"), (reexec, "bootstrap"), (reexec, "status")):  # controls: still refused
+            with self.subTest(cmd=cmd, sha="CREW_BOOTSTRAP_BUNDLE_SHA256" in env):
+                r = subprocess.run([sys.executable, str(self.cli), cmd, "--project", self.project], input="",
+                                   capture_output=True, text=True, env=env)
+                self.assertEqual((r.returncode, r.stdout), (2, ""), r.stderr)
+                self.assertTrue(r.stderr.startswith("mdstack: --project is disabled;"), r.stderr)
+        self.assertEqual(self.manifest.read_bytes(), before)
+
     def test_no_change_writes_nothing(self):
         before = self.manifest.stat().st_mtime_ns
         result = self.upgrade("--yes")
