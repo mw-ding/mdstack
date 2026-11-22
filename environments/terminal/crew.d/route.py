@@ -435,9 +435,25 @@ def unready(values, pr, head, round_):
     return "awaiting a builder-signed %s record at %s after %s; newest: %s" % ("/".join(kinds), head, after, first)
 
 
+def built_here(state, n):
+    """True when this crew's state names PR #n: a builder's `done: #<item> #n <head>` line or a `builder-pr<n>-` claim
+    (#1979). Two crews may post as one login under the same persona names, so only local state tells their PRs apart."""
+    if glob.glob(os.path.join(glob.escape(state), "claims", "builder-pr%d-*" % n)):
+        return True
+    for path in glob.glob(os.path.join(glob.escape(state), "status", "*.status")):
+        with open(path, encoding="utf-8", errors="replace") as f:
+            if any((m := BUILT.match(line)) and m.group(2) == str(n) for line in f):
+                return True
+    return False
+
+
 def ready_check(values, n, head, round_):
     """Read the change live, in this repo, and raise NotReady unless a fresh review of head at round_ may start
-    (#1878). An unreadable read raises a plain error: retried with backoff, never admitted."""
+    (#1878). A PR with no run record in this crew's state is skipped as a foreign team's (#1979). An unreadable read
+    raises a plain error: retried with backoff, never admitted."""
+    state = os.path.join(os.path.abspath(values["paths.state_dir"]), "%s__%s" % (values["repo.owner"], values["repo.name"]))
+    if not built_here(state, n):
+        raise NotReady(n, "foreign team: no builder claim or done: line in this crew's state names #%d" % n)
     pr = same_repo(values, gh("pr", "view", str(n), "-R", "%s/%s" % (values["repo.owner"], values["repo.name"]),
                               "--json", READY_FIELDS), "change #%d" % n)
     reason = unready(values, pr, head, round_)

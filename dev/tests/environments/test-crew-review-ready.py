@@ -178,6 +178,35 @@ class ReviewReadiness(pool_tests.ReviewerPool):
         self.assertEqual((self.reviewers(), self.messages()), (["vera-12-r2-review"], []))
         say("D1.1 unreadable read, repo-B URL         -> no admission; readable repo-A read -> one review")
 
+    def test_foreign_team_pr_skipped_own_pr_dispatches(self):  # #1979 R4 (3)
+        """Both crews post as one login under one persona, so a fully valid builder record is not enough: with no
+        builder `done:` line or `builder-pr<n>-` claim naming #12 in this crew's state the PR parks as `foreign team`
+        (another PR's record does not count); this crew's own done: line or claim dispatches it."""
+        rows = [("no record", None, None, False),
+                ("done: for another PR", "status/ben-8.status", "done: #8 #123 %s\n" % self.sha, False),
+                ("claim for another PR", "claims/builder-pr1-abcdef0", "", False),
+                ("done: line names #12", "status/ben-7.status", "done: #7 #12 %s\n" % self.sha, True),
+                ("builder-pr12 claim", "claims/builder-pr12-%s-r2-fix" % self.sha[:7], "", True)]
+        for row, (why, path, text, admitted) in enumerate(rows):
+            if row:
+                self.fresh()
+            with self.subTest(why):
+                os.remove(os.path.join(self.state, "status", "ben-7.status"))
+                route, values = self.mod.commands()["route"], self.mod.profile(self.args)[0]
+                if path:
+                    self.put(path, text)
+                self.scene([self.verdict(OLD, 1, "changes"), self.note()])
+                if not admitted:
+                    with mock.patch.dict(os.environ, self.env), \
+                            self.assertRaisesRegex(route.NotReady, "foreign team: no builder claim or done: line"):
+                        route.ready_check(values, 12, self.sha, 2)  # the fake gh: a valid record, refused here
+                self.offer()
+                if admitted:
+                    self.assertEqual((self.reviewers(), self.messages()), (["vera-12-r2-review"], []))
+                else:
+                    self.assert_parked(why)
+                say("R4   %-36s -> %s" % (why, "one review" if admitted else "parked: foreign team"))
+
     def test_publication_orders_and_proof(self):  # D1.2
         changes = self.verdict(OLD, 1, "changes")
         self.scene([changes])

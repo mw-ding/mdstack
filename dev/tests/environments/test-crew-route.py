@@ -34,6 +34,7 @@ class Route(SpawnBase):
                          body=self.BODY, createdAt="2026-01-01T00:10:00Z",
                          commits=[{"oid": self.sha, "committedDate": "2026-01-01T00:00:00Z"}])
         self.save()
+        self.put("status/ben-7.status", "done: #7 #12 %s\n" % self.sha)  # this crew's run record for PR 12 (#1979)
         with open(os.path.join(self.tmp, "bin", "gh"), "w") as f:
             f.write("#!/usr/bin/env python3\nimport json, sys\n"
                     "args = sys.argv[1:]\nopen(%r, 'a').write(json.dumps(args) + '\\n')\n"
@@ -584,6 +585,7 @@ class Route(SpawnBase):
         self.assertEqual((self.names().count("ben-7"), self.record("ben-7")["args"]["tier"]), (1, "deep"))
         with open(os.path.join(self.state, "inbox", "ben-7.jsonl")) as f:
             self.assertEqual([json.loads(line)["kind"] for line in f], ["fix", "ci-red", "merge-up"])
+        self.put("status/ben-7.status", "done: #7 #12 %s\n" % self.sha)  # the adopting builder's record (#1979)
         self.queue(self.event())
         self.route()
         rec = self.record("vera-12-r1-review")
