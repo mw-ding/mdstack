@@ -271,15 +271,15 @@ def snapshot(args):
     if team is not None:
         return team_snapshot(values, session, state, team)
     now = datetime.datetime.now(datetime.timezone.utc)
-    closed = []
-    suites = read(commands()["lead"].suites, values, state, closed)
+    closed, waits = [], []
+    suites = read(commands()["lead"].suites, values, state, closed, waits)
     loose = read(unrecorded, session, state)
     caps = {role: read(cap, values, state, role) for role in ("builder", "reviewer")}
     return dict(
         machine(values, caps, now), **repo_inputs(values, state),
         workers=read(workers, session, state),
         reservations=read(ledger, os.path.join(state, "schedule", "reservations.json")),
-        suites=suites,
+        suites=suites, suite_waits=[] if suites == UNKNOWN else waits,
         orphans=UNKNOWN if UNKNOWN in (suites, loose) else closed + loose,
         errors=read(errors, state, now))
 
@@ -293,10 +293,11 @@ def team_snapshot(values, session, state, team):
     each repo's demand, tracker, holds, ownership and pause under `repos`, the team ledger, and caps applied once to
     team totals. A repo that does not resolve leaves workers, suites and caps unknown: its runs cannot be counted."""
     now = datetime.datetime.now(datetime.timezone.utc)
-    ok, closed = [m for m in team if "problem" not in m], []
+    ok, closed, waits = [m for m in team if "problem" not in m], [], {}
     whole = len(ok) == len(team)
     found = [read(workers, session, m["state"], m["repo"]) for m in ok]
-    suites = summed([read(commands()["lead"].suites, m["values"], m["state"], closed) for m in ok] + [UNKNOWN] * (not whole))
+    suites = summed([read(commands()["lead"].suites, m["values"], m["state"], closed, waits.setdefault(m["repo"], []))
+                     for m in ok] + [UNKNOWN] * (not whole))
     loose = read(unrecorded, session, *[m["state"] for m in ok])
     caps = {role: [read(cap, m["values"], m["state"], role) for m in ok] + [UNKNOWN] * (not whole)
             for role in ("builder", "reviewer")}
@@ -308,7 +309,7 @@ def team_snapshot(values, session, state, team):
         unresolved=[dict(project=m["project"], problem=m["problem"]) for m in team if "problem" in m],
         workers=UNKNOWN if UNKNOWN in found or not whole else [w for ws in found for w in ws],
         reservations=read(ledger, os.path.join(home(values, state), "schedule", "reservations.json")),
-        suites=suites,
+        suites=suites, suite_waits=[] if suites == UNKNOWN else [dict(w, repo=r) for r, ws in waits.items() for w in ws],
         orphans=UNKNOWN if UNKNOWN in (suites, loose) else closed + loose,
         errors=summed([read(errors, m["state"], now) for m in ok]))
 
@@ -591,8 +592,11 @@ def walk(pool, ranked, snap, reserved, target_doc, opts, leads, ceiling=None, re
     the inbox when its pass starts, and a busy reviewer on the same PR runs another pass or round. In a team the
     caller is the lane (repo, pool): another repo's would-be grants are holds too, `leads` is keyed by lane, and caps,
     floors, target and ramp count team totals (team §9.4). A team class 8 build waits (`class-7`) while any eligible
-    team class 7 build has not started; a one-repo walk keeps class 8 as fill-in by rank order."""
+    team class 7 build has not started; a one-repo walk keeps class 8 as fill-in by rank order. The `max_suites`
+    ceiling alone is waived for an item a counted builder's un-woken wait names (`suite_waits`), admitted with reason
+    `suite-wait` and that wait (#1950)."""
     caller = pool if repo is None else (repo, pool)
+    suite_waits = {(w.get("repo"), w["ref"]): w for w in snap.get("suite_waits", [])}
 
     def running(item):
         return item["pool"] == "builder" and any(w["state"] == "busy" and on_ref(w, "builder", item["ref"]) and
@@ -622,14 +626,19 @@ def walk(pool, ranked, snap, reserved, target_doc, opts, leads, ceiling=None, re
             if mine:
                 actions.append(dict(act, action="defer", reasons=["class-7"]))
             continue
+        wait = suite_waits.get((item.get("repo"), item["ref"])) if ceiling == "max_suites" else None
         fails = [why for why, ok in (("cap", used[p] < snap["caps"][p]), ("target", total < target_doc["target"]),
-                                     ("ramp", starts < opts["schedule_ramp"]), (ceiling, ceiling is None)) if not ok]
+                                     ("ramp", starts < opts["schedule_ramp"]), (ceiling, ceiling is None or wait))
+                 if not ok]
         if fails and not (floor[p] and fails[0] != "cap"):
             if mine:
                 actions.append(dict(act, action="defer", reasons=fails[:1]))
             floor[p] = False
             continue
-        actions.append(dict(act, action="admit" if mine else "hold", reasons=["floor"] if fails else []))
+        if wait and not fails:
+            act.update(wait=dict(window=wait["window"], line=wait["line"]))
+        reasons = ["floor"] if fails else ["suite-wait"] if wait else []
+        actions.append(dict(act, action="admit" if mine else "hold", reasons=reasons))
         used[p], total, starts, floor[p] = used[p] + 1, total + 1, starts + 1, False
     return actions
 

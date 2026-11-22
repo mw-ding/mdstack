@@ -433,17 +433,23 @@ def relay(args):
     return 0
 
 
-def suites(values, state, closed=None):
-    """Live tool sessions of runs whose item is open; runs with a live session on a closed item go to `closed`."""
+WAIT_LINE = re.compile(r"waiting: (#\d+) \S+ id=\S+")
+
+
+def suites(values, state, closed=None, waits=None):
+    """Live tool sessions of runs whose item is open; runs with a live session on a closed item go to `closed`. A
+    counted builder whose newest status line is a typed `waiting: #<m> KIND id=<id>` (un-woken: nothing after it)
+    goes to `waits` as {window, ref, line}: suite admission may start #<m> past `max_suites` (#1950)."""
     count = 0
     repo = "%s/%s" % (values["repo.owner"], values["repo.name"])
     for name, rec in runs(state):
         if not rec.get("pane_pid") or not proc.live_child(rec["pane_pid"], rec["harness"]):
             continue
-        last = os.path.join(state, "status", name + ".status")
+        last, lines = os.path.join(state, "status", name + ".status"), []
         if os.path.exists(last):
             with open(last) as f:
-                for line in f.read().splitlines():
+                lines = [line.strip() for line in f.read().splitlines() if line.strip()]
+                for line in lines:
                     remember_pr(rec, line)
         item = rec.get("pr") or rec.get("args", {}).get("pr")
         kind = "pr" if item else "issue"
@@ -453,6 +459,9 @@ def suites(values, state, closed=None):
                 closed.append(dict(window=name, pid=rec["pane_pid"]))
             continue
         count += 1
+        wait = WAIT_LINE.fullmatch(lines[-1]) if lines and rec.get("role") == "builder" else None
+        if wait and waits is not None:
+            waits.append(dict(window=name, ref=wait[1], line=lines[-1]))
     return count
 
 

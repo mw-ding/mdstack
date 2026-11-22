@@ -274,6 +274,24 @@ class BuilderLead(LivenessBase):
         if TRANSCRIPT:
             print("suite probe: live item=1; same processes attached to closed/merged item=0")
 
+    def test_suite_probe_records_a_counted_builders_unwoken_wait(self):  # #1950
+        with open(self.ps, "w") as f:
+            json.dump({"children": [[42, 9000010, "Ss", "python3"]]}, f)
+        values, _, _ = self.mod.profile(self.args)
+        route = self.mod.commands()["route"]
+        line = "waiting: #1949 fix id=s1"
+        cases = [("OPEN", "ack: s1\n%s\n" % line, "builder", 1, [dict(window="ben-7", ref="#1949", line=line)]),
+                 ("OPEN", "%s\nack: s2\n" % line, "builder", 1, []), ("OPEN", "%s\n" % line, "reviewer", 1, []),
+                 ("OPEN", "waiting: #1949\n", "builder", 1, []), ("CLOSED", "%s\n" % line, "builder", 0, [])]
+        for state, status, role, count, expected in cases:
+            with self.subTest(state=state, status=status, role=role):
+                self.put("status/ben-7.status", status)
+                self.put("runs/ben-7.json", json.dumps(dict(self.record("ben-7"), role=role)))
+                waits = []
+                with mock.patch.dict(os.environ, self.env), mock.patch.object(route, "gh", return_value={"state": state}):
+                    self.assertEqual(self.lead.suites(values, self.state, None, waits), count)
+                self.assertEqual(waits, expected)
+
     def test_done_builder_with_unacked_spawn_build_message_is_idle(self):
         status = os.path.join(self.state, "status", "ben-7.status")
         cases = [("build", ["#7"], 100), ("build", ["#8"], None), ("fix", ["#12", "a" * 40], None)]
