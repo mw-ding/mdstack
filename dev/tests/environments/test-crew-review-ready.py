@@ -197,8 +197,9 @@ class ReviewReadiness(pool_tests.ReviewerPool):
                     self.put(path, text)
                 self.scene([self.verdict(OLD, 1, "changes"), self.note()])
                 if not admitted:
-                    with self.assertRaisesRegex(route.NotReady, "foreign team: no builder claim or done: line"):
-                        route.ready_check(values, 12, self.sha, 2)
+                    with mock.patch.dict(os.environ, self.env), \
+                            self.assertRaisesRegex(route.NotReady, "foreign team: no builder claim or done: line"):
+                        route.ready_check(values, 12, self.sha, 2)  # the fake gh: a valid record, refused here
                 self.offer()
                 if admitted:
                     self.assertEqual((self.reviewers(), self.messages()), (["vera-12-r2-review"], []))
