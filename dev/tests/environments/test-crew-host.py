@@ -501,6 +501,48 @@ class Host(Base):
         self.assertEqual(host("check")[0], 1)  # the receipt names another path: the declared one has not run
         self.assertFalse(os.path.exists(self.ssh_log))
 
+    def set_paths_root(self, root):
+        with open(self.project) as f:
+            text = f.read()
+        with open(self.project, "w") as f:
+            f.write(text.replace("[paths]\n", '[paths]\nroot = "%s"\n' % root, 1))
+
+    def test_primary_root_defaults_to_paths_root(self):
+        """#1961: a primary with no `root` prepares and reads its receipt under the resolved paths.root, not
+        ~/.mdstack, and reaches ready without setting `root`."""
+        install = os.path.join(self.tmp, "install-root")
+        self.set_paths_root(install)
+        host, declare = self.primary_command_checkout("", install)
+        declare(["true"])
+        code, out = host("prepare")
+        self.assertEqual(code, 0, out)
+        self.assertIn("ok project checkout: acme__widgets at %s\nhost-a: ready\n" % self.project_dir, out)
+        self.assertTrue(os.path.exists(os.path.join(install, "state", "acme__widgets", "checkout.json")))
+        self.assertEqual(host("check")[0], 0)
+
+    def test_primary_root_without_paths_root_is_user_root(self):
+        """#1961: with neither `root` nor paths.root, the primary's root is user_root() ($CREW_ROOT here)."""
+        user = os.path.join(self.tmp, "user-root")
+        self.env["CREW_ROOT"] = user
+        host, declare = self.primary_command_checkout("", user)
+        declare(["true"])
+        self.assertEqual(host("prepare")[0], 0)
+        self.assertTrue(os.path.exists(os.path.join(user, "state", "acme__widgets", "checkout.json")))
+
+    def test_primary_explicit_root_wins_over_paths_root(self):
+        """#1961: an explicit primary `root` is unchanged by paths.root; the declaration under paths.root is unread."""
+        install, explicit = os.path.join(self.tmp, "install-root"), os.path.join(self.tmp, "explicit-root")
+        self.set_paths_root(install)
+        host, declare = self.primary_command_checkout('root = "%s"\n' % explicit, install)
+        declare(["true"])
+        code, out = host("prepare")
+        self.assertEqual(code, 1, out)
+        self.assertIn("fail prepare checkout: no valid checkout/acme__widgets.json under root", out)
+        os.renames(os.path.join(install, "checkout"), os.path.join(explicit, "checkout"))
+        self.assertEqual(host("prepare")[0], 0)
+        self.assertTrue(os.path.exists(os.path.join(explicit, "state", "acme__widgets", "checkout.json")))
+        self.assertFalse(os.path.exists(os.path.join(install, "state", "acme__widgets", "checkout.json")))
+
     def test_session_runtime_gets_a_host_report(self):
         self.write_profile(runtime="session")
         self.add_hosts()
