@@ -3555,7 +3555,7 @@ shown, and no member was added after S0. The closing checks and lessons are in
 | K2 | #2018 | Diagram edge-source rule (PR #2035) | #2026 | default | done |
 | K3 | #2019 | Opened-PR number rule (PR #2064) | #2026 | default | done |
 | P1 | #1995 | Publication ledger and re-scan (PR #2038) | #2026 | default | done |
-| S1 | #2028 | Status sync and closing checks (this change) | Every admitted member landed | default | done |
+| S1 | #2028 | Status sync and closing checks (PR #2069) | Every admitted member landed | default | done |
 
 #### M64 outcome and lessons
 
