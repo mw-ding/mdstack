@@ -22,7 +22,8 @@ CONFINED = ["-c", "sandbox_workspace_write.exclude_slash_tmp=true", "-c", "sandb
 SANDBOX_PROBE = ["sandbox", "--", "true"]  # a no-op under its OS sandbox: fails where it cannot apply one (#1252)
 RESUME = ["resume"]
 # Blocking prompts (#289): approval (command, edits), folder trust (1. Trust and continue) and host hooks review.
-PROMPTS = [(r"Would you like to .+\?", r"Press enter to confirm or esc to cancel"),
+PERMISSION_PROMPTS = [(r"Would you like to .+\?", r"Press enter to confirm or esc to cancel")]
+PROMPTS = PERMISSION_PROMPTS + [
            (r"Trust this folder\?", r"enter continue · esc "),
            (r"(?i:Hooks need review)$", r"enter confirm · esc skip$")]
 FATAL = r'■\s(?=.*"type": ?"error")(?=.*"status": ?[45]\d\d\b)'  # ■ {"type":"error","status":400,...}
