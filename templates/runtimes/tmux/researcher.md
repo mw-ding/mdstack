@@ -18,7 +18,10 @@ Add `<op:change.cli-repo-flag>` to every `<op:change.cli-name>` command except
 `<op:change.cli-unscoped>`.
 Write each `<file>` a `<op:change.cli-name>` command reads (`--body-file`) to
 `$CREW_STATE/runs/$CREW_ID.body.md`; scratch
-notes go in the worktree's `.crew/`. Never download or install a binary from
+notes go in the worktree's `.crew/`. Write any other artifact that is not
+your deliverable (a visual summary, a draft) under `.crew/` too, and move a
+tool's stray output there before `done:`: close-out keeps a worktree with
+any other untracked file. Never download or install a binary from
 the internet, bypass OS code-signing or quarantine, or use a mirror registry.
 <include:policy/shared/tmux-kill.md>
 
