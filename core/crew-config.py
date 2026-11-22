@@ -113,9 +113,10 @@ KNOWLEDGE_OPERATIONS = {"knowledge": ["read", "propose-edit"]}
 # land-stack and stack-status: only a backend declaring land.stack, the session stack land (#1605); read-revision-id
 # only a change.land-stack using <stack-revisions> (#1722).
 # land-delete-arg: the land argument that also deletes an eligible head branch (#395); without it, close-out deletes.
+# tracker.read-comments: only a non-GitHub triage scan whose list-items omits comments, per open item (#1960).
 CONDITIONAL_OPERATIONS = {"change": ["publish", "land-status", "read-branch-head", "read-diff", "read-landed",
                                      "land-stack", "stack-status", "read-revision-id", "land-delete-arg"],
-                          "tracker": ["unlabel"]}
+                          "tracker": ["unlabel", "read-comments"]}
 LAND_FIELDS = {"mode": (str, "sync"), "opens_draft": (bool, False), "serializes": (bool, False),
                "tests_against_tip": (bool, False), "change_placeholder": (str, "n"), "head_guard": (bool, True),
                "status": (dict, None), "stack": (bool, False), "stack_tests_against_tip": (bool, False),
