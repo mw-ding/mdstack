@@ -10,7 +10,7 @@ the default branch (the `seed` call); the host never reaches the forge. A failed
 and the host stays not ready. A host with checkout = "command" sends `prepare` with checkout=command instead,
 forge-less or not: the host runs the checkout command declared in its own root (never sent over SSH) in place of the
 mirror steps, and check then requires a `project checkout` row in place of `project mirror` (#1035). A primary with
-checkout = "command" runs its own declaration under its root locally with the same functions instead of the fetch;
+checkout = "command" runs its own declaration under its root (unset: the resolved paths.root, #1961) locally with the same functions instead of the fetch;
 check reads the receipt, never runs the command, and also needs the declared path to be the project checkout (#1723).
 With an
 [install] table, prepare on a non-primary host also sends the primary's install.json (tag, bundle digest, transport)
@@ -42,7 +42,7 @@ import json
 import os
 import subprocess
 import tempfile
-from crew_shared import checkout, commands, harnesses, load, profile, tmux
+from crew_shared import checkout, commands, crew_render, harnesses, load, profile, tmux
 
 REMOTE = "environments/terminal/remote/crew-remote.py"
 
@@ -179,7 +179,10 @@ def command_checkout(values, host):
 
 
 def primary_root(values, host):
-    return os.path.abspath(os.path.expanduser(setting(values, host, "root", "~/.mdstack")))
+    """The primary's root: its declared `root`, else the resolved paths.root (CREW_ROOT already applied), else
+    user_root(); never a fixed ~/.mdstack under another install root (#1961)."""
+    default = values.get("paths.root") or crew_render.crew_config.user_root()
+    return os.path.abspath(os.path.expanduser(setting(values, host, "root", default)))
 
 
 def primary_checkout_row(values, project_file, host, project):

@@ -707,7 +707,7 @@ needs = { devices = ["ios-simulator"] }
 | `hosts.<name>.capabilities.engines` | list of `<engine>` (non-empty) | *required*; none when `forge = false` | Engines logged in on that host |
 | `hosts.<name>.max_runs` | integer ≥ 1 | *required* | This crew's concurrent role runs on that host; its concurrent runner jobs on a forge-less host |
 | `hosts.<name>.roles` | list from `builder`, `reviewer` | both | Roles placed there |
-| `hosts.<name>.root` | string: path on that host | `~/.mdstack` | Mirrors, worktrees and host state |
+| `hosts.<name>.root` | string: path on that host | `~/.mdstack`; on the primary, the resolved `paths.root`, else `$CREW_ROOT` or `~/.mdstack` (#1961) | Mirrors, worktrees and host state |
 | `hosts.<name>.toolchain_bin` | string: path on that host | none | `<toolchain-bin>` for builders there |
 | `hosts.<name>.checkout` | string: `mirror` or `command` | `mirror` | `command`: `mdstack host prepare` runs the checkout command that host declares in `<root>/checkout/<owner>__<repo>.json` in place of the git mirror or seed steps, for a checkout made by its own VCS ([command checkout](runtimes/multi-device.md#command-checkout), #1035); on the primary it runs locally and its declared `path` must be the project checkout (#1723) |
 | `hosts.<name>.connect.alias` | string: a DNS label, unique across host names and aliases | none | A short name for [`mdstack connect`](runtimes/multi-device.md#connect-to-a-host); the host name always works too |
