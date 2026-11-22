@@ -511,6 +511,44 @@ class Decide(unittest.TestCase):
         self.assertEqual(live([dict(old, start="2026-11-03T08:00:30Z")]), [])
         self.assertEqual(live([dict(old, item="issue #3, PR #9", state="busy")]), [])
 
+    def test_suite_wait_admits_the_waited_item_past_max_suites(self):  # #1950: ben-1933 parked on #1949
+        values = {"runtime.options.max_suites": 2}
+        holders = [dict(role="builder", item="issue #1933", pr=None, state="busy"),
+                   dict(role="reviewer", item="PR #1945 r1 review", pr=1945, state="busy")]
+        ranked = [dict(pool="reviewer", ref="#1949", kind="review", **{"class": 5}),
+                  dict(pool="builder", ref="#1960", kind="build", **{"class": 7})]
+        wait = dict(window="ben-1933", ref="#1949", line="waiting: #1949 fix id=s1")
+        caps = {"builder": 3, "reviewer": 2}
+
+        def run(pool, waits, ceiling_values=values, **load):
+            snap = dict(suites=2, load=0.1, cpus=8, suite_waits=waits)
+            snap = dict(snap, **load)
+            ceiling, past = (self.schedule.ceiling_hit(snap, ceiling_values, w) for w in (None, "max_suites"))
+            return self.schedule.walk(pool, ranked, dict(self.snap, caps=caps, workers=holders, **snap), [],
+                                      dict(target=5, starts=[]), self.opts, self.alive, ceiling, None, past)
+        admitted = run("reviewer", [wait])
+        self.assertEqual(walked(admitted), [("admit", "#1949", ["suite-wait"])])
+        self.assertEqual(admitted[0]["wait"], dict(window="ben-1933", line="waiting: #1949 fix id=s1"))
+        self.assertEqual(walked(run("builder", [wait])), [("hold", "#1949", ["suite-wait"]),
+                                                          ("defer", "#1960", ["max_suites"])])
+        for waits in ([], [dict(wait, ref="#1948")]):  # negative control: no wait names the deferred item
+            self.assertEqual(walked(run("reviewer", waits)), [("defer", "#1949", ["max_suites"])], waits)
+        self.assertEqual(walked(run("reviewer", [wait], {"runtime.options.max_load": 0.5})),
+                         [("defer", "#1949", ["max_load"])])  # only max_suites is waived
+        both = dict(values, **{"runtime.options.max_load": 0.5})  # load 0.1 x 8 cpus = 0.8: max_load hit too
+        for load in (0.1, "unknown"):
+            self.assertEqual(walked(run("reviewer", [wait], both, load=load)), [("defer", "#1949", ["max_load"])], load)
+        self.assertEqual(walked(run("reviewer", [wait], dict(values, **{"runtime.options.max_load": 1.0}))),
+                         [("admit", "#1949", ["suite-wait"])])  # 0.8 < 1.0: only max_suites is hit
+        state = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, state)
+        os.makedirs(os.path.join(state, "schedule"))
+        self.schedule.log(state, "reviewer", dict(caps=caps), dict(target=5), admitted, T0)
+        with open(os.path.join(state, "schedule", T0.strftime("decisions-%Y%m%d.jsonl"))) as f:
+            line = [json.loads(x) for x in f][1]
+        self.assertEqual((line["action"], line["ref"], line["reasons"], line["wait"]),
+                         ("admit", "#1949", ["suite-wait"], admitted[0]["wait"]))
+
     def test_ceilings(self):
         snap = dict(suites=4, load=0.5, cpus=8)
         hit = lambda values, **kw: self.schedule.ceiling_hit(dict(snap, **kw), values)

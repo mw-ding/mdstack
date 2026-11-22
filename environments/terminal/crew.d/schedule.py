@@ -271,15 +271,15 @@ def snapshot(args):
     if team is not None:
         return team_snapshot(values, session, state, team)
     now = datetime.datetime.now(datetime.timezone.utc)
-    closed = []
-    suites = read(commands()["lead"].suites, values, state, closed)
+    closed, waits = [], []
+    suites = read(commands()["lead"].suites, values, state, closed, waits)
     loose = read(unrecorded, session, state)
     caps = {role: read(cap, values, state, role) for role in ("builder", "reviewer")}
     return dict(
         machine(values, caps, now), **repo_inputs(values, state),
         workers=read(workers, session, state),
         reservations=read(ledger, os.path.join(state, "schedule", "reservations.json")),
-        suites=suites,
+        suites=suites, suite_waits=[] if suites == UNKNOWN else waits,
         orphans=UNKNOWN if UNKNOWN in (suites, loose) else closed + loose,
         errors=read(errors, state, now))
 
@@ -293,10 +293,11 @@ def team_snapshot(values, session, state, team):
     each repo's demand, tracker, holds, ownership and pause under `repos`, the team ledger, and caps applied once to
     team totals. A repo that does not resolve leaves workers, suites and caps unknown: its runs cannot be counted."""
     now = datetime.datetime.now(datetime.timezone.utc)
-    ok, closed = [m for m in team if "problem" not in m], []
+    ok, closed, waits = [m for m in team if "problem" not in m], [], {}
     whole = len(ok) == len(team)
     found = [read(workers, session, m["state"], m["repo"]) for m in ok]
-    suites = summed([read(commands()["lead"].suites, m["values"], m["state"], closed) for m in ok] + [UNKNOWN] * (not whole))
+    suites = summed([read(commands()["lead"].suites, m["values"], m["state"], closed, waits.setdefault(m["repo"], []))
+                     for m in ok] + [UNKNOWN] * (not whole))
     loose = read(unrecorded, session, *[m["state"] for m in ok])
     caps = {role: [read(cap, m["values"], m["state"], role) for m in ok] + [UNKNOWN] * (not whole)
             for role in ("builder", "reviewer")}
@@ -308,7 +309,7 @@ def team_snapshot(values, session, state, team):
         unresolved=[dict(project=m["project"], problem=m["problem"]) for m in team if "problem" in m],
         workers=UNKNOWN if UNKNOWN in found or not whole else [w for ws in found for w in ws],
         reservations=read(ledger, os.path.join(home(values, state), "schedule", "reservations.json")),
-        suites=suites,
+        suites=suites, suite_waits=[] if suites == UNKNOWN else [dict(w, repo=r) for r, ws in waits.items() for w in ws],
         orphans=UNKNOWN if UNKNOWN in (suites, loose) else closed + loose,
         errors=summed([read(errors, m["state"], now) for m in ok]))
 
@@ -572,17 +573,18 @@ def live_reservations(reservations, workers, now):
     return [r for r in reservations if (now - parse(r["time"])).total_seconds() < RESERVATION_TTL and not started(r)]
 
 
-def ceiling_hit(snap, values):
-    """The optional hard ceiling a start would exceed (an unobserved input counts as exceeded), else None."""
+def ceiling_hit(snap, values, waive=None):
+    """The optional hard ceiling a start would exceed (an unobserved input counts as exceeded), else None; a `waive`d
+    ceiling is not checked (a suite wait waives only `max_suites`, #1950)."""
     max_suites, max_load = values.get("runtime.options.max_suites"), values.get("runtime.options.max_load")
-    if max_suites is not None and (snap["suites"] == UNKNOWN or snap["suites"] >= max_suites):
+    if max_suites is not None and waive != "max_suites" and (snap["suites"] == UNKNOWN or snap["suites"] >= max_suites):
         return "max_suites"
     if max_load is not None and (UNKNOWN in (snap["load"], snap["cpus"]) or snap["load"] * snap["cpus"] >= max_load):
         return "max_load"
     return None
 
 
-def walk(pool, ranked, snap, reserved, target_doc, opts, leads, ceiling=None, repo=None):
+def walk(pool, ranked, snap, reserved, target_doc, opts, leads, ceiling=None, repo=None, past_suites="max_suites"):
     """Walk the crew's ranked demand (docs/scheduling.md#model). The caller's items are admitted (already reserved
     ones again, as `reserved`) or deferred with the first failed condition; the other pool's would-be grants are
     holds for this walk only, dropped as `lead-down` when that pool's lead is down. A pool with no busy worker or
@@ -591,8 +593,12 @@ def walk(pool, ranked, snap, reserved, target_doc, opts, leads, ceiling=None, re
     the inbox when its pass starts, and a busy reviewer on the same PR runs another pass or round. In a team the
     caller is the lane (repo, pool): another repo's would-be grants are holds too, `leads` is keyed by lane, and caps,
     floors, target and ramp count team totals (team §9.4). A team class 8 build waits (`class-7`) while any eligible
-    team class 7 build has not started; a one-repo walk keeps class 8 as fill-in by rank order."""
+    team class 7 build has not started; a one-repo walk keeps class 8 as fill-in by rank order. The `max_suites`
+    ceiling alone is waived for an item a counted builder's un-woken wait names (`suite_waits`): `past_suites`, the
+    ceiling hit with `max_suites` waived, still applies (not given: no waiver), and a grant is admitted with reason
+    `suite-wait` and that wait (#1950)."""
     caller = pool if repo is None else (repo, pool)
+    suite_waits = {(w.get("repo"), w["ref"]): w for w in snap.get("suite_waits", [])}
 
     def running(item):
         return item["pool"] == "builder" and any(w["state"] == "busy" and on_ref(w, "builder", item["ref"]) and
@@ -622,14 +628,20 @@ def walk(pool, ranked, snap, reserved, target_doc, opts, leads, ceiling=None, re
             if mine:
                 actions.append(dict(act, action="defer", reasons=["class-7"]))
             continue
+        wait = suite_waits.get((item.get("repo"), item["ref"])) if ceiling == "max_suites" else None
+        hit = past_suites if wait else ceiling
+        wait = wait if hit is None else None
         fails = [why for why, ok in (("cap", used[p] < snap["caps"][p]), ("target", total < target_doc["target"]),
-                                     ("ramp", starts < opts["schedule_ramp"]), (ceiling, ceiling is None)) if not ok]
+                                     ("ramp", starts < opts["schedule_ramp"]), (hit, hit is None)) if not ok]
         if fails and not (floor[p] and fails[0] != "cap"):
             if mine:
                 actions.append(dict(act, action="defer", reasons=fails[:1]))
             floor[p] = False
             continue
-        actions.append(dict(act, action="admit" if mine else "hold", reasons=["floor"] if fails else []))
+        if wait and not fails:
+            act.update(wait=dict(window=wait["window"], line=wait["line"]))
+        reasons = ["floor"] if fails else ["suite-wait"] if wait else []
+        actions.append(dict(act, action="admit" if mine else "hold", reasons=reasons))
         used[p], total, starts, floor[p] = used[p] + 1, total + 1, starts + 1, False
     return actions
 
@@ -714,7 +726,8 @@ def evaluate(args, values, session, state, now):
     else:
         leads = read(lead_states, session, state, values, members(args, values) if team else None)
         actions = walk(args.pool, rank(snap), snap, reserved, doc, target_options(values),
-                       {} if leads == UNKNOWN else leads, ceiling_hit(snap, values), repo)
+                       {} if leads == UNKNOWN else leads, ceiling_hit(snap, values), repo,
+                       ceiling_hit(snap, values, "max_suites"))
     return snap, reserved, doc, actions, refusal
 
 
