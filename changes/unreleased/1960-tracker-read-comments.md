@@ -1,7 +1,7 @@
 ---
 type: added
 issue: 1960
-pr: TBD
+pr: 2041
 date: 2026-11-21
 box-skill: none
 ---
