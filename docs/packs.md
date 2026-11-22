@@ -6,7 +6,7 @@ GitHub pack ships here as the GitHub connector
 ([connectors/github/](../connectors/github/manifest.toml));
 an organization's own pack lives in its own repo, outside mdstack, pinned
 to an mdstack version (portable mdstack, roadmap 13.15,
-[#127](https://github.com/mw-ding/eng-crew/issues/127);
+[#127](https://github.com/mw-ding/mdstack/issues/127);
 [portable spec P5, P6](specs/portable.md#2-requirements)).
 
 This page adds no rule, gate, cap, marker field or label; the

@@ -175,7 +175,7 @@ posts and markers keep their exact terms and formats.
 Prior art: the owner-communication etiquette of
 [firstmate](https://github.com/kunchenguid/firstmate) (MIT license), with its
 persona and forms of address removed; no text is copied. Decision:
-[#160, row 14](https://github.com/mw-ding/eng-crew/issues/160#issuecomment-6532191486).
+[#160, row 14](https://github.com/mw-ding/mdstack/issues/160#issuecomment-6532191486).
 
 ## Report skeleton (every role)
 

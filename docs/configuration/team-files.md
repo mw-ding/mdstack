@@ -2,7 +2,7 @@
 
 Configuration module for team files, split out of the
 [profile reference](../profile.md) under the M26 modular organization
-principle ([#676](https://github.com/mw-ding/eng-crew/issues/676)). It holds
+principle ([#676](https://github.com/mw-ding/mdstack/issues/676)). It holds
 the whole of the profile's [Team files](../profile.md#team-files) section:
 the file's location and name, the `[team]` tables and shorthands, the
 per-repo allowlist and an example, then resolution, the shared team instance
@@ -14,7 +14,7 @@ result still passes its [Validate](../profile.md#validate) checks.
 ## Schema and example
 
 One owner often runs more than one crew, and each crew serves several repos
-([#634](https://github.com/mw-ding/eng-crew/issues/634)). A team file holds
+([#634](https://github.com/mw-ding/mdstack/issues/634)). A team file holds
 the whole crew once, with a small section per repo. Keep it at
 `<config-home>/teams/<team>.toml`, outside any release bundle and any repo
 clone, so upgrades never touch it. The team name (`[a-z0-9-]`, 1–63

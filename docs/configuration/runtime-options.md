@@ -3,7 +3,7 @@
 Configuration module for the profile's runtime keys and the coordinator
 option shared by every runtime, split out of the
 [profile reference](../profile.md) under the M26 modular organization
-principle ([#676](https://github.com/mw-ding/eng-crew/issues/676)). It holds
+principle ([#676](https://github.com/mw-ding/mdstack/issues/676)). It holds
 the `[runtime]` key table and the shared `max_active_milestones` option with
 its priority and default behavior, the
 [`tmux` options](#tmux-options) with the standing and render-time notes,

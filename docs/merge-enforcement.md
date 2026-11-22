@@ -27,7 +27,7 @@ merging and no force-push are conventions. Squash, merge commits and rebase
 merges are all currently enabled. There is no live ruleset ID to link yet;
 record it here after application and verification.
 
-This plan-level blocker is tracked in **[#80](https://github.com/mw-ding/eng-crew/issues/80)**
+This plan-level blocker is tracked in **[#80](https://github.com/mw-ding/mdstack/issues/80)**
 (Blocked: Free-plan GitHub ruleset cannot enforce Sam-only merge on private
 repos). Keep #80 open until the account can apply the target ruleset (or an
 App-based alternative lands); then close it with what was applied.
@@ -68,7 +68,7 @@ organization (reassess this personal-repo recipe after a move). Making the
 repository public is not an option: it is private by design. MD applies only
 after MD's/Ash's explicit go; Ash records the result. This documentation
 authorizes no settings change. The Free-plan gap is the blocked issue
-[#80](https://github.com/mw-ding/eng-crew/issues/80); do not invent a waiver.
+[#80](https://github.com/mw-ding/mdstack/issues/80); do not invent a waiver.
 
 After the plan prerequisite and go, first read the existing rulesets to avoid
 creating a duplicate. If none implements this gate, write the following file
@@ -161,7 +161,7 @@ approval, squash only, no force-push/deletion, no bypass. GitHub enforces it
 at merge time. Vera's APPROVE (or the user's `/crew merge-ok` steer posted as
 `<reviewer-account>` APPROVE) and green CI already satisfy §7, so it adds no new wait.
 
-While it is not live (today — see [#80](https://github.com/mw-ding/eng-crew/issues/80)),
+While it is not live (today — see [#80](https://github.com/mw-ding/mdstack/issues/80)),
 the synthesizer's §7 checks remain the only enforcement, by convention;
 nothing changes for the crew. If a live ruleset
 blocks a merge §7 would permit (for example a renamed check), use the

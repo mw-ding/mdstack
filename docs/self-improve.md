@@ -111,7 +111,7 @@ suggestions and the owner's accept path remain separate follow-up work.
 ### Runtime-blocker recipe
 
 When a crew defect blocks or slows its run, the coordinator reports it in the
-same turn, without being asked ([#299](https://github.com/mw-ding/eng-crew/issues/299);
+same turn, without being asked ([#299](https://github.com/mw-ding/mdstack/issues/299);
 [always-on triage](triage.md#triggers-and-cadence) T7). Defects include a
 spawn, restart or launch failure, a role window stuck on a sandbox or
 permission prompt, a crew command error, a watcher or poll timeout, or the
