@@ -1954,6 +1954,22 @@ class AsyncLandTest(unittest.TestCase):
             self.assertEqual(code, 1, lines)
             self.assertIn(expected, lines)
 
+    def test_manifest_stack_separator(self):
+        """#1956: land.stack_separator is " " or ",", and only with stack = true."""
+        ok = (0, ["crew-config: OK (crew.toml)"])
+        caps = GITHUB_MANIFEST.replace('land = "supported"\n', 'land = "supported"\nland-stack = "supported"\n'
+                                       'stack-status = "supported"\n', 1)
+        for sep in ('" "', '","'):
+            self.assertEqual(validate(caps + '\n[land]\nstack = true\nstack_separator = %s\n' % sep), ok)
+        for text, expected in (
+                (caps + '\n[land]\nstack = true\nstack_separator = ";"\n',
+                 "crew.toml:land.stack_separator: unknown value ';' (expected one of:  , ,)"),
+                (caps + '\n[land]\nstack_separator = ","\n',
+                 "crew.toml:land.stack_separator: only valid with stack = true")):
+            code, lines = validate(text)
+            self.assertEqual(code, 1, lines)
+            self.assertIn(expected, lines)
+
     def test_profile_may_declare_conditional_operations(self):
         text = VALID.replace('[backends.change]\nname = "github"',
                              '[backends.change]\nname = "github"\ncapabilities = { publish = "unsupported", '

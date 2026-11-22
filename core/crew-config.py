@@ -119,7 +119,7 @@ CONDITIONAL_OPERATIONS = {"change": ["publish", "land-status", "read-branch-head
 LAND_FIELDS = {"mode": (str, "sync"), "opens_draft": (bool, False), "serializes": (bool, False),
                "tests_against_tip": (bool, False), "change_placeholder": (str, "n"), "head_guard": (bool, True),
                "status": (dict, None), "stack": (bool, False), "stack_tests_against_tip": (bool, False),
-               "stack_status": (str, "stack")}
+               "stack_status": (str, "stack"), "stack_separator": (str, " ")}
 LAND_STATES = ["none", "queued", "landing", "landed", "failed"]
 STRATEGY_FIELDS = {"update_from_base": (str, "merge"), "retains_prior_heads": (bool, False)}
 ASYNC_RUNTIMES = ["tmux", "session"]  # runtimes with an async land binding; others refuse land.mode = "async"
@@ -546,6 +546,9 @@ def check_land(err, land, change_caps, runtime=None):
         err("land.stack_tests_against_tip", "only valid with stack = true")
     if "stack_status" in land and not land.get("stack"):
         err("land.stack_status", "only valid with stack = true")
+    check_choice(err, "land.stack_separator", land.get("stack_separator", " "), [" ", ","])
+    if "stack_separator" in land and not land.get("stack"):
+        err("land.stack_separator", "only valid with stack = true")
     if per_change and land.get("stack_tests_against_tip"):
         err("land.stack_tests_against_tip", "per-change readback names no combined-stack check; expected false")
 

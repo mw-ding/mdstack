@@ -306,14 +306,15 @@ def stack_declared(meta, values):
 def stack_land(meta):
     return {"change_placeholder": meta.get("land.change_placeholder", ("n",))[0],
             "head_guard": meta.get("land.head_guard", (True,))[0], "status": meta.get("land.status", ({},))[0],
-            "per_change": meta.get("land.stack_status", ("stack",))[0] == "per-change"}
+            "per_change": meta.get("land.stack_status", ("stack",))[0] == "per-change",
+            "separator": meta.get("land.stack_separator", (" ",))[0]}
 
 
 def stack_commands(renderer, members, land, revisions=None):
     def single(op, pr, head):
         return command(renderer, op, pr, head, land)
     member = (lambda pr, head: commands_for(renderer, pr, head, land, ("land-status",))) if land["per_change"] else None
-    return land_stack.commands(renderer, members, single, revisions, member)
+    return land_stack.commands(renderer, members, single, revisions, member, land["separator"])
 
 
 def stack_reader(land):

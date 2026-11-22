@@ -758,6 +758,25 @@ class SessionRevisionStackLand(LandFixture):
         self.assertEqual(self.stack("stack-done").returncode, 0)
         self.assertIsNone(self.stack_intent())
 
+    def test_comma_separator_passes_one_revision_list_token(self):  # #1956
+        with open(self.manifest) as f:
+            manifest = f.read()
+        with open(self.manifest, "w") as f:
+            f.write(manifest.replace("\n[land]\n", '\n[land]\nstack_separator = ","\n', 1))
+        mapping_path = os.path.join(self.tmp, "pack", "render", "backends", "example.toml")
+        with open(mapping_path) as f:
+            mapping = f.read()
+        with open(mapping_path, "w") as f:
+            f.write(mapping.replace("submit-stack <stack-top> <stack-revisions>",
+                                    "submit-stack <stack-top> --ids=<stack-revisions> --changes=<stack-changes>"))
+        self.rounds("NEW", "QUEUED", self.LANDED_ALL)
+        r = self.stack()
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertEqual(self.calls("submit-stack"), [["submit-stack", "9", "--ids=D107,D108,D109", "--changes=7,8,9"]])
+        for change in (7, 8, 9):
+            self.assertIn("record: #%d: Landed revision:" % change, r.stdout)
+        self.assertEqual(self.stack_intent()["revisions"], ["D107", "D108", "D109"])
+
     def test_mixed_or_unknown_member_states_record_nothing(self):
         for bad in ({"7": "QUEUED", "8": "MERGING", "9": "QUEUED"},  # queued against landing is unknown here
                     {"7": "MERGED " + LANDED, "8": "MERGED " + STACK_LANDED, "9": "MERGING"},
