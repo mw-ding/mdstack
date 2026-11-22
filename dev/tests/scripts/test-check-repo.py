@@ -616,21 +616,41 @@ with tempfile.TemporaryDirectory() as d:
     expect("bundle-link: skipped outside a git work tree (the release-bundle stage)", rc == 0, out)
 
 ROOT = os.path.dirname(SCRIPTS)
+
+
+# The control writes and stages its own changes/unreleased/ target (#2083): at a
+# cut head that directory has no tracked files, so a clone lacks it and the plain
+# link check would fire instead of [bundle-link].
+def bundle_link_control(r, label):
+    write(r, "changes/unreleased/2083-control.md", "x\n")
+    git(r, "add", "changes/unreleased/2083-control.md")
+    with open(os.path.join(r, "README.md"), encoding="utf-8") as f:
+        text = f.read()
+    bad = text.replace("`changes/unreleased/` until", "[`changes/unreleased/`](changes/unreleased/) until", 1)
+    write(r, "README.md", bad)
+    rc, out = run(r, "--only", "links")
+    expect(label, bad != text and rc == 1 and "README.md:" in out and "[bundle-link]" in out
+           and "changes/unreleased/" in out and "[broken-link]" not in out, out)
+
+
 with tempfile.TemporaryDirectory() as d:
     if git(d, "clone", "-q", "--no-hardlinks", ROOT, d + "/r"):
         r = d + "/r"
         rc, out = run(r, "--only", "links")
         expect("bundle-link: the current tree passes", rc == 0, out)
-        with open(os.path.join(r, "README.md"), encoding="utf-8") as f:
-            text = f.read()
-        bad = text.replace("`changes/unreleased/` until", "[`changes/unreleased/`](changes/unreleased/) until", 1)
-        write(r, "README.md", bad)
-        rc, out = run(r, "--only", "links")
-        expect("bundle-link: negative control, #2000's README link to changes/unreleased/ fails",
-               bad != text and rc == 1 and "README.md:" in out and "[bundle-link]" in out
-               and "changes/unreleased/" in out, out)
+        bundle_link_control(r, "bundle-link: negative control, #2000's README link to changes/unreleased/ fails")
     else:
         print("skip bundle-link current-tree control (git clone unavailable)")
+
+with tempfile.TemporaryDirectory() as d:
+    if git(d, "clone", "-q", "--no-hardlinks", ROOT, d + "/r"):
+        r = d + "/r"
+        git(r, "rm", "-q", "-r", "--ignore-unmatch", "changes/unreleased")
+        expect("bundle-link: the cut-head clone has no changes/unreleased/",
+               not os.path.exists(os.path.join(r, "changes/unreleased")))
+        bundle_link_control(r, "bundle-link: negative control holds with an empty changes/unreleased/ (a cut head)")
+    else:
+        print("skip bundle-link cut-head control (git clone unavailable)")
 
 # Untracked files (#1414): path checks read `git ls-files`, so a default run
 # names non-ignored untracked files on stderr (a warning, exit unchanged) and
