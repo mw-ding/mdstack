@@ -78,16 +78,27 @@ a lower limit.
 <session-backend:local>
 Session backend `<session-backend>`: `native` starts each worker as a
 harness subagent with a unique task handle; `cli` starts an external harness
+<isolation:worktree>
 CLI run whose PID and OS start time you record. Give each worker and probe
 its own worktree `<worktree-root>/<n>-<sha7>-<role>-<pass>/` from a fresh
 remote base, never `/tmp`; none shares this checkout.
+<isolation:assigned-checkout>
+CLI run whose PID and OS start time you record. Each worker and probe runs
+in its pre-provisioned dedicated checkout and creates no worktree; none
+shares this checkout.
+<isolation:end>
 <session-backend:hosted>
 Session backend `hosted`: create each worker as a hosted session through
 the control plane and record the session id it returns as the worker's
 handle; check liveness by reading that session's state from the control
+<isolation:worktree>
 plane. Give each worker and probe its own worktree
 `<worktree-root>/<n>-<sha7>-<role>-<pass>/` from a fresh remote base, never
 `/tmp`; none shares this checkout.
+<isolation:assigned-checkout>
+plane. Each worker and probe runs in its pre-provisioned dedicated checkout
+and creates no worktree; none shares this checkout.
+<isolation:end>
 <session-backend:end>
 
 Before each dispatch, re-read the live item and head, check pass markers and
