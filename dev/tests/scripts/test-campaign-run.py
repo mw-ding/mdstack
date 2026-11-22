@@ -485,7 +485,7 @@ class A19LedgerTest(unittest.TestCase):
         ledger = os.path.join(self.A19, "ledger.json")
         p = self.replay(ledger)
         self.assertEqual(p.returncode, 0, p.stdout)
-        self.assertIn("A19: 6 harness x 19 rows, 2 backends x 10 rows;", p.stdout)
+        self.assertIn("A19: 6 harness x 20 rows, 2 backends x 10 rows;", p.stdout)
         with open(ledger) as fh:
             d = json.load(fh)
         d["harness"]["adapters"]["cursor"]["TRANSIENT"] = {"oracle": True, "tests": [
