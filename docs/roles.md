@@ -540,10 +540,11 @@ kept reviews moving without breaking the different-engine rule.
 
 ## Worker isolation (worktrees)
 
-- **Unique worktree per run:** `/workspace/wt/<pr>-<sha7>-<role>-<pass>/`, for
-  example `414-fc778cd-reviewer-review`. Use your own clone or worktree, never a
-  shared checkout.
-- **Never a branch-named shared path** such as `/workspace/wt/<branch>`. Reusing
+- **Unique worktree per run:** `<worktree-root>/<pr>-<sha7>-<role>-<pass>/`, for
+  example `414-fc778cd-reviewer-review`, where `<worktree-root>` is the
+  directory your runtime binding puts worktrees in. Use your own clone or
+  worktree, never a shared checkout.
+- **Never a branch-named shared path** such as `<worktree-root>/<branch>`. Reusing
   one lets a stale or concurrent run delete the tree mid-pass. This happened
   once: a shared worktree was deleted during a run.
 - **Cleanup:** when the run ends, delete **that run's** worktree and its build
@@ -672,7 +673,7 @@ Give each worker the complete brief. Copy, then fill every placeholder.
   an `Engine: <engine> <model> <effort>` trailer on every commit, and in the
   `crew:v1` builder marker.
 - Repo: <owner>/<repo>. Base branch: <default-branch>.
-- Your worktree: /workspace/wt/<pr>-<sha7>-<role>-<pass>/ (unique to this run).
+- Your worktree: <worktree-root>/<pr>-<sha7>-<role>-<pass>/ (unique to this run).
   Work only there. Clean it up per roles.md Worker isolation and your
   runtime binding.
 - Branch: <role>/<issue#>-<short-slug>. For review feedback on an existing PR,

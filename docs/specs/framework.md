@@ -95,14 +95,17 @@ copies stay on the box (R4).
 
 | Source | Feeds |
 |---|---|
-| `/home/box/agent-data/workflows/eng-pr-pipeline/SKILL.md` (stage protocol: roles/identities, stages, evidence, markers, rounds, duties on wake, merge gate, safety, `/crew` steering) | A, B |
-| `/home/box/agent-data/workflows/eng-crew-roles/SKILL.md` (roles, tiers, engines, quota rule, worker brief, worktrees, PR body, parallelism) | A, C |
-| `/home/box/agent-data/crew/mw-ding__agentconnect/wiring.md` (per-bot routines and trigger JSON, steering wiring, state passing, enforcement, cutover, wake estimates, risks, pilot findings) | D, E |
-| `/home/box/agent-data/crew/mw-ding__agentconnect/vera-engines.md` (reviewer engine choice) | C, D |
-| `/home/box/agent-data/crew/mw-ding__agentconnect/vera-v2-template.md` (reviewer per-PR watch template) | D |
-| `/home/box/agent-data/crew/mw-ding__agentconnect/pilot-evidence.md` (pilot #579 → PR #585 timeline and gaps) | E, F |
-| `/workspace/crew-framework-src/routines.md` (coordinator routines: steering dispatcher, after-merge, stuck-PR sweeper) | D |
-| `/workspace/crew-framework-src/lessons-2026-10-19.md` (bottleneck analysis, Oct 19, 2026) | F |
+| `<agent-data>/workflows/eng-pr-pipeline/SKILL.md` (stage protocol: roles/identities, stages, evidence, markers, rounds, duties on wake, merge gate, safety, `/crew` steering) | A, B |
+| `<agent-data>/workflows/eng-crew-roles/SKILL.md` (roles, tiers, engines, quota rule, worker brief, worktrees, PR body, parallelism) | A, C |
+| `<agent-data>/crew/mw-ding__agentconnect/wiring.md` (per-bot routines and trigger JSON, steering wiring, state passing, enforcement, cutover, wake estimates, risks, pilot findings) | D, E |
+| `<agent-data>/crew/mw-ding__agentconnect/vera-engines.md` (reviewer engine choice) | C, D |
+| `<agent-data>/crew/mw-ding__agentconnect/vera-v2-template.md` (reviewer per-PR watch template) | D |
+| `<agent-data>/crew/mw-ding__agentconnect/pilot-evidence.md` (pilot #579 → PR #585 timeline and gaps) | E, F |
+| `<source-dir>/routines.md` (coordinator routines: steering dispatcher, after-merge, stuck-PR sweeper) | D |
+| `<source-dir>/lessons-2026-10-19.md` (bottleneck analysis, Oct 19, 2026) | F |
+
+`<agent-data>` and `<source-dir>` stand for the box's agent-data and
+framework-source directories.
 
 ## 5. Slices
 
