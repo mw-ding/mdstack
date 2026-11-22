@@ -23,14 +23,15 @@ Reviewed PRs only (`docs/memory.md`).
   PRs; hold by closing unmerged (#985 c6814551260).
 - New edge cases per fix: fail closed, split proven work (#1677, #1684).
 - Review-changes: always send builder lead `fix` (#1871 c6874052190).
-- Until #1878 ships: slow fixes capture evidence, then push and post the
-  note at once (#1877).
-- Until #1850 installed: Claude builders ack mid-turn inbox at turn
-  end; busy one's no-ack: read pane, never restart.
 - Post-cut: check release, close milestone, capture, admit next (#1559,
   #1719).
-- Until #1830/#1835/#1836 ship: deep tier via builder-lead note ref;
-  hand synthesizer land on merge-ok at green CI; lead settles
-  owner-blocked held id, re-sends on answer (#1774, #1832, #1833).
 - Pre-land simulated cut for new tests reading version, `changes/`,
   CHANGELOG (#1821, #1828).
+- Until #2032/#2036 ship: ready = `crew:ready` + assignee + `lead
+  handoff builder build`; drain `pr-merged` now; retry on held
+  `queue.jsonl.route-*` (#2036).
+- Check reviewer handoffs, drained `new-head` by head SHA, not PR
+  number (#2047).
+- Until #2075 ships: docs + `changes/` PRs (all S1) get real bounded
+  validation, no docs skip; after rereview steer reclaim pre-steer
+  passes, queue new validate (#2074).
