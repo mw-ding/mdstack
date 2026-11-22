@@ -15,6 +15,20 @@ render step:
 - [Modules](../architecture.md#modules): the four axes and the module
   layout, with the dependency rules they follow.
 
+## Rule: every canonical edge cites its source
+
+A canonical diagram keeps an edge table beside it. Each edge, or group of
+edges with one source, has a row citing the code or doc anchor it depicts:
+a section link, or a file plus function or docstring. The deployment
+diagram's [E1–E23 table](../architecture.md#deployment-wakes-and-releases)
+is the example.
+
+A PR that adds or changes a canonical diagram adds or updates those rows.
+Its review compares every changed edge with its cited anchor: the actor at
+each end, the direction, and the channel or destination. An edge with no
+anchor, or one its anchor contradicts, is an unmet acceptance criterion. No
+check can verify a topology, so this is a review rule.
+
 ## eng-crew-flow (pilot, historical)
 
 The pilot's collaboration flow, kept as history. It is not on the newcomer
