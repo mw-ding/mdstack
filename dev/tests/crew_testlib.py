@@ -7,6 +7,7 @@ import importlib.util
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -248,6 +249,13 @@ class Base(unittest.TestCase):
         found = [c for c in self.calls() if c[0] == "new-session"]
         self.assertEqual(len(found), 1, self.calls())
         return found[0]
+
+    def session_env(self, call):
+        """A new-session call's environment: exported by window 0's command, never -e on the session (#1957)."""
+        self.assertNotIn("-e", call)
+        head = call[-1].partition("; ")[0]
+        self.assertTrue(head.startswith("export "), call[-1])
+        return dict(a.split("=", 1) for a in shlex.split(head)[1:])
 
     def settings(self):
         with open(os.path.join(self.project_dir, ".claude", "settings.local.json")) as f:
