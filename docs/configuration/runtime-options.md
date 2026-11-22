@@ -118,6 +118,7 @@ brief renders the land options as for `tmux`:
 | Option | Type | Default | Replaces |
 |---|---|---|---|
 | `session_backend` | string: `native`, `cli` or `hosted` | `"native"` | `<session-backend>`: `native` dispatches workers as harness subagents with task handles; `cli` as external harness CLI runs with a recorded PID and start time; `hosted` as hosted sessions created through a control plane, addressed by the returned session id and probed by a control-plane state read (#1052) |
+| `isolation` | string: `worktree` or `assigned-checkout` | `"worktree"` | the coordinator brief's worker isolation sentence: `worktree` gives each worker and probe its own `<worktree-root>/<n>-<sha7>-<role>-<pass>/` worktree; `assigned-checkout` says each runs in its pre-provisioned dedicated checkout and creates no worktree, for a venue whose workers run in checkouts on other hosts. The [C6 checks](../runtimes/session.md#runtime-contract) are unchanged (#1959) |
 | `builders` | integer | `5` | `<builder-cap>`: concurrent builder runs |
 | `reviewers` | integer | `2` | `<reviewer-cap>`: concurrent reviewer passes |
 | `present_builders` | integer, at least 1, at most `builders` | resolved `builders` | `<present-builder-cap>`: owner-present builder limit, as in `tmux`; a value above `builders` is refused (#1053) |
