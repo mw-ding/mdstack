@@ -4,7 +4,7 @@
 > - **Applies to:** tmux: the `mdstack poll` scan, the watcher's sweep timer and Riley's sweep; session: `mdstack poll --triage-only`, a hosted routine trigger and the session sweep brief ([session binding](runtimes/session.md#triage-sweep-routine), #1404); not Grok Bot, which has no triage timer or sweep ([Out of scope](#out-of-scope), #777)
 > - **Current rules:** [protocol §4](protocol.md#4-marker-conventions) (`pass=triage` record); [`[triage]` profile keys](profile.md#triage); coordinator dispositions in [§6](protocol.md#6-duties-on-wake-all-roles)
 > - **Built:** T1–T7 in [Build issues](#build-issues) (#757, #767, #772–#776)
-> - **Mode:** `mode = "shadow"` is the default and this crew's setting since 2026-11-04 ([#110](https://github.com/mw-ding/eng-crew/issues/110#issuecomment-6638329797)): sweeps write records and proposals only; `apply` is not on, and only the owner sets it after [calibration](#shadow-mode-and-calibration)
+> - **Mode:** `mode = "shadow"` is the default and this crew's setting since 2026-11-04 ([#110](https://github.com/mw-ding/mdstack/issues/110#issuecomment-6638329797)): sweeps write records and proposals only; `apply` is not on, and only the owner sets it after [calibration](#shadow-mode-and-calibration)
 > - **Built (#753):** the [write allowlist](#write-allowlist) at one apply entry point, issue text as data and the provider refusal record
 > - **Not built:** sweeps without bypass in a read-only sandbox ([Known risks](#known-risks))
 > - **Last checked:** 2026-11-05 at `996ff71`
@@ -12,12 +12,12 @@
 How every new issue and intake card gets a triage decision without anyone
 remembering to run it, decided from what the crew already learned instead of
 from a cold read
-([#659](https://github.com/mw-ding/eng-crew/issues/659); umbrella
-[#110](https://github.com/mw-ding/eng-crew/issues/110)). It records the
+([#659](https://github.com/mw-ding/mdstack/issues/659); umbrella
+[#110](https://github.com/mw-ding/mdstack/issues/110)). It records the
 owner's answers of 2026-11-04 (walkthrough about 00:45–01:30Z, the
-[decision post](https://github.com/mw-ding/eng-crew/issues/659#issuecomment-6620065225))
+[decision post](https://github.com/mw-ding/mdstack/issues/659#issuecomment-6620065225))
 and the skip-rule addendum of about 01:40Z
-([addendum](https://github.com/mw-ding/eng-crew/issues/659#issuecomment-6620173411)),
+([addendum](https://github.com/mw-ding/mdstack/issues/659#issuecomment-6620173411)),
 which override the initial draft wherever they differ.
 
 This page adds no rule, gate, round cap, marker field or label of its own:
@@ -33,10 +33,10 @@ rules; this design adds the recurring pass that reads them.
 
 | # | Seen | Cause |
 |---|---|---|
-| G1 | About 25 org-pack intake cards filed on 2026-11-01 waited untriaged ([#427](https://github.com/mw-ding/eng-crew/issues/427)); #372–#378, #391 and #422–#424 still wait | The only live trigger is the manual weekly sweep; the coordinator's triage window runs only while it is awake and not saturated |
+| G1 | About 25 org-pack intake cards filed on 2026-11-01 waited untriaged ([#427](https://github.com/mw-ding/mdstack/issues/427)); #372–#378, #391 and #422–#424 still wait | The only live trigger is the manual weekly sweep; the coordinator's triage window runs only while it is awake and not saturated |
 | G2 | About 45 open issues carry no milestone | Placement happens only when the owner or coordinator looks |
 | G3 | Duplicates and already-decided items get re-filed and re-asked (for example the parked #140 and the milestone scope rule) | Nothing checks closed issues, lessons, findings or recorded owner decisions before an item is triaged |
-| G4 | Milestone learnings and runtime blockers reached mdstack only when the owner asked ([#374](https://github.com/mw-ding/eng-crew/issues/374), [#299](https://github.com/mw-ding/eng-crew/issues/299)) | Intake triggers are per-PR events; nothing fires at milestone close or on a run blocker |
+| G4 | Milestone learnings and runtime blockers reached mdstack only when the owner asked ([#374](https://github.com/mw-ding/mdstack/issues/374), [#299](https://github.com/mw-ding/mdstack/issues/299)) | Intake triggers are per-PR events; nothing fires at milestone close or on a run blocker |
 | G5 | Triage in coordinator turns adds to the saturation seen on 2026-11-01 ([lesson](lessons/2026-11-01-coordinator-saturation.md)) | Triage is a coordinator duty with no other host |
 
 ## Overview
@@ -118,7 +118,7 @@ skipped issue is not listed in the log.
 ## Learning lookup
 
 For each item, in this order, before it is classified
-([#987](https://github.com/mw-ding/eng-crew/issues/987)):
+([#987](https://github.com/mw-ding/mdstack/issues/987)):
 
 1. **Still applies?** Check whether the item was overtaken since its
    creation date, with cited evidence for each case:
@@ -304,7 +304,7 @@ apply binding there yet.
 ### Priority
 
 Bands follow the owner's calibration of 2026-11-05
-([#987](https://github.com/mw-ding/eng-crew/issues/987)):
+([#987](https://github.com/mw-ding/mdstack/issues/987)):
 
 | Band | Criterion |
 |---|---|
@@ -476,7 +476,7 @@ lands:
    answers.
 
 The 2026-11-05 recalibration ran by hand with this method (owner about
-05:29Z; [#923](https://github.com/mw-ding/eng-crew/issues/923#issuecomment-6650542813)).
+05:29Z; [#923](https://github.com/mw-ding/mdstack/issues/923#issuecomment-6650542813)).
 
 ## Feedback
 
@@ -505,7 +505,7 @@ records, and `eval-score` compares a re-classification with it.
 ## Known risks
 
 Deferred by the owner on 2026-11-04 ("let's worry later") and tracked in
-[#753](https://github.com/mw-ding/eng-crew/issues/753). M60 built the
+[#753](https://github.com/mw-ding/mdstack/issues/753). M60 built the
 [write allowlist](#write-allowlist) at one apply entry point, the
 issue-text-as-data rule and the
 [provider refusal](#autonomy) record. The allowlist bounds what the brief
@@ -521,9 +521,9 @@ enabled on a repo with untrusted filers.
 
 | Item | Role in this design |
 |---|---|
-| [#427](https://github.com/mw-ding/eng-crew/issues/427) scheduled triage pass | Superseded: its scheduled pass is T2, its `pass=triage` markers, tracker operations and owner-approved route-out are T3, and its CI-job host option is rejected ([Host](#host)) |
-| [#374](https://github.com/mw-ding/eng-crew/issues/374) milestone-close trigger | Folded in as build issue T6 |
-| [#299](https://github.com/mw-ding/eng-crew/issues/299) run-blocker cards | Folded in as build issue T7: its cards feed the sweep |
+| [#427](https://github.com/mw-ding/mdstack/issues/427) scheduled triage pass | Superseded: its scheduled pass is T2, its `pass=triage` markers, tracker operations and owner-approved route-out are T3, and its CI-job host option is rejected ([Host](#host)) |
+| [#374](https://github.com/mw-ding/mdstack/issues/374) milestone-close trigger | Folded in as build issue T6 |
+| [#299](https://github.com/mw-ding/mdstack/issues/299) run-blocker cards | Folded in as build issue T7: its cards feed the sweep |
 | #354 flavor suggestions | Unchanged: project flavor stays with `flavor-suggest` and the owner; the sweep writes only the default item flavor record |
 | Weekly sweep (`intake-sweep.py`) | Kept; its drafts become sweep inputs |
 | Coordinator triage window | Kept for dispositions; reads triage records instead of re-triaging |
@@ -535,13 +535,13 @@ own CHANGELOG fragment.
 
 | ID | Issue | Scope | Depends on |
 |---|---|---|---|
-| T1 | [#747](https://github.com/mw-ding/eng-crew/issues/747) | Poll scan with the skip rules: deterministic duplicate hints, card-field parse and P0 signals in `mdstack poll`, writing `triage/queue.json`; a P0 candidate queues a single-item sweep; tests with fixtures | — |
-| T2 | [#748](https://github.com/mw-ding/eng-crew/issues/748) | `[triage]` profile (`enabled`, `interval_hours`, `repos`, `rules`, `mode`) with validator rules and profile.md rows; `researchers` cap 2; the watcher's sweep timer with catch-up and the empty-queue skip; tests | — |
-| T3 | [#749](https://github.com/mw-ding/eng-crew/issues/749) | Riley's triage-sweep brief (mirror): lookup, outcomes, autonomy, the `pass=triage` record in protocol §4, the skip rules, labels, the `triage:log` daily log issue, owner replies, cooldowns, noise cap; tests | T1, T2 |
-| T4 | [#750](https://github.com/mw-ding/eng-crew/issues/750) | Shadow mode and the precision bar: `mode = shadow` default, the 10-sample spot check, accuracy, override and reopen metrics, the eval set; tests | T3 |
-| T5 | [#751](https://github.com/mw-ding/eng-crew/issues/751) | Intake-card issue template with blank issues allowed; `triage:card-extracted` comments; tests | T3 |
-| T6 | [#374](https://github.com/mw-ding/eng-crew/issues/374) | Milestone-close sweep that drafts cards | T3 |
-| T7 | [#299](https://github.com/mw-ding/eng-crew/issues/299) | Run-blocker cards from coordinators, deduped and redacted | — |
+| T1 | [#747](https://github.com/mw-ding/mdstack/issues/747) | Poll scan with the skip rules: deterministic duplicate hints, card-field parse and P0 signals in `mdstack poll`, writing `triage/queue.json`; a P0 candidate queues a single-item sweep; tests with fixtures | — |
+| T2 | [#748](https://github.com/mw-ding/mdstack/issues/748) | `[triage]` profile (`enabled`, `interval_hours`, `repos`, `rules`, `mode`) with validator rules and profile.md rows; `researchers` cap 2; the watcher's sweep timer with catch-up and the empty-queue skip; tests | — |
+| T3 | [#749](https://github.com/mw-ding/mdstack/issues/749) | Riley's triage-sweep brief (mirror): lookup, outcomes, autonomy, the `pass=triage` record in protocol §4, the skip rules, labels, the `triage:log` daily log issue, owner replies, cooldowns, noise cap; tests | T1, T2 |
+| T4 | [#750](https://github.com/mw-ding/mdstack/issues/750) | Shadow mode and the precision bar: `mode = shadow` default, the 10-sample spot check, accuracy, override and reopen metrics, the eval set; tests | T3 |
+| T5 | [#751](https://github.com/mw-ding/mdstack/issues/751) | Intake-card issue template with blank issues allowed; `triage:card-extracted` comments; tests | T3 |
+| T6 | [#374](https://github.com/mw-ding/mdstack/issues/374) | Milestone-close sweep that drafts cards | T3 |
+| T7 | [#299](https://github.com/mw-ding/mdstack/issues/299) | Run-blocker cards from coordinators, deduped and redacted | — |
 
 T1, T2 and T7 can start first. T3 is the switch: before it, triage stays in
 the coordinator's window; after it, sweeps run in shadow mode until T4's bar
@@ -556,4 +556,4 @@ is met.
 - Any message to the owner outside the tracker.
 - Grok Bot: no timer, scan queue or sweep binding. There `triage.enabled =
   true` installs no timer, `mdstack doctor` warns, and triage stays the
-  coordinator's dispositions ([#777](https://github.com/mw-ding/eng-crew/issues/777)).
+  coordinator's dispositions ([#777](https://github.com/mw-ding/mdstack/issues/777)).

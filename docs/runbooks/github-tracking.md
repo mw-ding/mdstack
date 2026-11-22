@@ -3,7 +3,7 @@
 Onboarding module for the target repo's GitHub tracking setup, split out of
 the [onboarding runbook](../runbook-new-repo.md) under the M26 modular
 organization principle
-([#676](https://github.com/mw-ding/eng-crew/issues/676)). It holds the
+([#676](https://github.com/mw-ding/mdstack/issues/676)). It holds the
 runbook's Step 1, the `crew:*` label setup, between
 [Step 0: write, validate and render the profile](../runbook-new-repo.md#step-0-write-validate-and-render-the-profile)
 and

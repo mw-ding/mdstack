@@ -64,17 +64,18 @@ def intent_path(state, members):
     return os.path.join(state, "land", "stack", "%d-%s.json" % members[0])
 
 
-def commands(renderer, members, single, revisions=None, member=None):
+def commands(renderer, members, single, revisions=None, member=None, separator=" "):
     """change.land-stack and, without member, change.stack-status with the stack placeholders filled, plus each
     member's change.read-head; single builds one member's command as `mdstack land` does. member(change, head) builds
     one member's per-change status commands. A land-stack naming <stack-revisions> with no revisions yet gets
-    read-revision-id per member and land-stack None; the caller resolves them and builds again."""
+    read-revision-id per member and land-stack None; the caller resolves them and builds again. separator
+    (land.stack_separator, #1956) joins <stack-changes> and <stack-revisions>; <stack> stays space-separated."""
     fill = {"<stack>": " ".join("%d:%s" % m for m in members), "<stack-top>": str(members[-1][0]),
-            "<stack-changes>": " ".join(str(c) for c, _ in members)}
+            "<stack-changes>": separator.join(str(c) for c, _ in members)}
     if revisions is not None:
         if len(revisions) != len(members) or not all(isinstance(r, str) and REVISION.fullmatch(r) for r in revisions):
             raise ValueError("revision ids %r are not one safe token per member" % (revisions,))
-        fill["<stack-revisions>"] = " ".join(revisions)
+        fill["<stack-revisions>"] = separator.join(revisions)
     cmds = {}
     for op, keys in (("land-stack", ("<stack>", "<stack-revisions>")),
                      ("stack-status", ("<stack>", "<stack-changes>", "<stack-revisions>"))):

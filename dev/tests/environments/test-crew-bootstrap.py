@@ -628,10 +628,14 @@ class Bootstrap(doctor_tests.DoctorBase):
 
     def test_session_self_test_finds_session_briefs_and_skips_grok_steps(self):
         self.project_path.write_text(self.project_path.read_text().replace('name = "tmux"', 'name = "session"'))
+        r = subprocess.run([sys.executable, str(self.cli), "bootstrap", "--project", self.project, "--dry-run"],
+                           input="", capture_output=True, text=True, env=dict(self.env, MDSTACK_CONFIG=self.project))
+        self.assertIn("Human step: Run mdstack up\n", r.stdout)  # the installed team needs no MDSTACK_CONFIG (#2024)
         r = self.bootstrap("--yes")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("Self-test: briefs ok", r.stdout)
-        self.assertIn("Human step: Run mdstack up --project " + self.project, r.stdout)
+        self.assertIn("Human step: Run MDSTACK_CONFIG=%s mdstack up\n" % self.project, r.stdout)  # 8.x form (#2024)
+        self.assertNotIn("--project", "".join(l for l in r.stdout.splitlines(True) if l.startswith("Human step")))
         self.assertNotIn("routines", r.stdout)
         self.assertTrue((Path(self.tmp) / "live" / "runtime" / "coordinator.md").is_file())
         self.assert_no_changes(roots=(Path(self.tmp) / "live",))  # #1090 AC3
@@ -1167,7 +1171,10 @@ class TeamReference(ReleaseSources):
             self.select(repo)
             r = self.bootstrap("--dry-run")
             self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
-            self.assertIn("Human step: Run mdstack up --project %s#%s" % (self.team, repo), r.stdout)
+            self.assertIn("Human step: Run MDSTACK_CONFIG=%s#%s mdstack up\n" % (self.team, repo), r.stdout)
+            r = subprocess.run([sys.executable, str(self.cli), "bootstrap", "--project", self.project, "--dry-run"],
+                               input="", capture_output=True, text=True, env=dict(self.env, MDSTACK_CONFIG=str(self.team)))
+            self.assertIn("Human step: Run mdstack up --repo %s\n" % repo, r.stdout)  # #2024
             self.assertIn("no install written", r.stdout)
             self.assertNotIn("Project proposal", r.stdout)
             self.assertFalse(self.manifest.exists())
@@ -1182,7 +1189,7 @@ class TeamReference(ReleaseSources):
         self.assertEqual((record["project"], record["status"]), (self.project, "installed"))
         self.assertEqual(set(record["self_test"].values()), {"ok"})
         self.assertEqual((Path(self.state) / "config.toml").read_bytes(), team_bytes)
-        self.assertIn("Run mdstack up --project " + self.project, record["pending_human_steps"])
+        self.assertIn("Run MDSTACK_CONFIG=%s mdstack up" % self.project, record["pending_human_steps"])
         skill = Path(self.project_dir) / ".claude/skills/crew-coordinator/SKILL.md"
         self.assertIn(str(skill), record["targets"])
         self.assertFalse((self.team.parent / ".claude").exists())

@@ -9,11 +9,11 @@ source: Two local dry runs and three live runs of the tmux crew for #139 (mw-din
 
 Two local dry runs and three live runs of the tmux crew for #139, all on
 2026-10-30. The dry runs used an isolated tmux server, a fake `gh` and a
-local bare origin; the live runs used the private sandbox repo
-md-mt/eng-crew-sandbox on real GitHub with real CI. All used real Claude Code
-and Codex windows. Each run's evidence comment numbers its own findings, so
-IDs repeat across runs; below they are qualified by run (for example "live
-F5", "re-run N1"). Unqualified B and F IDs are the first dry run's.
+local bare origin; the live runs used a private sandbox repo on real GitHub
+with real CI, not publicly readable, so the tables below are the record. All
+used real Claude Code and Codex windows. Each run's evidence comment numbers
+its own findings, so IDs repeat across runs; below they are qualified by run
+(for example "live F5", "re-run N1"). Unqualified B and F IDs are the first dry run's.
 
 | Run | Evidence | Result | Fixes |
 |---|---|---|---|

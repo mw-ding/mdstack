@@ -64,6 +64,29 @@ class Upgrade(bootstrap_tests.Bootstrap):
         return subprocess.run([sys.executable, str(self.cli), "upgrade", "--project", self.project, *args],
                               input="", capture_output=True, text=True, env=self.env)
 
+    def test_7x_bootstrap_reexec_from_an_owner_shell(self):  # #2024 AC1, AC2
+        """7.16.0's fetch re-execs `<8.x>/cli/mdstack upgrade --project FILE ... --wait-timeout N --timeout N` from an
+        owner shell (no CREW_ROLE, no MDSTACK_INTERNAL), adding only the verified bundle sha to the environment."""
+        owner = {k: v for k, v in self.env.items() if k not in ("CREW_ROLE", "MDSTACK_INTERNAL", "TMUX", "TMUX_PANE")}
+        reexec = dict(owner, CREW_BOOTSTRAP_BUNDLE_SHA256="0" * 64)
+        argv = [sys.executable, str(self.cli), "upgrade", "--project", self.project, "--dry-run",
+                "--wait-timeout", "300.0", "--timeout", "15.0"]
+        before = self.manifest.read_bytes()
+        r = subprocess.run(argv, input="", capture_output=True, text=True, env=reexec)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("crew bootstrap: dry-run; no install written", r.stdout)
+        steps = [line for line in r.stdout.splitlines() if line.startswith("Human step: ")]
+        self.assertTrue(steps, r.stdout)
+        self.assertFalse([line for line in steps if "--project" in line], steps)  # AC3: a step 8.x accepts
+        self.assertEqual(self.manifest.read_bytes(), before)
+        for env, cmd in ((owner, "upgrade"), (reexec, "bootstrap"), (reexec, "status")):  # controls: still refused
+            with self.subTest(cmd=cmd, sha="CREW_BOOTSTRAP_BUNDLE_SHA256" in env):
+                r = subprocess.run([sys.executable, str(self.cli), cmd, "--project", self.project], input="",
+                                   capture_output=True, text=True, env=env)
+                self.assertEqual((r.returncode, r.stdout), (2, ""), r.stderr)
+                self.assertTrue(r.stderr.startswith("mdstack: --project is disabled;"), r.stderr)
+        self.assertEqual(self.manifest.read_bytes(), before)
+
     def test_no_change_writes_nothing(self):
         before = self.manifest.stat().st_mtime_ns
         result = self.upgrade("--yes")
@@ -177,6 +200,38 @@ class Upgrade(bootstrap_tests.Bootstrap):
         result = self.upgrade("--dry-run")
         self.assertEqual(result.returncode, 1)
         self.assertIn("has uncommitted changes", result.stdout + result.stderr)
+
+    def test_pack_toml_verified_export(self):
+        """#1962: bootstrap installs an exported pack whose pack.lock verifies and records its commit; a modified
+        export is refused naming the path, and a plain directory without a lock keeps today's refusal."""
+        pack, export = Path(self.tmp) / "checkout-pack", Path(self.tmp) / "export-pack"
+        shutil.copytree(Path(__file__).resolve().parents[1] / "core/fixtures/packs/example", pack)
+        text = re.sub(r'framework = ".*"', 'framework = ">=2.0.0, <3.0.0"', (pack / "pack.toml").read_text())
+        (pack / "pack.toml").write_text(text)
+        git = ["git", "-C", str(pack), "-c", "user.name=t", "-c", "user.email=t@example.invalid"]
+        for args in (["init", "-q"], ["add", "-A"], ["commit", "-qm", "pack"]):
+            subprocess.run(git + args, check=True)
+        head = subprocess.run(git + ["rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+        shutil.copytree(pack, export, ignore=shutil.ignore_patterns(".git"))
+        self.project_path.write_text(self.project_path.read_text() +
+                                     'pack = "%s"\n' % os.path.relpath(export, self.project_path.parent))
+        result = self.bootstrap("--yes")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("is not a git checkout; install pins a pack at a commit", result.stdout + result.stderr)
+        lock = subprocess.run([sys.executable, str(Path(CREW).parents[1] / "core/crew-pack.py"), "lock", str(pack),
+                               str(export)], capture_output=True, text=True)
+        self.assertEqual(lock.returncode, 0, lock.stdout + lock.stderr)
+        result = self.bootstrap("--yes")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(json.loads(self.manifest.read_text())["pack"], {
+            "name": "example", "version": "0.1.0", "framework": ">=2.0.0, <3.0.0", "commit": head})
+        self.assertIn("no changes", self.upgrade("--yes").stdout)
+        before = self.manifest.read_bytes()
+        (export / "profile.toml").write_text("")
+        result = self.bootstrap("--yes")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("does not match its pack.lock: profile.toml is changed", result.stdout + result.stderr)
+        self.assertEqual(self.manifest.read_bytes(), before)
 
     mirror_release = bootstrap_tests.ReleaseSources.mirror_release
     source = bootstrap_tests.ReleaseSources.source

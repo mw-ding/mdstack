@@ -338,6 +338,7 @@ class ValidateTest(unittest.TestCase):
         session = VALID.replace('name = "tmux"\noptions = { builders = 3 }', 'name = "session"\noptions = { %s }')
         for options in ("", 'session_backend = "cli", builders = 2, reviewers = 1, max_active_milestones = 2',
                         'session_backend = "hosted"',  # #1052
+                        'isolation = "worktree"', 'isolation = "assigned-checkout"',  # #1959
                         'merge_grant = "none", lone_pr_land = "direct", train_min = 3, mirror = "none", notes = {}',
                         'researchers = 0',  # #1057: the documented no-researcher statement survives a tmux migration
                         'researchers = 1',  # #1404: the session triage sweep worker
@@ -347,6 +348,7 @@ class ValidateTest(unittest.TestCase):
             self.assertEqual(code, 0, lines)
         for options, expected in [
                 ('session_backend = "tmux"', "session_backend: unknown value 'tmux' (expected one of: native, cli, hosted)"),
+                ('isolation = "none"', "isolation: unknown value 'none' (expected one of: worktree, assigned-checkout)"),
                 ('researchers = -1', "researchers: must be >= 0, got -1"),
                 ('researchers = "0"', "researchers: expected integer, got string"),
                 ('tmux_server = "default"', "tmux_server: unknown key"),
@@ -1953,6 +1955,27 @@ class AsyncLandTest(unittest.TestCase):
             code, lines = validate(text)
             self.assertEqual(code, 1, lines)
             self.assertIn(expected, lines)
+
+    def test_manifest_stack_separator(self):
+        """#1956: land.stack_separator is " " or ",", and only with stack = true; the shipped validator exits 0 on
+        each accepted value and nonzero, naming the key, on each rejected one."""
+        caps = GITHUB_MANIFEST.replace('land = "supported"\n', 'land = "supported"\nland-stack = "supported"\n'
+                                       'stack-status = "supported"\n', 1)
+        cases = ((caps + '\n[land]\nstack = true\nstack_separator = " "\n', 0, "crew-config: OK"),
+                 (caps + '\n[land]\nstack = true\nstack_separator = ","\n', 0, "crew-config: OK"),
+                 (caps + '\n[land]\nstack = true\nstack_separator = ";"\n', 1,
+                  "land.stack_separator: unknown value ';' (expected one of:  , ,)"),
+                 (caps + '\n[land]\nstack_separator = ","\n', 1,
+                  "land.stack_separator: only valid with stack = true"))
+        with tempfile.TemporaryDirectory() as d:
+            for text, code, expected in cases:
+                path = os.path.join(d, "manifest.toml")
+                with open(path, "w") as f:
+                    f.write(text)
+                r = subprocess.run([sys.executable, os.path.join(ROOT, "core", "crew-config.py"), "validate", path],
+                                   capture_output=True, text=True)
+                self.assertEqual(r.returncode, code, r.stdout + r.stderr)
+                self.assertIn(expected, r.stdout)
 
     def test_profile_may_declare_conditional_operations(self):
         text = VALID.replace('[backends.change]\nname = "github"',

@@ -2,7 +2,7 @@
 
 One install-time file picks the runtime, a backend per concern, identities,
 engines and paths for one repo (portable mdstack, roadmap 13.10,
-[#122](https://github.com/mw-ding/eng-crew/issues/122);
+[#122](https://github.com/mw-ding/mdstack/issues/122);
 [portable spec P4](specs/portable.md#2-requirements)). It replaces the
 hand-filled placeholders of the [templates](../templates/README.md#placeholders)
 and the per-repo [wiring doc](../templates/runtimes/grok-bot/wiring.md).
@@ -12,10 +12,10 @@ renders ([scripts](../scripts/README.md#profile-validator)).
 This page adds no rule, gate, cap, marker field or label; the
 [protocol](protocol.md) owns them. `validate` checks one complete file;
 `resolve` merges the config layers (13.11,
-[#123](https://github.com/mw-ding/eng-crew/issues/123); see
+[#123](https://github.com/mw-ding/mdstack/issues/123); see
 [Layers and precedence](#layers-and-precedence)) on top of the
 [default profile](../profiles/default.toml) (13.12,
-[#124](https://github.com/mw-ding/eng-crew/issues/124)).
+[#124](https://github.com/mw-ding/mdstack/issues/124)).
 
 ## Where the file lives
 
@@ -172,7 +172,7 @@ no targets, and never counts as unowned
 ([#1345](https://github.com/mw-ding/mdstack/issues/1345)). It exits 3 on
 unowned code and 4 when a query fails; both stop the check. `no_owner_ok` uses the
 [`sensitive`](#sensitive) glob syntax. Without `owners`, behaviour and
-render are unchanged ([#881](https://github.com/mw-ding/eng-crew/issues/881)).
+render are unchanged ([#881](https://github.com/mw-ding/mdstack/issues/881)).
 
 ```toml
 [builder.precheck]
@@ -330,7 +330,10 @@ concern, in the interfaces order:
 [asynchronous land](interfaces.md#asynchronous-land-design) needs; a `sync` backend leaves them out. `change` also accepts
 `read-branch-head` and `tracker` accepts `unlabel`, which only
 `mdstack handoff` runs, with `repo.control_item` and a non-GitHub tracker or
-change backend ([handoff](handoff.md#handoff-live-reads)). `read-diff` is
+change backend ([handoff](handoff.md#handoff-live-reads)). `tracker` also
+accepts `read-comments`, which only the non-GitHub triage scan runs, per
+open listed item
+([session triage](runtimes/session.md#triage-sweep-routine), #1960). `read-diff` is
 conditional too: `resolve` refuses a profile with
 [content rules](#content-rules-879) whose effective `change.read-diff` is
 `unsupported` or undeclared.
@@ -367,7 +370,7 @@ describes events, retries, digests and the return brief.
 
 Optional: how the project cuts and records releases through the
 [release operations](release.md#release-operations)
-([#585](https://github.com/mw-ding/eng-crew/issues/585)). Without the table
+([#585](https://github.com/mw-ding/mdstack/issues/585)). Without the table
 nothing changes; mdstack's own release on GitHub needs none, since every
 default below is today's behaviour.
 
@@ -417,14 +420,14 @@ stays optional.
 
 ### `[install]`
 
-Optional ([#882](https://github.com/mw-ding/eng-crew/issues/882)): where
+Optional ([#882](https://github.com/mw-ding/mdstack/issues/882)): where
 `--version` and `mdstack host prepare` fetch a release (`github`, `url`,
 `mirror` or `git`; default `github`). The validator checks the table
-([#943](https://github.com/mw-ding/eng-crew/issues/943)): each source's
+([#943](https://github.com/mw-ding/mdstack/issues/943)): each source's
 required keys, the pin formats, and a refusal for a key the source does not
 use. Bootstrap and upgrade `--version` fetch from `url` and `mirror`
-([#944](https://github.com/mw-ding/eng-crew/issues/944)) and `git`
-([#945](https://github.com/mw-ding/eng-crew/issues/945)); with the table set,
+([#944](https://github.com/mw-ding/mdstack/issues/944)) and `git`
+([#945](https://github.com/mw-ding/mdstack/issues/945)); with the table set,
 `mdstack host prepare` installs the primary's pinned toolkit on each host and
 `mdstack host check` verifies it. Keys and checks:
 [release sources](bootstrap.md#release-sources-design).
@@ -432,7 +435,7 @@ use. Bootstrap and upgrade `--version` fetch from `url` and `mirror`
 ### `[triage]`
 
 Optional: the [always-on triage](triage.md) sweep
-([#748](https://github.com/mw-ding/eng-crew/issues/748)). Off by default.
+([#748](https://github.com/mw-ding/mdstack/issues/748)). Off by default.
 When enabled, `mdstack watch` starts a fresh researcher session with
 `mdstack spawn researcher --sweep` every `interval_hours`, at once when the
 crew wakes with a sweep overdue, and skips the slot when
@@ -498,7 +501,7 @@ Binding and resolve refusals: [status concern](interfaces.md#status).
 ### `[docs]`
 
 Optional: the project [docs pass](project-docs.md#docs-pass)
-([#754](https://github.com/mw-ding/eng-crew/issues/754)). Off by default:
+([#754](https://github.com/mw-ding/mdstack/issues/754)). Off by default:
 with no `[docs]` table nothing runs and no key resolves; with a table, the
 defaults below fill each missing key. `homes` maps a project's existing home
 for an [essential doc](project-doc-set.md#essential-doc-set) instead of
@@ -644,7 +647,7 @@ A key with default "none" may be left out of one file; the
 ### `[hosts.<name>]` and `[placement]`
 
 Optional: the host inventory and project affinity of a multi-device tmux
-crew (20.2, [#204](https://github.com/mw-ding/eng-crew/issues/204); design in
+crew (20.2, [#204](https://github.com/mw-ding/mdstack/issues/204); design in
 [multi-device](runtimes/multi-device.md#host-inventory-profile-extension)).
 With no `[hosts]` table the crew runs on one machine, as today. A host is
 named by its overlay network name only, never by an address, user, port or
@@ -730,7 +733,7 @@ that concern, all *required*. `[capabilities.release]` is optional; when present
 [connectors/github/manifest.toml](../connectors/github/manifest.toml).
 
 `validate` and `resolve` check a `pack.harness` registry statically
-([#964](https://github.com/mw-ding/eng-crew/issues/964), slice B1 of #883):
+([#964](https://github.com/mw-ding/mdstack/issues/964), slice B1 of #883):
 the file and every `source` and `launch_note` must resolve, symlinks
 followed, to a regular UTF-8 file inside the pack directory, and the
 registry is a list of `[[pointer]]` tables. An entry with `launch_note` takes
@@ -743,7 +746,7 @@ relative to its root and normalized (no leading `/` or `~`, no empty, `.`, `..`
 or `.git` component), unique within its root, and, for a project root, none
 of the built-in bootstrap targets.
 `mdstack bootstrap --harness` installs the entries and records them under
-`harness_pointers` ([#965](https://github.com/mw-ding/eng-crew/issues/965)).
+`harness_pointers` ([#965](https://github.com/mw-ding/mdstack/issues/965)).
 
 An optional `[land]` table declares the
 [asynchronous land](interfaces.md#declaration) (#873): `mode` (`sync` or
@@ -752,8 +755,9 @@ An optional `[land]` table declares the
 `change_placeholder`, `head_guard` and a `[land.status]` table (#1042, see
 [Declaration](interfaces.md#declaration)). Without it the backend is `sync`.
 A [stack land](interfaces.md#stack-land) adds `stack`,
-`stack_tests_against_tip` and, from #1722, `stack_status` (`stack` or
-`per-change`); a sync stack binding also takes `change_placeholder`, and a
+`stack_tests_against_tip`, from #1722, `stack_status` (`stack` or
+`per-change`) and, from #1956, `stack_separator` (`" "` or `","`, default
+`" "`); a sync stack binding also takes `change_placeholder`, and a
 per-change one a `[land.status]` table.
 `validate` rejects `async` with `change.land-status` undeclared or
 `unsupported`, `opens_draft = true` with `change.publish` undeclared or

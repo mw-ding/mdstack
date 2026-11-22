@@ -3,7 +3,7 @@
 Configuration module for the profile's runtime keys and the coordinator
 option shared by every runtime, split out of the
 [profile reference](../profile.md) under the M26 modular organization
-principle ([#676](https://github.com/mw-ding/eng-crew/issues/676)). It holds
+principle ([#676](https://github.com/mw-ding/mdstack/issues/676)). It holds
 the `[runtime]` key table and the shared `max_active_milestones` option with
 its priority and default behavior, the
 [`tmux` options](#tmux-options) with the standing and render-time notes,
@@ -70,7 +70,7 @@ sessions; running workers drain naturally when the cap drops:
 | `train_min` | integer, at least 2 | `2` | `<train-min>`: train ready PRs at once at this threshold; below it, wait only if another PR is close to approval, otherwise land alone ([land rules](../protocol.md#land-rules-and-merge-trains)) |
 | `train_window` | integer, at least 1 | `600` | `<train-window>`: maximum wait in seconds after the first PR becomes ready when another is close to approval; at expiry train two or more ready PRs, or land the single ready PR alone |
 | `merge_grant` | string | `"none"` | `<merge-grant>` renders a bounded live-resolved profile lookup instead of quoting this grant/history; the value remains the owner's standing merge grant scope, with its source (e.g. `#110 roadmap PRs per #111`); `none` means a recorded owner merge-ok per PR. It gives permission only ([§7](../protocol.md#7-merge-gate-synthesizer)). [`merge_grant_scope`](#merge_grant_scope) can extend it to spec changes |
-| `release_delegation` | string | `"none"` | `<release-delegation>`: the owner's recorded standing go for release cuts, with a `https://` link to the record (e.g. `"make releases https://github.com/<owner>/<repo>/issues/985#issuecomment-1"`); `none` keeps a per-cut owner merge-ok. Set only by an owner account (a pack is refused). With it set, the coordinator's `cmd-id=release-delegation` merge-ok at a cut PR's head stands in for the owner's; never for a `crew:sensitive` cut, and never a CI, validation, actor or hold waiver ([release delegation](../release.md#release-delegation)) |
+| `release_delegation` | string | `"none"` | `<release-delegation>`: the owner's recorded standing go for release cuts, with a `https://` link to the record (e.g. `"make releases https://github.com/<owner>/<repo>/issues/<n>#issuecomment-<id>"`); `none` keeps a per-cut owner merge-ok. Set only by an owner account (a pack is refused). With it set, the coordinator's `cmd-id=release-delegation` merge-ok at a cut PR's head stands in for the owner's; never for a `crew:sensitive` cut, and never a CI, validation, actor or hold waiver ([release delegation](../release.md#release-delegation)) |
 | `train_local_checks` | boolean | `false` | Opt in to the local full suite before opening the train PR; `--local` also enables it. Default builds record `local=skipped`. A local pre-check is a future CI-velocity option, not a merge gate; green train CI is still required |
 | `mirror_deferral` | string | `"none"` | `<mirror-deferral>`: source and scope of a recorded owner standing mirror deferral (e.g. `#110 roadmap PRs per #140`). The synthesizer checks coverage, excludes live Grok Bot behaviour changes and records use in the merge post; this gives no merge permission ([§7](../protocol.md#7-merge-gate-synthesizer)) |
 | `mirror` | string: `live-copy` or `none` | `"live-copy"` | `none` declares this install has no live copy outside the render `mdstack up` deploys, so the mirror gate resolves to `n/a` and the merge record says `Mirror: n/a (profile)`. Refused with a `mirror_deferral` other than `"none"`; Grok Bot refuses the key. Supplies no approval or merge permission ([No live copy to mirror](../runtimes/tmux.md#no-live-copy-to-mirror-877), [§7](../protocol.md#7-merge-gate-synthesizer)) |
@@ -118,6 +118,7 @@ brief renders the land options as for `tmux`:
 | Option | Type | Default | Replaces |
 |---|---|---|---|
 | `session_backend` | string: `native`, `cli` or `hosted` | `"native"` | `<session-backend>`: `native` dispatches workers as harness subagents with task handles; `cli` as external harness CLI runs with a recorded PID and start time; `hosted` as hosted sessions created through a control plane, addressed by the returned session id and probed by a control-plane state read (#1052) |
+| `isolation` | string: `worktree` or `assigned-checkout` | `"worktree"` | the coordinator brief's worker isolation sentence: `worktree` gives each worker and probe its own `<worktree-root>/<n>-<sha7>-<role>-<pass>/` worktree; `assigned-checkout` says each runs in its pre-provisioned dedicated checkout and creates no worktree, for a venue whose workers run in checkouts on other hosts. The [C6 checks](../runtimes/session.md#runtime-contract) are unchanged (#1959) |
 | `builders` | integer | `5` | `<builder-cap>`: concurrent builder runs |
 | `reviewers` | integer | `2` | `<reviewer-cap>`: concurrent reviewer passes |
 | `present_builders` | integer, at least 1, at most `builders` | resolved `builders` | `<present-builder-cap>`: owner-present builder limit, as in `tmux`; a value above `builders` is refused (#1053) |

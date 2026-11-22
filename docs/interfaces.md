@@ -2,7 +2,7 @@
 
 The minimum operations a backend must support for each concern, the guarantee
 each operation gives, and the invariant it protects (portable mdstack, roadmap
-13.9, [#121](https://github.com/mw-ding/eng-crew/issues/121)). Terms are in
+13.9, [#121](https://github.com/mw-ding/mdstack/issues/121)). Terms are in
 [concepts.md](concepts.md). Invariants are numbered as in
 [portable spec §3](specs/portable.md#3-invariants): I1 author ≠ reviewer, I2
 reviewer engine ≠ writing engine, I3 evidence on the change record, validated at head, I4 only the
@@ -71,6 +71,7 @@ every earlier head kept readable in place of the no-rewrite guarantee
 | Milestone | Set and read an item's milestone; a closed milestone takes no new items | I5 |
 | Board status | Set and read Todo / In Progress / In Review / Done | I5 |
 | List items (`list-items`) | Lists open and closed items with title, body, labels, milestone, state, close reason, creation time and comments, for a [triage](triage.md) lookup | I5 |
+| Read comments (`read-comments`, conditional) | Prints one item's comments (`<n>`) as a JSON array with author, body and creation time; a non-GitHub triage scan runs it per open listed item when bound, for a tracker whose `list-items` omits comments ([session](runtimes/session.md#triage-sweep-routine)) | I5 |
 | Label (`label`) | Sets, clears and reads a non-state label on an item (the triage and priority labels of [protocol §4](protocol.md#4-marker-conventions)) | I5 |
 | Comment (`comment`) | Appends a signed post with its marker line to any item (a triage record, a log entry, an extracted card); never edited | I5 |
 | Close item (`close-item`) | Closes an item with a reason; it stays readable | I5 |
@@ -137,7 +138,7 @@ re-delivery are runtime duties ([C1, C2](runtimes/README.md#contract)).
 Optional: a backend may leave the whole concern undeclared, and only a
 profile with a [`[release]` table](profile.md#release) needs it
 ([release operations](release.md#release-operations),
-[#585](https://github.com/mw-ding/eng-crew/issues/585)). R is the
+[#585](https://github.com/mw-ding/mdstack/issues/585)). R is the
 [release gate](protocol.md#gate-registry): no release is published without
 the owner's per-change merge-ok at the landed cut's head.
 
@@ -199,7 +200,7 @@ table.
 Optional, and outside the profile: no profile binds it. A knowledge
 connector reaches the owner's external notes service
 ([team spec REQ-17](specs/team.md#req-17-knowledge-in-external-services),
-[#1229](https://github.com/mw-ding/eng-crew/issues/1229)). Its manifest may
+[#1229](https://github.com/mw-ding/mdstack/issues/1229)). Its manifest may
 declare this concern alone, without the core concerns. Knowledge is context
 only: no verdict, marker, state tag or gate input lives there, so I5 is
 unchanged. A role reaches a source only if its
@@ -239,7 +240,7 @@ Rules:
   unsupported for release. Without the table the concern is not checked.
 - **Release pairing.** With an external pack, `[release]` and a pack-bound
   `[backends.release]` bind together
-  ([#910](https://github.com/mw-ding/eng-crew/issues/910)). `resolve`
+  ([#910](https://github.com/mw-ding/mdstack/issues/910)). `resolve`
   fails closed on a `[release]` table whose `[backends.release]` still comes
   from the bundled default while the pack's manifest declares release
   capabilities, and on a `[backends.release]` that a layer above the
@@ -252,12 +253,12 @@ Rules:
   concern is not checked, so every existing profile and manifest resolves
   unchanged ([#1313](https://github.com/mw-ding/mdstack/issues/1313)).
 - A declaration changes no protocol rule. The profile file that carries it is
-  13.10 ([#122](https://github.com/mw-ding/eng-crew/issues/122)).
+  13.10 ([#122](https://github.com/mw-ding/mdstack/issues/122)).
 
 ## Single-identity profile
 
 One account acts for every role (the roadmap setup decided in
-[#111](https://github.com/mw-ding/eng-crew/issues/111),
+[#111](https://github.com/mw-ding/mdstack/issues/111),
 [portable spec §6](specs/portable.md#6-decisions)).
 
 - **What breaks: I1.** Author and reviewer are the same account, so
@@ -283,7 +284,7 @@ One account acts for every role (the roadmap setup decided in
 - **Scope.** Merge permission comes from a recorded owner merge-ok per
   change, or from an owner standing merge grant recorded on the tracker for
   changes in its scope (for #110 roadmap changes, the grant on
-  [#111](https://github.com/mw-ding/eng-crew/issues/111), with its listed
+  [#111](https://github.com/mw-ding/mdstack/issues/111), with its listed
   exclusions). A spec change is in a grant's scope only when
   `merge_grant_scope` lists `spec` and the recorded grant authorizes spec
   coverage ([§7 spec change](protocol.md#spec-change-definition-and-spec-grant-scope)).
@@ -294,13 +295,13 @@ One account acts for every role (the roadmap setup decided in
 
 ## Asynchronous land (design)
 
-**Status: active on tmux** ([#873](https://github.com/mw-ding/eng-crew/issues/873)
+**Status: active on tmux** ([#873](https://github.com/mw-ding/mdstack/issues/873)
 slices D and B1 to B4). Without a `[land]` table every backend is `sync`, the
 land is the one head-pinned call in [change](#change), and
 [protocol §7](protocol.md#7-merge-gate-synthesizer) applies as written. The
 gate alternatives below are stated in protocol §7 and its gate registry.
 Owner decisions:
-[#649](https://github.com/mw-ding/eng-crew/issues/649) (2026-11-05): the
+[#649](https://github.com/mw-ding/mdstack/issues/649) (2026-11-05): the
 final gate check runs before queue admission, a head change triggers
 re-verification, and a land that was never requested is told apart from a
 failed one.
@@ -424,7 +425,7 @@ the binding nothing changes.
 
 ### Declaration
 
-Three optional keys join the `[land]` table above. They are independent of
+Four optional keys join the `[land]` table above. They are independent of
 `mode`: a `sync` backend may declare a stack land beside its individual
 land.
 
@@ -433,12 +434,13 @@ land.
 | `stack` | bool (`false`) | The backend lands a linear stack atomically through `change.land-stack`, read back by `change.stack-status` |
 | `stack_tests_against_tip` | bool (`false`) | The stack land tests the combined stack on the current tip and refuses on red; its readback names the check |
 | `stack_status` | `stack` \| `per-change` (`stack`) | `per-change` reads the stack back from each member's `change.land-status`, mapped by `[land.status]` (with `change.read-landed` for a revision it does not capture), instead of `change.stack-status` (#1722) |
+| `stack_separator` | `" "` \| `","` (`" "`) | Joins the member ids in `<stack-changes>` and the revision ids in `<stack-revisions>`; `","` passes a review tool whose stack-land flag takes one comma-separated list a single argument. `<stack>` stays space-separated (#1956) |
 
 `resolve` fails when `stack = true` is declared with `change.land-stack`
 unsupported, or with its readback unsupported: `change.stack-status`, or
 `change.land-status` under `per-change`. It fails when
-`stack_tests_against_tip = true` or `stack_status` is declared without
-`stack = true`, and when `per-change` is declared with
+`stack_tests_against_tip = true`, `stack_status` or `stack_separator` is
+declared without `stack = true`, and when `per-change` is declared with
 `stack_tests_against_tip = true`, since three landed statuses are no receipt
 of a combined test. A `sync` stack binding may declare `change_placeholder`,
 which fills every per-member stack command; `[land.status]` is valid under
@@ -456,7 +458,7 @@ or runs the stack land; `mdstack land stack` refuses a tmux profile.
 
 Instead of `<stack>`, `land-stack` may name the stack the way a review tool
 does: `<stack-top>` (the last member's id, the representative change),
-`<stack-changes>` (member ids, space-separated, base first) and
+`<stack-changes>` (member ids, base first, joined by `stack_separator`) and
 `<stack-revisions>` (each member's revision id, same order). A request must
 carry `<stack>` or `<stack-revisions>`, so it is pinned to the checked heads,
 and the backend refuses it when any member's revision id is no longer
@@ -504,10 +506,10 @@ GitHub render stays byte-identical.
 
 ## Bindable sensitivity (design)
 
-**Status: in effect** ([#880](https://github.com/mw-ding/eng-crew/issues/880)
+**Status: in effect** ([#880](https://github.com/mw-ding/mdstack/issues/880)
 slices B1 to B3); the [protocol](protocol.md#sensitive-class) holds the
 operative rule. Owner
-decision ([#649](https://github.com/mw-ding/eng-crew/issues/649),
+decision ([#649](https://github.com/mw-ding/mdstack/issues/649),
 2026-11-05): a pack binding can add matches but never remove built-in ones.
 
 An org that keeps its sensitivity policy in its own source (ownership files,
@@ -598,18 +600,18 @@ output and exit codes are byte-identical to today's.
 
 | Slice | Paths | Adds |
 |---|---|---|
-| B1 ([#961](https://github.com/mw-ding/eng-crew/issues/961)) | `scripts/crew-config.py`, `docs/profile.md` | Optional `classify` concern, the backend-map command lookup and fold, the `resolve` refusals |
-| B2 ([#962](https://github.com/mw-ding/eng-crew/issues/962)) | `scripts/crew-config.py` or `scripts/crew-sensitive.py`, their tests | The union runner: built-in positive with extension negative, extension-only positive, failure, malformed JSON, no extension, shared content records |
-| B3 ([#963](https://github.com/mw-ding/eng-crew/issues/963)) | `scripts/crew-render.py`, the three rendered call sites, protocol Sensitive class | The fixed token value, the call sites on the token, the operative protocol wording; default render byte-identical |
+| B1 ([#961](https://github.com/mw-ding/mdstack/issues/961)) | `scripts/crew-config.py`, `docs/profile.md` | Optional `classify` concern, the backend-map command lookup and fold, the `resolve` refusals |
+| B2 ([#962](https://github.com/mw-ding/mdstack/issues/962)) | `scripts/crew-config.py` or `scripts/crew-sensitive.py`, their tests | The union runner: built-in positive with extension negative, extension-only positive, failure, malformed JSON, no extension, shared content records |
+| B3 ([#963](https://github.com/mw-ding/mdstack/issues/963)) | `scripts/crew-render.py`, the three rendered call sites, protocol Sensitive class | The fixed token value, the call sites on the token, the operative protocol wording; default render byte-identical |
 
 ## Rebase update from base
 
-**Status: active** ([#874](https://github.com/mw-ding/eng-crew/issues/874):
+**Status: active** ([#874](https://github.com/mw-ding/mdstack/issues/874):
 design slice D, schema B1, briefs, protocol wording and train refusal
 B2+B3). A backend with no `[strategy]` table updates by merge, and
 [change](#change) and the [protocol](protocol.md) apply as written. Owner
 decision 3 on
-[#649](https://github.com/mw-ding/eng-crew/issues/649) (2026-11-05): rebase
+[#649](https://github.com/mw-ding/mdstack/issues/649) (2026-11-05): rebase
 is allowed only with the guarantee that every earlier head stays readable,
 merge stays the default, rebase disables trains, and there is no weaker
 emulated mode.
@@ -709,9 +711,9 @@ GitHub render stays byte-identical.
 
 | Slice | Paths | Adds |
 |---|---|---|
-| B1 [#951](https://github.com/mw-ding/eng-crew/issues/951) | `scripts/crew-config.py`, `docs/profile.md` | `[strategy]` schema, the `validate` and `resolve` refusals, the resolved strategy in metadata |
-| B2 [#952](https://github.com/mw-ding/eng-crew/issues/952) | `scripts/crew-render.py`, tmux builder, solo and synthesizer templates, Grok Bot briefs, `docs/roles.md`, protocol hard rules, precheck and portability | Strategy wording in renders, a rebase-backend render fixture, the operative protocol text |
-| B3 [#953](https://github.com/mw-ding/eng-crew/issues/953) | `scripts/crew.d/train.py`, `docs/runtimes/tmux.md` | The early `train build` and `train bisect` refusal |
+| B1 [#951](https://github.com/mw-ding/mdstack/issues/951) | `scripts/crew-config.py`, `docs/profile.md` | `[strategy]` schema, the `validate` and `resolve` refusals, the resolved strategy in metadata |
+| B2 [#952](https://github.com/mw-ding/mdstack/issues/952) | `scripts/crew-render.py`, tmux builder, solo and synthesizer templates, Grok Bot briefs, `docs/roles.md`, protocol hard rules, precheck and portability | Strategy wording in renders, a rebase-backend render fixture, the operative protocol text |
+| B3 [#953](https://github.com/mw-ding/mdstack/issues/953) | `scripts/crew.d/train.py`, `docs/runtimes/tmux.md` | The early `train build` and `train bisect` refusal |
 
 Tests: `dev/tests/core/test-crew-config.py` (default, refusals, metadata),
 render tests (rebase fixture, unchanged GitHub bytes), `dev/tests/environments/test-crew-train.py`

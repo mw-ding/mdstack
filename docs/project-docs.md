@@ -1,16 +1,16 @@
 # Project docs consolidation
 
 > - **Status:** partly built
-> - **Applies to:** the repos a crew works on (its project repo, plus any packs or upstreams the profile lists); mdstack's own docs are [Track A](README.md#documentation-principles) ([#676](https://github.com/mw-ding/eng-crew/issues/676))
+> - **Applies to:** the repos a crew works on (its project repo, plus any packs or upstreams the profile lists); mdstack's own docs are [Track A](README.md#documentation-principles) ([#676](https://github.com/mw-ding/mdstack/issues/676))
 > - **Current rules:** the [`[docs]`](profile.md#docs) profile table and the [project doc set](project-doc-set.md); the [Documentation principles](README.md#documentation-principles) guide mdstack's own docs only
-> - **Built:** P1 ([#1024](https://github.com/mw-ding/eng-crew/issues/1024)), P2 `scripts/docs-scan.py` ([#1025](https://github.com/mw-ding/eng-crew/issues/1025)), P3 timer, `mdstack spawn researcher --docs-pass`, brief and record ([#1026](https://github.com/mw-ding/eng-crew/issues/1026)); [Build issues](#build-issues) P4 not yet
+> - **Built:** P1 ([#1024](https://github.com/mw-ding/mdstack/issues/1024)), P2 `scripts/docs-scan.py` ([#1025](https://github.com/mw-ding/mdstack/issues/1025)), P3 timer, `mdstack spawn researcher --docs-pass`, brief and record ([#1026](https://github.com/mw-ding/mdstack/issues/1026)); [Build issues](#build-issues) P4 not yet
 > - **Last checked:** 2026-11-05 at `9b83dad`
 
 How a crew keeps the essential docs of the projects it works on consolidated:
 which docs every crew-run project should have and where they live, how a
 design doc states its status, and an opt-in docs pass that finds missing,
 duplicated, contradictory or stale docs and proposes small structural fixes
-([#754](https://github.com/mw-ding/eng-crew/issues/754), M26 Track B). It
+([#754](https://github.com/mw-ding/mdstack/issues/754), M26 Track B). It
 reuses Track A's method, so mdstack runs the pass on itself first.
 
 This page adds no rule, gate, round cap, marker field or label of its own:
@@ -34,7 +34,7 @@ builds it.
 The essential docs every crew-run project should have, their default homes and
 the docs index rule moved to the
 [project doc set](project-doc-set.md#essential-doc-set) reference module
-([#1024](https://github.com/mw-ding/eng-crew/issues/1024)). A project maps
+([#1024](https://github.com/mw-ding/mdstack/issues/1024)). A project maps
 an existing home with `[docs] homes` ([Profile opt-in](#profile-opt-in)).
 
 ## Status banners
@@ -70,7 +70,7 @@ scan finds something or a judgment check is due.
    the first pass): findings by class with citations, and draft issues. A
    quiet pass (nothing new since the last report) posts nothing.
 4. **Propose.** Each draft issue is one unit of work
-   ([issue sizing](https://github.com/mw-ding/eng-crew/issues/978)): one PR,
+   ([issue sizing](https://github.com/mw-ding/mdstack/issues/978)): one PR,
    split into commits. Consolidation drafts are structural only
    ([principle 4](README.md#documentation-principles)): move, dedupe, link,
    add a banner or a missing essential stub. A contradiction becomes its own
@@ -86,7 +86,7 @@ scan finds something or a judgment check is due.
 crew wakes with a pass overdue, and on demand when the coordinator asks.
 The timer skips the session when the scan's result is unchanged since the
 last report. As built ([mdstack watch](runtimes/tmux.md#mdstack-watch),
-[#1026](https://github.com/mw-ding/eng-crew/issues/1026)), the timer scans
+[#1026](https://github.com/mw-ding/mdstack/issues/1026)), the timer scans
 only the project's own checkout, so another `repos` entry fails the scan
 until a clone source for it is added. The brief and the `pass=docs-pass`
 record ([protocol §4](protocol.md#4-marker-conventions)) carry stages 2–4.
@@ -113,7 +113,7 @@ decisions = "README.md#decisions"
 
 The keys, types, defaults and validation are in the profile's
 [`[docs]`](profile.md#docs) section
-([#1024](https://github.com/mw-ding/eng-crew/issues/1024)).
+([#1024](https://github.com/mw-ding/mdstack/issues/1024)).
 
 ## Host
 
@@ -153,7 +153,7 @@ its `README.md`, `AGENTS.md`, `docs/architecture.md` and `docs/README.md`
 already meet the set, and its banners follow principle 3. The pilot passes
 when the scan reports no false missing essential and the owner accepts at
 least half of the drafts from the first two passes. The owner then names
-the first target project ([#676 option 4](https://github.com/mw-ding/eng-crew/issues/676#issuecomment-6640367783)),
+the first target project ([#676 option 4](https://github.com/mw-ding/mdstack/issues/676#issuecomment-6640367783)),
 which runs it next. mdstack has no `docs/runbook.md` or
 `docs/decisions.md` of its own; the pilot maps them in `homes`
 (`docs/runbook-new-repo.md` and `docs/metrics/decisions.md` are candidates)
@@ -166,14 +166,14 @@ commits, with its own CHANGELOG fragment.
 
 | ID | Issue | Scope | Depends on |
 |---|---|---|---|
-| P1 | [#1024](https://github.com/mw-ding/eng-crew/issues/1024) | `[docs]` profile table with validator rules and profile.md rows; the essential set and banner convention moved from this page into a reference module the profile links | — |
-| P2 | [#1025](https://github.com/mw-ding/eng-crew/issues/1025) | `scripts/docs-scan.py`: inventory, missing essentials, banners and staleness, links, size budget, `scan.json`; tests with fixture repos; run on mdstack | P1 |
-| P3 | [#1026](https://github.com/mw-ding/eng-crew/issues/1026) | Watcher timer with catch-up and unchanged-scan skip; `mdstack spawn researcher --docs-pass`; Riley's docs-pass brief (mirror) with the review classes, `docs:log` issue, draft format and re-proposal rule; the record in protocol §4; tests | P2 |
-| P4 | [#1028](https://github.com/mw-ding/eng-crew/issues/1028) | Dogfood pilot on mdstack: two passes, the acceptance bar above, findings recorded; then the owner names the first target project | P3 |
+| P1 | [#1024](https://github.com/mw-ding/mdstack/issues/1024) | `[docs]` profile table with validator rules and profile.md rows; the essential set and banner convention moved from this page into a reference module the profile links | — |
+| P2 | [#1025](https://github.com/mw-ding/mdstack/issues/1025) | `scripts/docs-scan.py`: inventory, missing essentials, banners and staleness, links, size budget, `scan.json`; tests with fixture repos; run on mdstack | P1 |
+| P3 | [#1026](https://github.com/mw-ding/mdstack/issues/1026) | Watcher timer with catch-up and unchanged-scan skip; `mdstack spawn researcher --docs-pass`; Riley's docs-pass brief (mirror) with the review classes, `docs:log` issue, draft format and re-proposal rule; the record in protocol §4; tests | P2 |
+| P4 | [#1028](https://github.com/mw-ding/mdstack/issues/1028) | Dogfood pilot on mdstack: two passes, the acceptance bar above, findings recorded; then the owner names the first target project | P3 |
 
 ## Out of scope
 
-- mdstack's own consolidation: Track A ([#676](https://github.com/mw-ding/eng-crew/issues/676)).
+- mdstack's own consolidation: Track A ([#676](https://github.com/mw-ding/mdstack/issues/676)).
 - Writing a project's docs: the pass proposes stubs and moves; content is
   normal build work.
 - Org-specific doc systems or trackers: a pack maps them ([packs](packs.md)).

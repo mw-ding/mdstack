@@ -1675,6 +1675,32 @@ class SessionRuntime(unittest.TestCase):
                     self.assertNotIn("<session-backend:", text)
                     self.assertNotIn("hosted session", " ".join(text.split()), rel)
 
+    def test_assigned_checkout_isolation_replaces_the_worktree_sentence(self):  # #1959
+        default = self.render()
+        base = self.base
+        self.base = base.replace('session_backend = "native"', 'session_backend = "native", isolation = "worktree"')
+        self.assertEqual(self.render(), default)
+        for backend, sentence in (("native", "CLI run whose PID and OS start time you record. Each worker and probe runs "
+                                             "in its pre-provisioned dedicated checkout and creates no worktree; none "
+                                             "shares this checkout."),
+                                  ("hosted", "control plane. Each worker and probe runs in its pre-provisioned dedicated "
+                                             "checkout and creates no worktree; none shares this checkout.")):
+            with self.subTest(backend=backend):
+                self.base = base.replace('session_backend = "native"',
+                                         'session_backend = "%s", isolation = "assigned-checkout"' % backend)
+                got = self.render()
+                self.base = base.replace('session_backend = "native"', 'session_backend = "%s"' % backend)
+                worktree = self.render()
+                coordinator = " ".join(got["runtime/coordinator.md"].split())
+                self.assertIn(sentence, coordinator)
+                self.assertNotIn("<isolation:", got["runtime/coordinator.md"])
+                self.assertNotIn("Give each worker and probe its own worktree", coordinator)
+                self.assertNotIn("<n>-<sha7>-<role>-<pass>/", coordinator)
+                self.assertIn("Give each worker and probe its own worktree", " ".join(worktree["runtime/coordinator.md"].split()))
+                self.assertEqual({k: v for k, v in got.items() if k != "runtime/coordinator.md"},
+                                 {k: v for k, v in worktree.items() if k != "runtime/coordinator.md"})
+        self.base = base
+
     def test_land_step_holds_a_working_lock(self):
         synth = self.render()["runtime/synthesizer.md"]
         step = synth[synth.index("3. Serial land"):synth.index("\n4. ")]

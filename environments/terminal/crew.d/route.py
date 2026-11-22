@@ -61,8 +61,11 @@ import os
 import re
 import subprocess
 from urllib.parse import quote
-from crew_shared import (canonical_labels, commands, crew_render, heartbeat, post_title, profile, queue_lock, refuse_paused,
-                         require_ownership, ROLES, runs, synthesizer_work, open_trains, tracker_labels, work_context)
+from crew_shared import (canonical_labels, commands, crew_render, heartbeat, load, post_title, profile, queue_lock,
+                         refuse_paused, require_ownership, ROLES, runs, synthesizer_work, open_trains, tracker_labels,
+                         work_context)
+
+linkage = load("crew_route_linkage", "scripts/check-pr-linkage.py")
 
 
 # A gate-status block whose only unmet items are pending CI, an in-flight review, validation or express self-gate, or a
@@ -347,11 +350,23 @@ def mismatch(want, got):
     return None
 
 
+def linked_items(pr):
+    """The PR's linked items: its closing references, else a release cut's `Release issue: #N` when the body passes
+    check-pr-linkage's release form (one such line, `Refs #N`, no closing keyword; #1970)."""
+    closing = {str(i["number"]) for i in pr.get("closingIssuesReferences") or []}
+    if closing:
+        return closing
+    body = pr.get("body") or ""
+    lines = [l.strip() for l in body.splitlines() if l.strip().lower().startswith("release issue:")]
+    m = re.fullmatch(r"Release issue: #(\d+)", lines[0]) if len(lines) == 1 else None
+    return {m.group(1)} if m and not linkage.findings(body, release=int(m.group(1))) else set()
+
+
 def unready(values, pr, head, round_):
     """Why a fresh review of the live head at round_ may not start, or None (#1878). The published builder record for
     the head's operation is authoritative; `done:`, head events and the backstop only wake this check. One table R binds
-    every field (D1.1): this repo, the PR's one linked item as the builder-signed body's marker names it (and a note's
-    issue=, if any), this PR, the full head, the author login against the configured builder login, the builder's
+    every field (D1.1): this repo, the PR's one linked item (linked_items) as the builder-signed body's marker names it
+    (and a note's issue=, if any), this PR, the full head, the author login against the configured builder login, the builder's
     signature as authenticated, the epoch, the operation kind with its record round, the requested round and inline
     proof; a record that leaves any field missing or binds it otherwise refuses. This runtime's verdicts and coordinator
     resets set the epoch: a head whose newest verdict passed is left to deduplication; otherwise the requested round
@@ -390,7 +405,7 @@ def unready(values, pr, head, round_):
     claims = {m.get("issue") for m in markers(body["body"]) if m.get("role") == "builder" and "pass" not in m} \
         if poll.signed_by(values, "builder", body) else set()
     want = {"repo": ("%s/%s" % (values["repo.owner"], values["repo.name"])).lower(),
-            "item": {str(i["number"]) for i in pr.get("closingIssuesReferences") or []}, "pr": str(n), "head": head,
+            "item": linked_items(pr), "pr": str(n), "head": head,
             "login": values.get("identities.builder.gh_user"), "signature": "builder", "epoch": "current",
             "kind": re.compile("|".join("%s@%s" % (k, "[0-9]+" if r is None else r) for k, r in kinds.items())),
             "round": str(poll.pr_snapshot(dict(pr, statusCheckRollup=[]), values=values)["round"]),  # needs no CI

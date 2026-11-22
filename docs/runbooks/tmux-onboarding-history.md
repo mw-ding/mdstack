@@ -17,19 +17,20 @@ CI: eng-crew `main` at `7eb454d`, one identity for every role, sandbox
 issue #5 to PR #6 to squash `3a8be25` in about 13 minutes. Two earlier live
 runs failed the pass bar; their findings and fixes are in the
 [dry-run and live-run lesson](../lessons/2026-10-30-tmux-dry-runs.md). Times
-are PDT; sandbox [`md-mt/eng-crew-sandbox`](https://github.com/md-mt/eng-crew-sandbox).
+are PDT. The sandbox repo is private, so the GitHub objects below are named,
+not linked; this table is their self-contained record.
 
 | # | Time | Event | Window (engine) | Marker / GitHub object |
 |---|---|---|---|---|
 | 1 | 21:50:54 | `mdstack up`; Claude trust dialog answered once (21:51:07) | `ash` (claude-code) | none |
-| 2 | 21:51:39 | Start sweep spawns the builder for `crew:ready` issue #5 | `ben-5` (claude-code sonnet) | claim `builder-issue5`; [issue #5](https://github.com/md-mt/eng-crew-sandbox/issues/5) |
-| 3 | 21:52:12 | PR #6 opened, `crew:in-review` | `ben-5` | [PR #6](https://github.com/md-mt/eng-crew-sandbox/pull/6); `role=builder issue=5 tier=trivial engine=claude-code model=sonnet`; trailer `Engine: claude-code sonnet medium` |
-| 4 | 21:52:24 | CI `check` green at `cedd053` | GitHub Actions | [run 41170296758](https://github.com/md-mt/eng-crew-sandbox/actions/runs/41170296758) |
+| 2 | 21:51:39 | Start sweep spawns the builder for `crew:ready` issue #5 | `ben-5` (claude-code sonnet) | claim `builder-issue5`; issue #5 |
+| 3 | 21:52:12 | PR #6 opened, `crew:in-review` | `ben-5` | PR #6; `role=builder issue=5 tier=trivial engine=claude-code model=sonnet`; trailer `Engine: claude-code sonnet medium` |
+| 4 | 21:52:24 | CI `check` green at `cedd053` | GitHub Actions | run 41170296758 |
 | 5 | 21:52:54 → 21:53:57 | `ci-passed` → review pass, `done: … review pass` | `vera-6-r1-review` (codex) | claim `reviewer-pr6-cedd053-r1-review` |
-| 6 | 21:56:02 | Validate → verdict at head; `crew:in-review` → `crew:approved` | `vera-6-r1-validate` (codex) | [review 5721362072](https://github.com/md-mt/eng-crew-sandbox/pull/6#pullrequestreview-5721362072), `pass=verdict pr=6 sha=cedd0538… round=1 verdict=pass` |
-| 7 | 21:56:40 | Merge-ok ask, default keep hold; `sam` refuses: `blocked: #6 no owner merge-ok … merge_grant=none` | `ash`, `sam` | [review 5721364245](https://github.com/md-mt/eng-crew-sandbox/pull/6#pullrequestreview-5721364245), `cmd=ask` |
-| 8 | 21:59:38 | Owner merge-ok ("merge-ok, go go go", 21:59:28) recorded; ask closed | `ash` | reviews [5721375572](https://github.com/md-mt/eng-crew-sandbox/pull/6#pullrequestreview-5721375572) `cmd=merge-ok`, [5721375653](https://github.com/md-mt/eng-crew-sandbox/pull/6#pullrequestreview-5721375653) `cmd=ask-closed` |
-| 9 | 21:59:55 → 22:00:00 | `land-lock acquire` → `pr merge --squash --match-head-commit cedd0538…` (21:59:56) → `[Sam/merge]` → `release` | `sam` | [review 5721376964](https://github.com/md-mt/eng-crew-sandbox/pull/6#pullrequestreview-5721376964) `pass=merge`; merge [`3a8be25`](https://github.com/md-mt/eng-crew-sandbox/commit/3a8be2569e9fe68cebc9aa104835199706070299); issue #5 closed |
+| 6 | 21:56:02 | Validate → verdict at head; `crew:in-review` → `crew:approved` | `vera-6-r1-validate` (codex) | review 5721362072, `pass=verdict pr=6 sha=cedd0538… round=1 verdict=pass` |
+| 7 | 21:56:40 | Merge-ok ask, default keep hold; `sam` refuses: `blocked: #6 no owner merge-ok … merge_grant=none` | `ash`, `sam` | review 5721364245, `cmd=ask` |
+| 8 | 21:59:38 | Owner merge-ok ("merge-ok, go go go", 21:59:28) recorded; ask closed | `ash` | reviews 5721375572 `cmd=merge-ok`, 5721375653 `cmd=ask-closed` |
+| 9 | 21:59:55 → 22:00:00 | `land-lock acquire` → `pr merge --squash --match-head-commit cedd0538…` (21:59:56) → `[Sam/merge]` → `release` | `sam` | review 5721376964 `pass=merge`; merge `3a8be25`; issue #5 closed |
 | 10 | 22:00:34 | Close-out: windows killed without `--discard`, labels cleared, branch deleted | `ash` | PR #6 and issue #5 with no labels; head branch 404 |
 | 11 | 22:03:46 | `mdstack down` rc 0; no harness process left | none | `pgrep` empty |
 
