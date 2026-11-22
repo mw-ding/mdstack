@@ -71,6 +71,7 @@ every earlier head kept readable in place of the no-rewrite guarantee
 | Milestone | Set and read an item's milestone; a closed milestone takes no new items | I5 |
 | Board status | Set and read Todo / In Progress / In Review / Done | I5 |
 | List items (`list-items`) | Lists open and closed items with title, body, labels, milestone, state, close reason, creation time and comments, for a [triage](triage.md) lookup | I5 |
+| Read comments (`read-comments`, conditional) | Prints one item's comments (`<n>`) as a JSON array with author, body and creation time; a non-GitHub triage scan runs it per open listed item when bound, for a tracker whose `list-items` omits comments ([session](runtimes/session.md#triage-sweep-routine)) | I5 |
 | Label (`label`) | Sets, clears and reads a non-state label on an item (the triage and priority labels of [protocol §4](protocol.md#4-marker-conventions)) | I5 |
 | Comment (`comment`) | Appends a signed post with its marker line to any item (a triage record, a log entry, an extracted card); never edited | I5 |
 | Close item (`close-item`) | Closes an item with a reason; it stays readable | I5 |
@@ -424,7 +425,7 @@ the binding nothing changes.
 
 ### Declaration
 
-Three optional keys join the `[land]` table above. They are independent of
+Four optional keys join the `[land]` table above. They are independent of
 `mode`: a `sync` backend may declare a stack land beside its individual
 land.
 
@@ -433,12 +434,13 @@ land.
 | `stack` | bool (`false`) | The backend lands a linear stack atomically through `change.land-stack`, read back by `change.stack-status` |
 | `stack_tests_against_tip` | bool (`false`) | The stack land tests the combined stack on the current tip and refuses on red; its readback names the check |
 | `stack_status` | `stack` \| `per-change` (`stack`) | `per-change` reads the stack back from each member's `change.land-status`, mapped by `[land.status]` (with `change.read-landed` for a revision it does not capture), instead of `change.stack-status` (#1722) |
+| `stack_separator` | `" "` \| `","` (`" "`) | Joins the member ids in `<stack-changes>` and the revision ids in `<stack-revisions>`; `","` passes a review tool whose stack-land flag takes one comma-separated list a single argument. `<stack>` stays space-separated (#1956) |
 
 `resolve` fails when `stack = true` is declared with `change.land-stack`
 unsupported, or with its readback unsupported: `change.stack-status`, or
 `change.land-status` under `per-change`. It fails when
-`stack_tests_against_tip = true` or `stack_status` is declared without
-`stack = true`, and when `per-change` is declared with
+`stack_tests_against_tip = true`, `stack_status` or `stack_separator` is
+declared without `stack = true`, and when `per-change` is declared with
 `stack_tests_against_tip = true`, since three landed statuses are no receipt
 of a combined test. A `sync` stack binding may declare `change_placeholder`,
 which fills every per-member stack command; `[land.status]` is valid under
@@ -456,7 +458,7 @@ or runs the stack land; `mdstack land stack` refuses a tmux profile.
 
 Instead of `<stack>`, `land-stack` may name the stack the way a review tool
 does: `<stack-top>` (the last member's id, the representative change),
-`<stack-changes>` (member ids, space-separated, base first) and
+`<stack-changes>` (member ids, base first, joined by `stack_separator`) and
 `<stack-revisions>` (each member's revision id, same order). A request must
 carry `<stack>` or `<stack-revisions>`, so it is pinned to the checked heads,
 and the backend refuses it when any member's revision id is no longer

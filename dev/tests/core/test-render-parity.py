@@ -631,6 +631,8 @@ class Parity(unittest.TestCase):
                         self.assertIn(token, ("control-item:set", "control-item:none", "control-item:end"))
                     elif token.startswith("session-backend:"):  # a block marker line, not a placeholder (#1052)
                         self.assertIn(token, ("session-backend:hosted", "session-backend:local", "session-backend:end"))
+                    elif token.startswith("isolation:"):  # a block marker line, not a placeholder (#1959)
+                        self.assertIn(token, ("isolation:worktree", "isolation:assigned-checkout", "isolation:end"))
                     elif token.startswith("title:"):  # a role post title head (#1946)
                         self.assertRegex(token, r"^title:(coordinator|builder|reviewer|synthesizer|researcher)/[a-z-]+$")
                     elif not token.startswith("op:"):

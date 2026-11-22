@@ -262,8 +262,9 @@ table except the `bootstrap --harness` install choices. `mdstack pack list
 
 Bootstrap and upgrade refuse a pack whose `framework` does not admit the
 installed stable release tag. Pre-releases and `--dev` commits satisfy no
-range. The pack directory must be a clean checkout. Install records
-`"pack": {"name", "version", "framework", "commit"}` in `install.json`. A
+range. The pack directory must be a clean checkout or a verified export.
+Install records `"pack": {"name", "version", "framework", "commit"}` in
+`install.json`. A
 new pack commit makes `mdstack upgrade` re-plan, and uncommitted changes are
 refused.
 
@@ -280,6 +281,24 @@ commit = ["hg", "log", "-r", ".", "-T", "{node}"]  # exits 0, prints the commit
 
 A failing command, an empty commit or any output from `clean` refuses the
 pack.
+
+A host with no checkout of the pack's repository can install an exported
+copy instead (#1962). The exporter writes a `pack.lock` into the export from
+a clean checkout:
+
+```sh
+python3 core/crew-pack.py lock <checkout> <export>
+```
+
+It refuses an export file that differs from the checkout's file at the same
+path. The lock records the checkout's `commit`, each file's `sha256` under
+`[files]`, and a `sha256` over the sorted lines `<path>\0<file sha256>\n`;
+`pack.lock` itself is excluded. When the commit read fails, or its command
+is not installed, and the directory holds a `pack.lock`, bootstrap and
+upgrade verify the export against it. A changed, added or removed file
+refuses the pack, naming the first mismatched path in sorted order; a
+verified export records the lock's `commit` as `pack.commit`. A plain
+directory without `pack.lock` keeps the checkout refusal.
 
 ### Floors
 

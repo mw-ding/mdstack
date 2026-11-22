@@ -3,6 +3,7 @@
 
 Usage: crew-pack.py discover [--project FILE] [--pack DIR]
        crew-pack.py check DIR [--framework vX.Y.Z]
+       crew-pack.py lock CHECKOUT EXPORT
 
 A pack directory with pack.toml declares the mdstack versions it supports (`framework`) and what it provides:
 connectors/<name>/manifest.toml, harnesses/<name>/adapter.py, environments/<name>/defaults.toml (profile defaults for
@@ -10,12 +11,15 @@ runtime <name>) and skills/<name>/SKILL.md. Each item is checked with the loader
 the harness discover(), the profile schema, the Agent Skills frontmatter); a pack name never shadows a built-in.
 A pack may tighten rules but never loosen a core floor: its profile.toml and environment defaults are refused for a
 floor control, a merge grant or a flavor below the core default. `discover` prints kind, name, source and path for
-every built-in and pack item; `check` loads a pack (and with --framework checks its range). The conformance kit is
-actions/contract.py (`mdstack pack test`). Exit 0 ok, 1 on any problem. Python 3.11+ stdlib only.
+every built-in and pack item; `check` loads a pack (and with --framework checks its range); `lock` writes
+EXPORT/pack.lock pinning an exported copy of a clean CHECKOUT (#1962). The conformance kit is actions/contract.py
+(`mdstack pack test`). Exit 0 ok, 1 on any problem. Python 3.11+ stdlib only.
 """
 import argparse
 import glob
+import hashlib
 import importlib.util
+import json
 import os
 import re
 import subprocess
@@ -29,6 +33,7 @@ SINGULAR = {"connectors": "connector", "harnesses": "harness", "environments": "
 NAME = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 VERSION = re.compile(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")
 COMPARATOR = re.compile(r"(>=|<=|>|<|==)\s*(\S+)")
+LOCK = "pack.lock"
 OPS = {">=": lambda a, b: a >= b, "<=": lambda a, b: a <= b, ">": lambda a, b: a > b, "<": lambda a, b: a < b,
        "==": lambda a, b: a == b}
 
@@ -273,9 +278,68 @@ def discover(cfg, harnesses, pack_dir=None):
     return reg, problems
 
 
+def sha256_file(path):
+    with open(path, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()
+
+
+def file_digests(pack_dir):
+    """{relative path: sha256 hex} for every file under pack_dir except pack.lock."""
+    files = {}
+    for root, _, names in os.walk(pack_dir):
+        for name in names:
+            rel = os.path.relpath(os.path.join(root, name), pack_dir).replace(os.sep, "/")
+            if rel != LOCK:
+                files[rel] = sha256_file(os.path.join(root, name))
+    return files
+
+
+def tree_digest(files):
+    """The export's sha256: over each sorted relative path and its file's sha256, one line each."""
+    return hashlib.sha256("".join("%s\0%s\n" % (p, files[p]) for p in sorted(files)).encode()).hexdigest()
+
+
+def write_lock(checkout, export):
+    """Write export/pack.lock pinning export as the clean checkout's content at its commit; ValueError unless every
+    export file is byte-identical to the checkout's file at the same path. Returns the lock's path."""
+    head = commit(checkout)
+    files = file_digests(export)
+    for rel in sorted(files):
+        source = os.path.join(checkout, rel)
+        if not os.path.isfile(source) or sha256_file(source) != files[rel]:
+            raise ValueError("pack export %s: %s differs from checkout %s" % (export, rel, checkout))
+    lines = ["commit = %s" % json.dumps(head), "sha256 = %s" % json.dumps(tree_digest(files)), "", "[files]"]
+    lines += ["%s = %s" % (json.dumps(p), json.dumps(files[p])) for p in sorted(files)]
+    path = os.path.join(export, LOCK)
+    with open(path, "w") as f:
+        f.write("\n".join(lines) + "\n")
+    return path
+
+
+def verify_lock(pack_dir):
+    """The commit pack_dir/pack.lock records; ValueError naming the first mismatched path unless the export's files
+    are exactly the locked ones."""
+    try:
+        with open(os.path.join(pack_dir, LOCK), "rb") as f:
+            lock = tomllib.load(f)
+    except (OSError, tomllib.TOMLDecodeError) as e:
+        raise ValueError("pack %s: unreadable %s (%s)" % (pack_dir, LOCK, e))
+    locked, head = lock.get("files"), lock.get("commit")
+    if not (isinstance(head, str) and head and isinstance(locked, dict) and
+            all(isinstance(v, str) for v in locked.values()) and lock.get("sha256") == tree_digest(locked)):
+        raise ValueError("pack %s: %s needs commit, sha256 and files matching its sha256" % (pack_dir, LOCK))
+    files = file_digests(pack_dir)
+    for rel in sorted(set(files) | set(locked)):
+        if files.get(rel) != locked.get(rel):
+            state = "missing" if rel not in files else "not locked" if rel not in locked else "changed"
+            raise ValueError("pack %s does not match its %s: %s is %s" % (pack_dir, LOCK, rel, state))
+    return head
+
+
 def commit(pack_dir):
     """The pack checkout's full commit; ValueError unless its working copy is clean, so the commit pins it. A pack
-    whose version control is not git declares [vcs] clean (prints nothing when clean) and commit (prints the commit)."""
+    whose version control is not git declares [vcs] clean (prints nothing when clean) and commit (prints the commit).
+    A directory outside version control pins through its pack.lock, which must verify (#1962)."""
     try:
         with open(os.path.join(pack_dir, "pack.toml"), "rb") as f:
             vcs = tomllib.load(f).get("vcs")
@@ -289,14 +353,21 @@ def commit(pack_dir):
         raise ValueError("pack %s: [vcs] needs clean and commit commands (lists of strings)" % pack_dir)
 
     def run(key):
+        exported = key == "commit" and os.path.isfile(os.path.join(pack_dir, LOCK))
         try:
             proc = subprocess.run(vcs[key], cwd=pack_dir, capture_output=True, text=True)
         except OSError as e:
+            if exported:
+                return None
             raise ValueError("pack %s: [vcs] %s command failed to start (%s)" % (pack_dir, key, e.strerror))
         if proc.returncode:
+            if exported:
+                return None
             raise ValueError("pack %s is not a %s checkout; install pins a pack at a commit" % (pack_dir, vcs[key][0]))
         return proc.stdout.strip()
     head = run("commit")
+    if head is None:
+        return verify_lock(pack_dir)
     if not head:
         raise ValueError("pack %s: [vcs] commit printed no commit" % pack_dir)
     if run("clean"):
@@ -324,7 +395,17 @@ def main(argv=None):
     c = sub.add_parser("check")
     c.add_argument("dir")
     c.add_argument("--framework")
+    lk = sub.add_parser("lock")
+    lk.add_argument("checkout")
+    lk.add_argument("export")
     args = parser.parse_args(argv)
+    if args.cmd == "lock":
+        try:
+            print("crew-pack: wrote %s" % write_lock(args.checkout, args.export))
+        except (OSError, ValueError) as e:
+            print("crew-pack: %s" % e, file=sys.stderr)
+            return 1
+        return 0
     cfg = load_module("crew_config", "core/crew-config.py")
     harnesses = cfg.harnesses
     if args.cmd == "discover":

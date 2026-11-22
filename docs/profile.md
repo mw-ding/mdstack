@@ -330,7 +330,10 @@ concern, in the interfaces order:
 [asynchronous land](interfaces.md#asynchronous-land-design) needs; a `sync` backend leaves them out. `change` also accepts
 `read-branch-head` and `tracker` accepts `unlabel`, which only
 `mdstack handoff` runs, with `repo.control_item` and a non-GitHub tracker or
-change backend ([handoff](handoff.md#handoff-live-reads)). `read-diff` is
+change backend ([handoff](handoff.md#handoff-live-reads)). `tracker` also
+accepts `read-comments`, which only the non-GitHub triage scan runs, per
+open listed item
+([session triage](runtimes/session.md#triage-sweep-routine), #1960). `read-diff` is
 conditional too: `resolve` refuses a profile with
 [content rules](#content-rules-879) whose effective `change.read-diff` is
 `unsupported` or undeclared.
@@ -752,8 +755,9 @@ An optional `[land]` table declares the
 `change_placeholder`, `head_guard` and a `[land.status]` table (#1042, see
 [Declaration](interfaces.md#declaration)). Without it the backend is `sync`.
 A [stack land](interfaces.md#stack-land) adds `stack`,
-`stack_tests_against_tip` and, from #1722, `stack_status` (`stack` or
-`per-change`); a sync stack binding also takes `change_placeholder`, and a
+`stack_tests_against_tip`, from #1722, `stack_status` (`stack` or
+`per-change`) and, from #1956, `stack_separator` (`" "` or `","`, default
+`" "`); a sync stack binding also takes `change_placeholder`, and a
 per-change one a `[land.status]` table.
 `validate` rejects `async` with `change.land-status` undeclared or
 `unsupported`, `opens_draft = true` with `change.publish` undeclared or

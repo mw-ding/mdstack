@@ -356,6 +356,79 @@ class CommitPin(PackCase):
             pk.commit(self.pack)
 
 
+class ExportLock(PackCase):
+    """#1962: an exported pack outside version control pins through a pack.lock that bootstrap verifies."""
+    git = CommitPin.git
+
+    def setUp(self):
+        super().setUp()
+        self.git("init", "-q")
+        self.git("add", "-A")
+        self.git("commit", "-qm", "pack")
+        self.head = subprocess.run(["git", "-C", self.pack, "rev-parse", "HEAD"], capture_output=True,
+                                   text=True).stdout.strip()
+        self.export = os.path.join(self.tmp, "export")
+        shutil.copytree(self.pack, self.export, ignore=shutil.ignore_patterns(".git"))
+
+    def test_verified_export_pins_the_locked_commit(self):
+        pk.write_lock(self.pack, self.export)
+        self.assertEqual(pk.commit(self.export), self.head)
+
+    def test_changed_added_or_removed_file_is_refused_naming_it(self):
+        def append(path, mode="a"):
+            with open(path, mode) as f:
+                f.write("x")
+        pk.write_lock(self.pack, self.export)
+        for change, rel, state in ((append, "profile.toml", "changed"),
+                                   (lambda p: append(p, "w"), "extra.md", "not locked"),
+                                   (os.remove, "pack.toml", "missing")):
+            with self.subTest(state=state):
+                backup = os.path.join(self.tmp, "backup")
+                shutil.copytree(self.export, backup)
+                change(os.path.join(self.export, rel))
+                with self.assertRaisesRegex(ValueError, "does not match its pack.lock: %s is %s" % (rel, state)):
+                    pk.commit(self.export)
+                shutil.rmtree(self.export)
+                os.rename(backup, self.export)
+
+    def test_plain_directory_without_a_lock_keeps_the_refusal(self):
+        with self.assertRaisesRegex(ValueError, "is not a git checkout; install pins a pack at a commit"):
+            pk.commit(self.export)
+
+    def test_tampered_lock_is_refused(self):
+        lock = pk.write_lock(self.pack, self.export)
+        with open(lock) as f:
+            text = f.read()
+        with open(lock, "w") as f:
+            f.write(re.sub(r'("profile.toml" = ")[0-9a-f]+', r"\g<1>" + "0" * 64, text))
+        with self.assertRaisesRegex(ValueError, "pack.lock needs commit, sha256 and files matching its sha256"):
+            pk.commit(self.export)
+
+    def test_export_with_an_uninstalled_declared_vcs_verifies(self):
+        with open(os.path.join(self.export, "pack.toml"), "a") as f:
+            f.write('\n[vcs]\nclean = ["no-such-vcs-tool", "status"]\ncommit = ["no-such-vcs-tool", "rev"]\n')
+        with self.assertRaisesRegex(ValueError, "failed to start"):
+            pk.commit(self.export)
+        files = pk.file_digests(self.export)
+        with open(os.path.join(self.export, pk.LOCK), "w") as f:
+            f.write('commit = "abc"\nsha256 = "%s"\n[files]\n%s' % (pk.tree_digest(files), "".join(
+                "%s = %s\n" % (json.dumps(p), json.dumps(h)) for p, h in files.items())))
+        self.assertEqual(pk.commit(self.export), "abc")
+
+    def test_lock_cli_refuses_an_export_that_differs_from_the_checkout(self):
+        with open(os.path.join(self.export, "profile.toml"), "a") as f:
+            f.write("# edited\n")
+        script = os.path.join(ROOT, "core", "crew-pack.py")
+        bad = subprocess.run([sys.executable, script, "lock", self.pack, self.export], capture_output=True, text=True)
+        self.assertEqual((bad.returncode, bad.stdout), (1, ""))
+        self.assertIn("profile.toml differs from checkout", bad.stderr)
+        self.assertFalse(os.path.exists(os.path.join(self.export, pk.LOCK)))
+        shutil.copy(os.path.join(self.pack, "profile.toml"), os.path.join(self.export, "profile.toml"))
+        ok = subprocess.run([sys.executable, script, "lock", self.pack, self.export], capture_output=True, text=True)
+        self.assertEqual((ok.returncode, ok.stderr), (0, ""), ok.stdout)
+        self.assertEqual(pk.commit(self.export), self.head)
+
+
 class Conformance(PackCase):
     def run_kit(self):
         with contextlib.redirect_stdout(io.StringIO()) as out:
