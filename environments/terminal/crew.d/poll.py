@@ -618,21 +618,30 @@ def triage_scan(repo, open_items, closed_items, rules, owners, fields, coordinat
     return entries
 
 
-def triage_items(data):
-    """(open, closed) from a `tracker.list-items` output (an array or pages): ids (`number` or `id`, digits as int),
-    label names or `{name}`, comment authors as a string or `{login}`, `created` or `createdAt`; only an absent or
-    `open` state is open."""
+def triage_array(data):
+    """A tracker operation's JSON output (an array or pages) as one array of objects; ValueError otherwise."""
     flat = [x for page in data for x in page] if isinstance(data, list) and data and all(
         isinstance(p, list) for p in data) else data
     if not isinstance(flat, list) or not all(isinstance(x, dict) for x in flat):
         raise ValueError("printed no array of objects")
+    return flat
+
+
+def triage_comment(c):
+    """One tracker comment: author as a string or `{login}`, `created` or `createdAt`, a missing body empty."""
+    return dict(c, author=c["author"] if isinstance(c.get("author"), dict) else {"login": c.get("author")},
+                createdAt=c.get("createdAt") or c.get("created"), body=c.get("body") or "")
+
+
+def triage_items(data):
+    """(open, closed) from a `tracker.list-items` output (an array or pages): ids (`number` or `id`, digits as int),
+    label names or `{name}`, comment authors as a string or `{login}`, `created` or `createdAt`; only an absent or
+    `open` state is open."""
     items = ([], [])
-    for i in flat:
+    for i in triage_array(data):
         n = i.get("number", i.get("id"))
         n = int(n) if isinstance(n, str) and n.isdigit() else n
-        comments = [dict(c, author=c["author"] if isinstance(c.get("author"), dict) else {"login": c.get("author")},
-                         createdAt=c.get("createdAt") or c.get("created"), body=c.get("body") or "")
-                    for c in i.get("comments") or [] if isinstance(c, dict)]
+        comments = [triage_comment(c) for c in i.get("comments") or [] if isinstance(c, dict)]
         labels = [lb if isinstance(lb, dict) else {"name": lb} for lb in i.get("labels") or []]
         items[str(i.get("state") or "open").lower() != "open"].append(
             dict(i, number=n, labels=labels, comments=comments, url=i.get("url") or ""))
