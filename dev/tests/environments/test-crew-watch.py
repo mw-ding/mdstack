@@ -321,6 +321,33 @@ class Watch(LivenessBase):
         self.assertEqual(self.mod.reason(wakes[0]), "dialog: ben-7 ambiguous, silent 30s, escalate")
         self.assertEqual(self.scan(NOW + 900, self.seen), [])  # once per dialog, and no stale wake behind it
 
+    def test_scan_bypass_permission_prompt_names_class_and_line(self):  # #1968
+        self.beat(NOW - 30)
+        cases = [("claude-proceed", "bypass", "Do you want to proceed?"),
+                 ("codex-approval", "bypass", "Would you like to run the following command?"),
+                 ("claude-trust", "bypass", None), ("codex-trust", "bypass", None),
+                 ("claude-proceed", "auto", None), ("claude-proceed", None, None)]
+        for name, mode, want in cases:
+            with self.subTest(name=name, mode=mode):
+                self.set_pane(10, screen=screen(name))
+                with mock.patch.dict(os.environ, self.env):
+                    wakes = self.mod.scan(self.state, "crew-acme-widgets", NOW, 900, {"offsets": {}, "keys": {}},
+                                          permission_mode=mode)
+                self.assertEqual([(w["reason"], w["action"]) for w in wakes], [("dialog", "escalate")])
+                self.assertEqual((wakes[0].get("class"), wakes[0].get("prompt")),
+                                 ("permission-dialog", want) if want else (None, None))
+        self.set_pane(10, screen="Do you trust this workspace?\nUse Up/Down or 1/2, then Enter. Esc quits.")
+        with mock.patch.dict(os.environ, self.env):  # an adapter without PERMISSION_PROMPTS (Muse): today's wake
+            wake, = self.mod.scan(self.state, "crew-acme-widgets", NOW, 900, {"offsets": {}, "keys": {}},
+                                  permission_mode="bypass")
+        self.assertEqual((wake["reason"], wake.get("class")), ("dialog", None))
+        self.set_pane(10, screen=screen("claude-proceed"))
+        with mock.patch.dict(os.environ, self.env):
+            wake, = self.mod.scan(self.state, "crew-acme-widgets", NOW, 900, {"offsets": {}, "keys": {}},
+                                  permission_mode="bypass")
+        self.assertEqual(self.mod.reason(wake), "dialog: ben-7 ambiguous, silent 30s, escalate, "
+                                                "permission-dialog: Do you want to proceed?")
+
     def test_scan_stuck_screen_wakes_at_once_working_screen_does_not(self):  # #289
         self.beat(NOW - 30)
         for name, want in [(n, [("dialog", "ambiguous")]) for n in STUCK] + [(n, []) for n in WORKING]:
@@ -744,6 +771,29 @@ class Watch(LivenessBase):
     def watch(self, *args):
         return subprocess.Popen([sys.executable, CREW, "watch", "--project", self.project, "--interval", "0.05",
                                  "--source-interval", "0", *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=self.env)
+
+    def test_watch_names_a_bypass_permission_dialog(self):  # #1968, through the shipped entry point
+        with open(self.project) as f:
+            profile = f.read()
+        dialog = r"dialog: ben-7 ambiguous, silent \d+s, escalate"
+        cases = [("claude-proceed", "bypass", dialog + ", permission-dialog: Do you want to proceed\\?"),
+                 ("codex-approval", "bypass", dialog + ", permission-dialog: Would you like to run the following command\\?"),
+                 ("claude-trust", "bypass", dialog), ("codex-trust", "bypass", dialog), ("claude-proceed", "auto", dialog)]
+        for name, mode, want in cases:
+            with self.subTest(name=name, mode=mode):
+                with open(self.project, "w") as f:
+                    f.write(profile + '[runtime.options]\npermission_mode = "%s"\n' % mode)
+                for left in ("watch-state.json", "queue.jsonl"):  # each case wakes afresh, its queue drained
+                    if os.path.exists(os.path.join(self.state, "wake", left)):
+                        os.remove(os.path.join(self.state, "wake", left))
+                self.set_pane(10, screen=screen(name))
+                p = self.watch()
+                out, err = p.communicate(timeout=30)
+                self.assertEqual((p.returncode, err), (0, "mdstack: config %s\n" % self.project))
+                self.assertRegex(out, "^%s\n$" % want)
+                w = self.queue_lines()[-1]
+                self.assertEqual((w["reason"], w.get("class"), "prompt" in w),
+                                 ("dialog", "permission-dialog", True) if "permission-dialog" in want else ("dialog", None, False))
 
     def test_watch_blocks_then_exits_with_reason_and_queue(self):
         p = self.watch()

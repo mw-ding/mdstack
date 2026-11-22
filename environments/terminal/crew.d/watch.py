@@ -73,7 +73,7 @@ import signal
 import subprocess
 import sys
 import time
-from crew_shared import BUSY, checkout, commands, CREW_BIN, dialog, ownership_module, ENGINE_CMD, foreground_matches, finished, GLYPHS, PROMPTS, gateway_error, HERE, heartbeat, idle_builder, paused, probe, proc, profile, queue_lock, receipts, remember_pr, remote_run, ROOT, runs, TRANSIENT, tmux, transient_lines
+from crew_shared import BUSY, checkout, commands, CREW_BIN, dialog, ownership_module, ENGINE_CMD, foreground_matches, finished, GLYPHS, PROMPTS, gateway_error, harnesses, HERE, heartbeat, idle_builder, paused, probe, proc, profile, queue_lock, receipts, remember_pr, remote_run, ROOT, runs, TRANSIENT, tmux, transient_lines
 
 # Fields route adds to a record it leaves queued; a kept record still matches its candidate and wakes window 0 (#814).
 ROUTE_NOTES = ("at", "route_error", "consumer", "dependents")
@@ -264,11 +264,12 @@ def stall(state, seen, name, now, since=None, liveness=None):
 
 
 def scan(state, session, now, stale, seen, idle_ttl=1800, stuck_after=1800, idle_stall=1800, schedule_home=None,
-         repo=None, mine=None):
+         repo=None, mine=None, permission_mode=None):
     """Wake records: new status lines, runs dead, missing or silent past stale, owner asks past their deadline and
     finishing work deferred past stuck_after (in a team, this repo's from the team schedule at schedule_home); each
     fires once per key. A working run whose pane printed nothing for
-    idle_stall seconds is idle at its prompt and wakes stale (liveness `idle`), however fresh its status file (#1283)."""
+    idle_stall seconds is idle at its prompt and wakes stale (liveness `idle`), however fresh its status file (#1283).
+    Under permission_mode bypass, a dialog wake for an adapter permission prompt names it (#1968)."""
     windows = dict((n, i) for i, n in tmux.list_windows(session))
     wakes = []
     for name, rec in list(runs(state)) + list(commands()["lead"].records(state)):
@@ -335,8 +336,10 @@ def scan(state, session, now, stale, seen, idle_ttl=1800, stuck_after=1800, idle
         if cls == "ambiguous" and not finished(rec, last) and dialog(session, rec["index"]):
             if seen["keys"].get(name) != "dialog %s" % beat:  # wakes on the next scan, never after --stale (#234 N3)
                 seen["keys"][name] = "dialog %s" % beat
-                wakes.append({"reason": "dialog", "window": name, "liveness": cls, "silent": int(now - beat),
-                              "action": "escalate"})
+                w = {"reason": "dialog", "window": name, "liveness": cls, "silent": int(now - beat), "action": "escalate"}
+                if permission_mode == "bypass" and (line := permission_prompt(session, rec["index"])):
+                    w.update({"class": "permission-dialog", "prompt": line})
+                wakes.append(w)
             continue
         p = tmux.pane(session, rec["index"]) if cls == "alive" and idle_stall else None
         quiet = now - float(p["activity"]) if p and float(p["activity"]) else None  # herdr reports no activity ("0")
@@ -597,6 +600,10 @@ def holder(wake):
         os.close(fd)
 
 
+PERMISSION_PROMPTS = [(re.compile(head), re.compile(foot)) for a in harnesses.BY_EXECUTABLE.values()
+                      for head, foot in getattr(a, "PERMISSION_PROMPTS", [])]
+
+
 def prompt_open(session, index):
     """A blocking harness prompt on the pane, whose Enter could approve a command (#315). Unlike dialog(), a fatal API
     error over an idle composer is not one: a coordinator stopped by a gateway error still gets its wake (#1346)."""
@@ -605,7 +612,18 @@ def prompt_open(session, index):
                                for head, foot in PROMPTS)
 
 
+def permission_prompt(session, index):
+    """The heading line of an adapter permission prompt (PERMISSION_PROMPTS) on the pane, else None: a built-in safety
+    dialog bypass does not suppress (#1968). Folder trust and other dialogs are never one."""
+    lines = [line.strip().lstrip(GLYPHS + "> ") for line in tmux.capture(session, index).splitlines() if line.strip()]
+    return next((line for head, foot in PERMISSION_PROMPTS if lines and foot.match(lines[-1])
+                 for line in lines if head.match(line)), None)
+
+
 def reason(w):
+    if "class" in w:
+        return "%s: %s %s, silent %ds, %s, %s: %s" % (w["reason"], w["window"], w["liveness"], w["silent"], w["action"],
+                                                      w["class"], w["prompt"])
     if "event" in w:
         return "%s: %s" % (w["reason"], w["event"])
     if "line" in w:
@@ -875,7 +893,8 @@ def run(args):
             trial = json.loads(json.dumps(seen))  # committed only once its wakes are queued
             wakes = scan(state, session, time.time(), args.stale, trial, values["runtime.options.idle_builder_ttl"],
                          values["runtime.options.stuck_after"], args.idle_stall, home, repo,
-                         commands()["send"].ours(args.project, args.org_profile, values)) + found
+                         commands()["send"].ours(args.project, args.org_profile, values),
+                         values["runtime.options.permission_mode"]) + found
             others = queued(state, wake, trial)
             if code_sig() != code and not held:  # before route resolves the live profile with old code (#702)
                 reexec(lock)  # trial is not committed, so the new image finds this scan's status lines and records again

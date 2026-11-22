@@ -116,6 +116,44 @@ class UserInstall(bootstrap_tests.Bootstrap):
         self.assertIn("stale", self.detail(r, "launcher"))
         self.assertIn("resolves to %s/mdstack, not the launcher" % self.bindir, self.detail(r, "mdstack on PATH"))
 
+    def second_root(self, name="mdstack-b"):
+        other = Path(self.home) / "crew-b"
+        shutil.copytree(self.bundle, other / "releases" / "mdstack-2.1.0", symlinks=True)
+        r = self.install("--name", name, cli=other / "releases" / "mdstack-2.1.0" / "cli" / "mdstack")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        return other, other / "bin" / name
+
+    def owner_config(self, launcher, **env):
+        """The config a launcher's bare `doctor` resolves in an owner shell: no --project, no CREW_*/MDSTACK_*."""
+        clean = {k: v for k, v in self.env.items() if not k.startswith(("CREW_", "MDSTACK_"))}
+        r = subprocess.run([str(launcher), "doctor"], input="", capture_output=True, text=True, env=dict(clean, **env))
+        line = next((x for x in r.stderr.splitlines() if x.startswith("mdstack: config ")), r.stdout + r.stderr)
+        return line.removeprefix("mdstack: config ").split("#")[0]
+
+    def test_a_non_default_root_launcher_reads_its_own_config(self):  # #2023 AC1-AC3
+        other, launcher = self.second_root()
+        self.assertEqual(self.install().returncode, 0)
+        for root in (self.root, other):  # the default root's config is the decoy a bare launcher used to read
+            shutil.copy(self.project, root / "config.toml")
+        self.assertIn("CREW_ROOT=%s exec " % other, launcher.read_text())
+        self.assertEqual(self.owner_config(launcher), str(other / "config.toml"))
+        self.assertEqual(self.owner_config(launcher, MDSTACK_CONFIG=self.project), self.project)
+        self.assertEqual(self.owner_config(launcher, CREW_PROJECT=self.project), self.project)
+        self.assertNotIn("CREW_ROOT", self.launcher.read_text())
+        self.assertEqual(self.owner_config(self.launcher), str(self.root / "config.toml"))
+
+    def test_install_rewrites_a_stale_launcher(self):  # #2023 AC4
+        other, launcher = self.second_root()
+        fresh = launcher.read_text()
+        launcher.write_text(install.LAUNCHER_HEAD + 'exec %s "$@"\n' % (other / "releases/current/cli/mdstack"))
+        cli = other / "releases" / "mdstack-2.1.0" / "cli" / "mdstack"
+        r = self.install("--name", "mdstack-b", "--dry-run", cli=cli)
+        self.assertIn("would write launcher " + str(launcher), r.stdout)
+        self.assertNotEqual(launcher.read_text(), fresh)
+        r = self.install("--name", "mdstack-b", cli=cli)
+        self.assertIn("wrote launcher " + str(launcher), r.stdout)
+        self.assertEqual(launcher.read_text(), fresh)
+
     def test_upgrade_flips_current_and_rolls_back(self):
         self.real_git()
         subprocess.run(["git", "init", "-q", self.project_dir], check=True)
@@ -133,6 +171,7 @@ class UserInstall(bootstrap_tests.Bootstrap):
         r = self.run_launcher("upgrade", "--project", self.project, "--latest", "--yes")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("releases/current -> mdstack-2.2.0", r.stdout)
+        self.assertNotRegex(r.stdout, "would write launcher|wrote launcher")  # ~/.mdstack's is current as written (#2023)
         self.assertEqual(os.readlink(self.releases / "current"), "mdstack-2.2.0")
         record = json.loads(self.manifest.read_text())
         self.assertEqual((record["tag"], record["source"], record["bundle_sha256"], record["project"]),
@@ -173,8 +212,16 @@ class UserInstall(bootstrap_tests.Bootstrap):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("mdstack: config %s\n" % project, r.stderr)
         self.release()
+        fresh = launcher.read_text()  # a launcher from before #2023 pinned no root; upgrade rewrites it (AC4)
+        launcher.write_text(install.LAUNCHER_HEAD + 'exec %s "$@"\n' % (other / "releases/current/cli/mdstack"))
+        r = b("upgrade", "--project", str(project), "--version", "v2.2.0", "--dry-run")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("would write launcher " + str(launcher), r.stdout)
+        self.assertNotEqual(launcher.read_text(), fresh)
         r = b("upgrade", "--project", str(project), "--version", "v2.2.0", "--yes")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("wrote launcher " + str(launcher), r.stdout)
+        self.assertEqual(launcher.read_text(), fresh)
         self.assertEqual(os.readlink(other / "releases" / "current"), "mdstack-2.2.0")
         self.assertEqual(b("--version").stdout, "mdstack v2.2.0\n")
         self.release("v2.1.0")
@@ -190,6 +237,30 @@ class UserInstall(bootstrap_tests.Bootstrap):
                            env=dict(self.env, CREW_ROOT=str(other)))  # this profile sets no paths.root
         self.assertIn("ok    launcher           %s -> mdstack-2.1.0" % launcher, r.stdout)
         self.assertIn("ok    mdstack-b on PATH  %s" % (local / "mdstack-b"), r.stdout)
+
+
+class LauncherText(unittest.TestCase):  # #2023 AC3: the ~/.mdstack launcher stays byte-identical
+    def test_only_a_non_default_root_is_pinned(self):
+        with tempfile.TemporaryDirectory() as home, mock.patch.dict(os.environ, {"HOME": home}):
+            self.assertEqual(install.launcher_text(Path(home) / ".mdstack"),
+                             "#!/bin/sh\n# mdstack launcher, written by mdstack install (#1317): runs the current "
+                             'release.\nexec %s/.mdstack/releases/current/cli/mdstack "$@"\n' % home)
+            self.assertEqual(install.launcher_text(Path(home) / "crew b"),
+                             "#!/bin/sh\n# mdstack launcher, written by mdstack install (#1317): runs the current "
+                             "release.\nCREW_ROOT='%s/crew b' exec '%s/crew b/releases/current/cli/mdstack' \"$@\"\n"
+                             % (home, home))
+
+    def test_a_stale_launcher_keeps_the_root_spelling_it_names(self):  # a re-exec'd bundle path is resolved
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(os.environ, {"HOME": tmp}):
+            real, link = Path(tmp) / "real", Path(tmp) / "link"
+            (real / "bin").mkdir(parents=True)
+            link.symlink_to(real)
+            (real / "bin" / "b").write_text(install.LAUNCHER_HEAD + 'exec %s/releases/current/cli/mdstack "$@"\n' % link)
+            (real / "bin" / "other").write_text("#!/bin/sh\nexec true\n")
+            self.assertEqual(install.stale_launchers(real), [(link / "bin" / "b", link)])
+            install.write_launcher(link / "bin" / "b", link)
+            self.assertIn("CREW_ROOT=%s exec " % link, (real / "bin" / "b").read_text())
+            self.assertEqual(install.stale_launchers(real), [])
 
 
 class Follow(unittest.TestCase):
