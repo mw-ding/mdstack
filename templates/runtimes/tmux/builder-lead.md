@@ -91,7 +91,8 @@ Never delete a referenced event or finding while work remains pending.
   once. Never restart an ambiguous worker; re-probe, then escalate to coordinator.
   A `dialog` wake with `class: permission-dialog` (a harness safety dialog
   that bypass did not suppress) is an owner ask: run
-  `$CREW_BIN lead report builder owner-decision WINDOW #<n> --detail "permission-dialog: <prompt line>" --project "$CREW_PROJECT"`.
+  `$CREW_BIN lead report builder owner-decision WINDOW #<n> --detail "permission-dialog: PROMPT" --project "$CREW_PROJECT"`,
+  PROMPT being the wake's prompt line.
   Never approve it, retry or reframe the refused command, or change
   permission modes, settings or allow rules.
   A `quota` wake (the worker's harness shows its usage-limit screen) also
