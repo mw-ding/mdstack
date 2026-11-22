@@ -171,7 +171,7 @@ class UserInstall(bootstrap_tests.Bootstrap):
         r = self.run_launcher("upgrade", "--project", self.project, "--latest", "--yes")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("releases/current -> mdstack-2.2.0", r.stdout)
-        self.assertNotIn("write launcher", r.stdout)  # the ~/.mdstack launcher is current as written (#2023)
+        self.assertNotRegex(r.stdout, "would write launcher|wrote launcher")  # ~/.mdstack's is current as written (#2023)
         self.assertEqual(os.readlink(self.releases / "current"), "mdstack-2.2.0")
         record = json.loads(self.manifest.read_text())
         self.assertEqual((record["tag"], record["source"], record["bundle_sha256"], record["project"]),
