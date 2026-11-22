@@ -362,3 +362,15 @@ The live buffer. How to append, when to batch and who owns it are in
   `main` (#1342). #1132's absence cases through `pack.toml` discovery ->
   #1411. The floor-selector false positive #1325 and VCS pinning #1326 are
   separate.
+
+### A new guard refuses the previous release's own caller
+
+- **Date:** 2026-11-22
+- **PR / repo:** mw-ding/mdstack#2024
+- **Smell:** An 8.x owner-shell guard refused the 7.x bootstrap's re-exec of
+  `upgrade --project`. Tests covered only 8.x → 8.x handoffs, where the
+  parent marks its children internal.
+- **Count:** 1
+- **Proposed fix layer:** CI check: a test that runs each cross-release
+  handoff the way the previous release's code calls it.
+- **Status:** fixed by #2024
