@@ -104,7 +104,10 @@ FAKE_COMPOSER = textwrap.dedent("""\
                     c["draft"] = (draft or [""]) + [""]
             draft = c["draft"]
         json.dump(c, open(os.environ["FAKE_COMPOSER"], "w"))
-    os.execv(os.path.join(os.path.dirname(sys.argv[0]), "tmux-base"), ["tmux"] + full)
+    base = os.path.join(os.path.dirname(sys.argv[0]), "tmux-base")
+    if os.path.realpath(base) == os.path.realpath(sys.argv[0]):  # a shim renamed over tmux-base: never re-exec itself
+        sys.exit("fake tmux: %s would exec itself; tmux-base must be the base fake" % base)
+    os.execv(base, ["tmux"] + full)
     """)
 
 CONCERNS = ["change", "review", "tracker", "state-tags", "markers", "ci", "events", "owner-channel"]
@@ -440,7 +443,10 @@ FAKE_TMUX_PANES = textwrap.dedent("""\
                   "command": state.get("_panes", {}).get(target, "")}, **load("FAKE_PANES").get(target, {}))
         print(p["id"], p["pid"], p["dead"], p["activity"], "/dev/ttyp" + index, p["command"])
         sys.exit(0)
-    os.execv(os.path.join(os.path.dirname(sys.argv[0]), "tmux-base"), ["tmux"] + full)
+    base = os.path.join(os.path.dirname(sys.argv[0]), "tmux-base")
+    if os.path.realpath(base) == os.path.realpath(sys.argv[0]):  # a shim renamed over tmux-base: never re-exec itself
+        sys.exit("fake tmux: %s would exec itself; tmux-base must be the base fake" % base)
+    os.execv(base, ["tmux"] + full)
     """)
 FAKE_PS = textwrap.dedent("""\
     #!/usr/bin/env python3

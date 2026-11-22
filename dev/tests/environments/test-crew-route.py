@@ -12,7 +12,8 @@ import subprocess
 import sys
 import unittest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # dev/tests/: crew_testlib
-from crew_testlib import CREW, FAKE_PS, FAKE_TMUX_PANES, PROFILE, SpawnBase
+import tempfile
+from crew_testlib import CREW, FAKE_COMPOSER, FAKE_PS, FAKE_TMUX_PANES, PROFILE, SpawnBase
 
 
 class Route(SpawnBase):
@@ -1554,6 +1555,29 @@ class Route(SpawnBase):
         self.assertIn("vera-12-r1-review", self.names())
         self.assertEqual([w["event"] for w in self.pending()], ["owner asks for status"])
         self.assertFalse(any(c[0] == "send-keys" for c in self.calls()))
+
+
+class ShimSelfExec(unittest.TestCase):
+    """A wrapping fake tmux renamed over `tmux-base` (a second wrap) fails closed instead of exec'ing itself in a
+    fork chain (#2015 steer: an orphaned chain neared the process ulimit); a real base fake still gets the call."""
+
+    def run_shim(self, shim, base):
+        with tempfile.TemporaryDirectory() as tmp:
+            for name, text in (("tmux", shim), ("tmux-base", base), ("c.json", "{}")):
+                with open(os.path.join(tmp, name), "w") as f:
+                    f.write(text)
+                os.chmod(os.path.join(tmp, name), 0o755)
+            return subprocess.run([os.path.join(tmp, "tmux"), "has-session", "-t", "=crew"], capture_output=True,
+                                  text=True, timeout=30, env=dict(os.environ, FAKE_PANES=os.path.join(tmp, "p.json"),
+                                                                  FAKE_COMPOSER=os.path.join(tmp, "c.json")))
+
+    def test_wrapping_shim_never_execs_itself(self):
+        for shim in (FAKE_TMUX_PANES, FAKE_COMPOSER):
+            r = self.run_shim(shim, shim)
+            self.assertNotEqual(r.returncode, 0)
+            self.assertIn("would exec itself", r.stderr)
+            r = self.run_shim(shim, "#!/usr/bin/env python3\nimport sys\nprint('base', *sys.argv[1:])\n")
+            self.assertEqual((r.returncode, r.stdout), (0, "base has-session -t =crew\n"), r.stderr)
 
 
 if __name__ == "__main__":
