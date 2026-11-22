@@ -44,10 +44,10 @@
    (carry, re-check and override: PR conventions). Cite the newest signed
    allocation and pass `<mdstack>/scripts/check-pr-linkage.py` before opening
    (`<mdstack>/docs/backends/github.md` Builder linkage check). Open a non-draft PR: `<op:change.open>`, body per §3, written once, never
-   edited; label it `crew:in-review`. Use only the number opening returned
-   for labels, fragment and posts, never a guess (#2019).<land-publish>
-   Right after opening, before `done:`, set the fragment's `pr:` to the PR
-   number, pass `scripts/check-changelog-pr.py --base origin/<default-branch> --pr <pr>`,
+   edited; label it `crew:in-review`. Labels, fragment and posts use only
+   the opened number, never a guess (#2019).<land-publish>
+   Right after opening, before `done:`, set the fragment's `pr:`, pass
+   `scripts/check-changelog-pr.py --base origin/<default-branch> --pr <pr>`,
    push and post a round-0 `CI fix` note at the new head; review
    waits for it. CI on the opened head may still fail on `TBD` (#1844).
    After each push, read the head back (`<op:change.read-head>`); use that
