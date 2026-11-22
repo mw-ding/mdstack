@@ -115,7 +115,7 @@ class Up(Base):
         self.assertEqual(call[call.index("-s") + 1], "crew-acme-widgets")
         self.assertEqual(call[call.index("-n") + 1], "ash")
         self.assertEqual(call[call.index("-c") + 1], self.project_dir)
-        env = [call[i + 1] for i, a in enumerate(call) if a == "-e"]
+        env = ["%s=%s" % kv for kv in self.session_env(call).items()]
         self.assertIn("CREW_BRIEF=" + brief, env)
         self.assertIn("CREW_IDENTITY=acme-bot", env)
         self.assertIn("CREW_ROLE=coordinator", env)
@@ -206,8 +206,7 @@ class Up(Base):
                 self.env["CREW_SANDBOX_ENV"] = setting
             for _ in range(2):  # rebuild coordinator from its profile, without a parent environment
                 self.assertEqual(self.up().returncode, 0)
-                call = [c for c in self.calls() if c[0] == "new-session"][-1]
-                env = dict(call[i + 1].split("=", 1) for i, a in enumerate(call) if a == "-e")
+                env = self.session_env([c for c in self.calls() if c[0] == "new-session"][-1])
                 if setting == "":
                     self.assertNotIn("CREW_TEST_SANDBOX", env)
                 else:
@@ -220,7 +219,7 @@ class Up(Base):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         brief = os.path.join(self.state, "render", "runtime", "coordinator.md")
         call = self.new_session()
-        self.assertIn("CREW_BRIEF=" + brief, [call[i + 1] for i, a in enumerate(call) if a == "-e"])
+        self.assertEqual(self.session_env(call)["CREW_BRIEF"], brief)
         with open(brief) as f:
             self.assertIn("You are Ash, in window 0", f.read())
         self.assertFalse(os.path.exists(os.path.join(self.state, "render", "briefs")))
@@ -351,7 +350,7 @@ class Up(Base):
             self.assertIn("session", f.read().lower())
         self.assertEqual(call[call.index("-s") + 1], "crew-acme-widgets")
         self.assertEqual(call[call.index("-n") + 1], "ash")
-        env = [call[i + 1] for i, a in enumerate(call) if a == "-e"]
+        env = ["%s=%s" % kv for kv in self.session_env(call).items()]
         for var in ("CREW_ROLE=coordinator", "CREW_STATE=" + self.state, "CREW_PROJECT=" + self.project,
                     "CREW_BRIEF=" + brief, "CREW_IDENTITY=acme-bot"):
             self.assertIn(var, env)
@@ -393,6 +392,39 @@ class Up(Base):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("launch.coordinator = none, so no session started", r.stdout)
         self.assertEqual([c for c in self.calls() if c[0] != "has-session"], [])
+
+    def test_session_runtime_scopes_crew_variables_and_honours_launch_cwd(self):
+        """#1957 R10 (1), (2): window 0's command exports CREW_*, the session gets no -e; launch.cwd, relative to the
+        profile's directory, is window 0's directory; a missing one refuses before any session; unset keeps the
+        profile's directory."""
+        self.write_profile(runtime="session")
+        os.makedirs(os.path.join(self.project_dir, "work"))
+        self.launch('cwd = "work"')
+        r = self.crew("up", "--project", self.project)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        call = self.new_session()
+        self.assertEqual(call[call.index("-c") + 1], os.path.join(self.project_dir, "work"))
+        env = self.session_env(call)  # asserts no -e
+        self.assertEqual((env["CREW_ROLE"], env["CREW_PROJECT"]), ("coordinator", self.project))
+        self.crew("down", "--project", self.project)
+        os.remove(self.log)
+        os.remove(self.state_file)
+        self.write_profile(runtime="session")
+        self.launch('cwd = "missing"')
+        r = self.crew("up", "--project", self.project)
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn("launch.cwd %s is not a directory" % os.path.join(self.project_dir, "missing"), r.stdout)
+        self.assertFalse(any(c[0] == "new-session" for c in self.calls()))
+        self.write_profile(runtime="session")
+        self.launch('cwd = ""')
+        r = self.crew("up", "--project", self.project)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("runtime.options.launch.cwd: expected a nonempty directory path", r.stdout + r.stderr)
+        self.write_profile(runtime="session")
+        r = self.crew("up", "--project", self.project)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        call = self.new_session()
+        self.assertEqual(call[call.index("-c") + 1], self.project_dir)
 
     def test_tmux_resume_flag_overrides_launch_resume(self):
         self.launch('resume = "fresh"')
@@ -734,7 +766,7 @@ class TeamUp(Base):
         root = os.path.join(self.tmp, "state", "ext")
         call = self.new_session()
         self.assertEqual((call[call.index("-s") + 1], call[call.index("-c") + 1]), ("crew-team-ext", os.path.dirname(team)))
-        env = dict(call[i + 1].split("=", 1) for i, a in enumerate(call) if a == "-e")
+        env = self.session_env(call)
         self.assertEqual((env["CREW_STATE"], env["CREW_TEAM"], env["CREW_PROJECT"], env["CREW_BRIEF"]),
                          (root, team, team + "#widgets", os.path.join(root, "coordinator.md")))
         with open(env["CREW_BRIEF"]) as f:
@@ -1032,6 +1064,26 @@ class UpAttach(Base):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("--attach", r.stdout)
         self.assertIn("window 0", r.stdout)
+
+
+class CoordinatorLaunch(unittest.TestCase):
+    """#1957 R10 (4): window 0's launch line derives GH_TOKEN only when a backend is bound to github; the GitHub line
+    is byte-identical to the shipped template's."""
+
+    def test_token_only_with_a_github_backend(self):
+        from importlib.machinery import SourceFileLoader
+        loader = SourceFileLoader("crew_cli_launch", CREW)
+        loader.exec_module(importlib.util.module_from_spec(importlib.util.spec_from_loader("crew_cli_launch", loader)))
+        shared = sys.modules["crew_shared"]
+        pointer = "Read your brief at $CREW_BRIEF and follow it."
+        github = {"backends.markers.name": "example", "backends.change.name": "github"}
+        self.assertEqual(shared.coordinator_launch(github, "claude", "fresh"),
+                         'export GH_TOKEN="$(gh auth token --user "$CREW_IDENTITY")"; exec claude "%s"' % pointer)
+        self.assertEqual(shared.coordinator_launch(github, "claude --resume", "ask"),
+                         'export GH_TOKEN="$(gh auth token --user "$CREW_IDENTITY")"; exec claude --resume')
+        other = {"backends.markers.name": "example", "backends.change.name": "example", "repo.owner": "github"}
+        self.assertEqual(shared.coordinator_launch(other, "claude", "fresh"), 'exec claude "%s"' % pointer)
+        self.assertEqual(shared.coordinator_launch(other, "claude --resume", "ask"), "exec claude --resume")
 
 
 class OrphanLeads(Base):

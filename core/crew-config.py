@@ -889,7 +889,7 @@ def validate(profile, err, backends=BACKENDS, pack_dir=None, item=None, status_i
             if budget < 1:
                 err("size_budget." + role, "must be >= 1")
     if "builder" in top:
-        builder = check_table(err, "builder", top["builder"], {"precheck": (dict, None)})
+        builder = check_table(err, "builder", top["builder"], {"precheck": (dict, None), "local_checks": (str, None)})
         if "precheck" in builder:
             precheck = check_table(err, "builder.precheck", builder["precheck"],
                                   {"enabled": (bool, False), "lint": (str, None), "test": (str, None),
@@ -1044,7 +1044,10 @@ def validate(profile, err, backends=BACKENDS, pack_dir=None, item=None, status_i
                         "triage sweep; it cannot replace the %s researcher brief" % rt["name"])
             if "launch" in opts:
                 launch = check_table(err, "runtime.options.launch", opts["launch"], {
-                    "coordinator": (str, "tmux"), "roles": (str, "tmux"), "resume": (str, "fresh"), "reconcile": (str, "backend")})
+                    "coordinator": (str, "tmux"), "roles": (str, "tmux"), "resume": (str, "fresh"), "reconcile": (str, "backend"),
+                    "cwd": (str, None)})
+                if "cwd" in launch and not launch["cwd"].strip():
+                    err("runtime.options.launch.cwd", "expected a nonempty directory path")
                 check_choice(err, "runtime.options.launch.coordinator", launch.get("coordinator"), ["tmux", "none"])
                 check_choice(err, "runtime.options.launch.roles", launch.get("roles"), ["tmux", "hosted", "none"])
                 check_choice(err, "runtime.options.launch.reconcile", launch.get("reconcile"), ["backend"])

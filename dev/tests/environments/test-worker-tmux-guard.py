@@ -106,6 +106,22 @@ class Decoy(unittest.TestCase):
         self.start("crew-guard", "default")
         self.check("crew-guard", reload=True)
 
+    def test_owner_window_inherits_no_crew_variables(self):
+        """#1957 R10 (1): window 0 sees the env new_session was given; a window opened later in the session sees none."""
+        for var in ("CREW_ROLE", "CREW_PROJECT"):  # the server's global env is this process's; the suite may run in a crew pane
+            os.environ.pop(var, None)
+        self.tmux.bind("crew-env", "default")
+        zero, other = os.path.join(self.tmp, "zero"), os.path.join(self.tmp, "other")
+        probe = "echo \"role=${CREW_ROLE-unset} project=${CREW_PROJECT-unset}\" > %s; echo done >> %s; sleep 60"
+        self.tmux.new_session("crew-env", "ash", self.tmp, {"CREW_ROLE": "coordinator", "CREW_PROJECT": "/p q"},
+                              probe % (zero, zero))
+        sock = self.tmux.tmux("display-message", "-p", "#{socket_path}").stdout.strip()
+        self.addCleanup(subprocess.run, ["tmux", "-S", sock, "kill-server"], capture_output=True)
+        self.assertEqual(self.wait(zero), "role=coordinator project=/p q\ndone\n")
+        r = self.tmux.tmux("new-window", "-d", "-t", "=crew-env:", probe % (other, other))
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(self.wait(other), "role=unset project=unset\ndone\n")
+
     def test_coordinator_reload_keeps_the_crew_tmux(self):
         self.start("crew-guard", "default")
         out = os.path.join(self.tmp, "coordinator")

@@ -184,7 +184,7 @@ class AttachBare(Base):  # #1942: a bare `mdstack attach` types into the install
         self.assertEqual(r.stderr, "mdstack: config %s\n" % self.team)
         new = [c for c in self.calls() if c[0] == "new-session"]
         self.assertEqual([c[c.index("-s") + 1] for c in new], ["crew-team-eng"])
-        env = dict(new[0][i + 1].split("=", 1) for i, a in enumerate(new[0]) if a == "-e")
+        env = self.session_env(new[0])
         self.assertEqual((env["CREW_TEAM"], env["CREW_STATE"]), (self.team, os.path.join(self.tmp, "state", "eng")))
         for repo in ("widgets", "gadgets", "gizmos"):  # up --team renders every repo
             self.assertTrue(os.path.isdir(os.path.join(self.tmp, "state", "eng", "acme__" + repo, "render")), repo)
