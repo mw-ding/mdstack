@@ -141,6 +141,21 @@ The `tmux` launch topology (`[runtime.options.launch]`) with its
 absent-table fallback, keys and example moved to
 [Runtime options: Launch topology](configuration/runtime-options.md#launch-topology).
 
+### `builder.local_checks`
+
+Optional string: the local checks a builder runs before each push, named in
+the builder brief's build pass in place of mdstack's own list
+([#1958](https://github.com/mw-ding/mdstack/issues/1958)). Unset, a GitHub
+change backend keeps today's list and another backend names "the project's
+own checks from its `AGENTS.md`". The same render shows the GitHub linkage
+check only for a GitHub change backend and the post-open fragment step only
+for a GitHub change backend or a declared [`[release]`](#release) table.
+
+```toml
+[builder]
+local_checks = "`make lint test`"
+```
+
 ### `[builder.precheck]`
 
 Optional pre-review check settings, supplied by the project or an org profile.

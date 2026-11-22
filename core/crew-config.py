@@ -884,7 +884,7 @@ def validate(profile, err, backends=BACKENDS, pack_dir=None, item=None, status_i
             if budget < 1:
                 err("size_budget." + role, "must be >= 1")
     if "builder" in top:
-        builder = check_table(err, "builder", top["builder"], {"precheck": (dict, None)})
+        builder = check_table(err, "builder", top["builder"], {"precheck": (dict, None), "local_checks": (str, None)})
         if "precheck" in builder:
             precheck = check_table(err, "builder.precheck", builder["precheck"],
                                   {"enabled": (bool, False), "lint": (str, None), "test": (str, None),

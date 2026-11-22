@@ -980,6 +980,36 @@ class PackOverlay(unittest.TestCase):
         self.assertNotIn("--delete-branch", tree(got)["runtime/synthesizer.md"])
         self.assertNotIn("Head branch:", tree(got)["runtime/synthesizer.md"])
 
+    def test_build_pass_steps_follow_the_change_backend(self):  # #1958
+        renderer = cr.Renderer({}, None)
+        local = renderer.line(cr.LOCAL_CHECKS)
+        fragment = renderer.line(cr.FRAGMENT_STEP.replace("<default-branch>", "main"))
+        for runtime in ("tmux", "session"):
+            project = os.path.join(self.tmp, runtime + "-1958.toml")
+            with open(project, "w") as f:
+                f.write('[runtime]\nname = "%s"\n' % runtime)
+            code, out, gh = self.render(project)
+            self.assertEqual(code, 0, out)
+            gh = tree(gh)["runtime/builder.md"]
+            for text in (local, "scripts/check-pr-linkage.py", "Builder linkage check)", fragment):
+                self.assertIn(text, gh)
+            code, out, other = self.render(project, "--org-profile", self.org)
+            self.assertEqual(code, 0, out)
+            other = tree(other)["runtime/builder.md"]
+            for text in ("scripts/check-repo.py", "check-pr-linkage", "Builder linkage check",
+                         "set the fragment's `pr:`", "#1844"):
+                self.assertNotIn(text, other)
+            self.assertIn("runs the project's own checks from its `AGENTS.md` before pushing.", other)
+            self.assertIn("(carry, re-check and override: PR conventions). Open a non-draft PR:", other)
+            with open(project, "a") as f:
+                f.write('[builder]\nlocal_checks = "`make check <target>`"\n[release]\n[backends.release]\nname = "example"\n')
+            code, out, declared = self.render(project, "--org-profile", self.org)
+            self.assertEqual(code, 0, out)
+            declared = tree(declared)["runtime/builder.md"]
+            self.assertIn("runs `make check <target>` before pushing.", declared)
+            self.assertIn("set the fragment's `pr:`", declared)
+            self.assertNotIn("check-pr-linkage", declared)
+
     def test_async_land_renders_synthesizer_and_builder_steps(self):
         code, out, sync = self.render(self.project(), "--org-profile", self.org)
         self.assertEqual(code, 0, out)
