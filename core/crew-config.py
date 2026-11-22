@@ -151,7 +151,8 @@ RUNTIME_OPTIONS = {"grok-bot": {"max_active_milestones": (int, 1)},
                                "mirror": (str, "live-copy"), "hold_label_blocks": (bool, True), "notes": (dict, {}),
                                # mdstack up's coordinator launch (#1548): its tmux session, harness flags and topology
                                "session": (str, None), "permission_mode": (str, "bypass"), "launch": (dict, None),
-                               "role_runtime": (dict, None)}}  # one role from another runtime's templates (#1055)
+                               "role_runtime": (dict, None),  # one role from another runtime's templates (#1055)
+                               "isolation": (str, "worktree")}}  # assigned-checkout: pre-provisioned checkouts (#1959)
 SESSION_BACKENDS = {"tmux": sessions.CHOICES, "session": ["native", "cli", "hosted"]}  # runtime.options.session_backend
 LAUNCH_SESSION_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}")  # launch.resume: a harness conversation id
 TRIAGE_MODES = ["shadow", "apply"]  # [triage] mode (docs/triage.md Shadow mode and calibration)
@@ -1009,6 +1010,7 @@ def validate(profile, err, backends=BACKENDS, pack_dir=None, item=None, status_i
             check_choice(err, "runtime.options.session_backend", opts.get("session_backend"),
                          SESSION_BACKENDS.get(rt["name"], []))
             check_choice(err, "runtime.options.tmux_server", opts.get("tmux_server"), ["default", "dedicated"])
+            check_choice(err, "runtime.options.isolation", opts.get("isolation"), ["worktree", "assigned-checkout"])
             check_choice(err, "runtime.options.lone_pr_land", opts.get("lone_pr_land"), ["train", "direct"])
             check_choices(err, "runtime.options.merge_grant_scope", opts.get("merge_grant_scope", []), MERGE_GRANT_SCOPES)
             if "spec" in opts.get("merge_grant_scope", []) and opts.get("merge_grant", "none") == "none":
