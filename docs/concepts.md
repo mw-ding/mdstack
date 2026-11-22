@@ -1,7 +1,7 @@
 # Concepts
 
 Shared vocabulary for the abstract protocol (portable mdstack, roadmap 13.1,
-[#113](https://github.com/mw-ding/eng-crew/issues/113)). Later M13 changes use
+[#113](https://github.com/mw-ding/mdstack/issues/113)). Later M13 changes use
 these terms when they split the core from its bindings. The
 [four axes](#four-axes) and the [team and module terms](#team-and-modules)
 come from the team spec ([specs/team.md](specs/team.md), #1216). Each entry

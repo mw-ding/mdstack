@@ -3,7 +3,7 @@
 Onboarding module for giving the reviewer identity write access to the target
 repo, split out of the [onboarding runbook](../runbook-new-repo.md) under the
 M26 modular organization principle
-([#676](https://github.com/mw-ding/eng-crew/issues/676)). It is the runbook's
+([#676](https://github.com/mw-ding/mdstack/issues/676)). It is the runbook's
 Step 2, between
 [Step 1: create the `crew:*` labels](../runbook-new-repo.md#step-1-create-the-crew-labels)
 and

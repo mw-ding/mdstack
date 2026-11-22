@@ -10,10 +10,10 @@
 How a new environment (a Claude Code or Codex session, a Grok Bot account, a
 tmux host) gets mdstack from one reviewed source, at a pinned version, with
 the right profile, and proves the install works before any role does work
-(roadmap 17.1, [#144](https://github.com/mw-ding/eng-crew/issues/144);
-umbrella [#110](https://github.com/mw-ding/eng-crew/issues/110);
+(roadmap 17.1, [#144](https://github.com/mw-ding/mdstack/issues/144);
+umbrella [#110](https://github.com/mw-ding/mdstack/issues/110);
 [portable spec P4, P5, P9](specs/portable.md#2-requirements); decision
-[#160 row 17](https://github.com/mw-ding/eng-crew/issues/160#issuecomment-6532308283)).
+[#160 row 17](https://github.com/mw-ding/mdstack/issues/160#issuecomment-6532308283)).
 
 This page adds no rule, gate, cap, marker field or label; the
 [protocol](protocol.md) owns them. It is design only; the
@@ -69,9 +69,9 @@ Bootstrap never starts or stops a crew: `mdstack up` (tmux) or routine creation
 
 | Choice | Alternatives considered |
 |---|---|
-| `mdstack bootstrap`: a module `environments/terminal/crew.d/bootstrap.py` of the existing `crew` CLI ([#224](https://github.com/mw-ding/eng-crew/issues/224) layout), run as `<mdstack>/cli/mdstack bootstrap`. The first bundle comes from the README install steps (download, `SHA256SUMS`, extract); later ones from bootstrap itself ([Q8](#q8-idempotency-upgrade-and-uninstall)) | A one-line fetch-and-run (`curl … \| sh`): the repo is private, so a plain fetch gets a 404, and it runs code before any checksum is checked. A separate shell installer: a second language and code path beside stdlib Python. A Claude Code plugin as the installer: one harness only ([packaging](deliverables.md#packaging)) |
+| `mdstack bootstrap`: a module `environments/terminal/crew.d/bootstrap.py` of the existing `crew` CLI ([#224](https://github.com/mw-ding/mdstack/issues/224) layout), run as `<mdstack>/cli/mdstack bootstrap`. The first bundle comes from the README install steps (download, `SHA256SUMS`, extract); later ones from bootstrap itself ([Q8](#q8-idempotency-upgrade-and-uninstall)) | A one-line fetch-and-run (`curl … \| sh`): the repo is private, so a plain fetch gets a 404, and it runs code before any checksum is checked. A separate shell installer: a second language and code path beside stdlib Python. A Claude Code plugin as the installer: one harness only ([packaging](deliverables.md#packaging)) |
 | No `--runtime` flag: the resolved `runtime.name` decides, so the profile stays the one record (P4) | A `--runtime` flag: two sources for one fact, which can disagree |
-| Runs on the host that runs the roles, from any directory; `--project` names the target clone's `config.toml` | Only from inside the target repo: a Grok Bot box or a second host ([#158](https://github.com/mw-ding/eng-crew/issues/158)) may not run from a clone |
+| Runs on the host that runs the roles, from any directory; `--project` names the target clone's `config.toml` | Only from inside the target repo: a Grok Bot box or a second host ([#158](https://github.com/mw-ding/mdstack/issues/158)) may not run from a clone |
 | A clone of mdstack works only at an exact tag (`git describe --exact-match`); `--dev` records the full SHA and satisfies no pin | Any commit: the install could not say which version it runs |
 
 Where it writes:
@@ -91,7 +91,7 @@ Where it writes:
 |---|---|---|
 | Source | The bundle `mdstack-<version>.tar.gz` at a tag: `gh release download vX.Y.Z -R mw-ding/mdstack` with the host's existing `gh` login, checked against `SHA256SUMS` before extraction. Other sources: `url` and `mirror` per [release sources](#release-sources-design) (#882; `git` and the host toolkit still design) | A `git clone` at the tag: kept only as the maintainer path (the "Before bootstrap" row of the [update path](release.md#update-path)); a clone carries internal paths the bundle leaves out. Tracking `main`: P9 says installs record a tag. A submodule or vendored copy in the product repo: a product commit per upgrade. A package manager: hosting and publishing are out of scope |
 | Which tag | The bundle it runs from; `--version vX.Y.Z` for an upgrade. Pre-release tags need `--pre` and never satisfy a pin ([versioning](deliverables.md#versioning)) | Implicit "latest": an unattended major bump, which the update path's Decide step gives to the owner |
-| Minimum | The first release whose bundle carries every file the install CLI imports ([#275](https://github.com/mw-ding/eng-crew/issues/275); `v2.0.0` lacks one) | none |
+| Minimum | The first release whose bundle carries every file the install CLI imports ([#275](https://github.com/mw-ding/mdstack/issues/275); `v2.0.0` lacks one) | none |
 | Record | `<state-dir>/<owner>__<repo>/VERSION` (the bundle's file) and `install.json` (tag, bundle SHA-256, runtime, each target path with its SHA-256, pending human steps, status). The link `<state-dir>/<owner>__<repo>/mdstack` points at the extracted bundle, and `paths.mdstack` names the link, so an upgrade never edits `config.toml`. This is the update path's "next to the live copy": beside it, never inside it | The tag in `config.toml`: bootstrap would rewrite the owner's file each upgrade (#191 records answers once). `VERSION` inside the live dir: `check-skill-drift.py --project` reports any live file the render does not produce as `EXTRA` |
 | Pack pin | An org pack's `pack.mdstack_version` (the `manifest.toml` beside its profile) must equal the installed tag; else fail closed, with the [version pin](packs.md#version-pin) steps as the hint | Warn and continue: a pack is supported only at its pin |
 | Upgrade | Pull only ([update path](release.md#update-path)): see [Q8](#q8-idempotency-upgrade-and-uninstall) | A scheduled auto-update: nothing pushes a version into an environment ([compatibility](deliverables.md#compatibility-promise)) |
@@ -100,15 +100,15 @@ Where it writes:
 
 Bootstrap resolves the four layers of
 [profile.md](profile.md#layers-and-precedence) in-process through
-`resolve_profile` ([#165](https://github.com/mw-ding/eng-crew/issues/165)),
+`resolve_profile` ([#165](https://github.com/mw-ding/mdstack/issues/165)),
 then runs every `validate` and cross-key check.
 
 | Layer | Source at bootstrap | When missing |
 |---|---|---|
 | `core` | `crew-config.py` defaults | Always present |
 | `default` | `<mdstack>/profiles/default.toml` in the bundle | The bundle is damaged: `SHA256SUMS` fails first; refuse |
-| `org` | `--org-profile <pack>/profile.toml`, later `paths.pack` ([#166](https://github.com/mw-ding/eng-crew/issues/166)); never stored in mdstack | Not given: skipped (P7: the default profile is complete). Given but unreadable, or its pin is not this version: fail closed |
-| `project` | `[--project <config.toml>]` | Propose, confirm, record ([#191](https://github.com/mw-ding/eng-crew/issues/191)): backends from the clone's git config only (never the network), runtime and engines from `profiles/default.toml` or `profiles/tmux.toml`; the owner confirms or edits; written once where `--project` points and never re-derived. Without a terminal and `--yes`: print the proposal and fail |
+| `org` | `--org-profile <pack>/profile.toml`, later `paths.pack` ([#166](https://github.com/mw-ding/mdstack/issues/166)); never stored in mdstack | Not given: skipped (P7: the default profile is complete). Given but unreadable, or its pin is not this version: fail closed |
+| `project` | `[--project <config.toml>]` | Propose, confirm, record ([#191](https://github.com/mw-ding/mdstack/issues/191)): backends from the clone's git config only (never the network), runtime and engines from `profiles/default.toml` or `profiles/tmux.toml`; the owner confirms or edits; written once where `--project` points and never re-derived. Without a terminal and `--yes`: print the proposal and fail |
 
 A team file ([profile.md](profile.md#team-files), #634) resolves the same way,
 with `team` and `repo` layers in place of `project`. Name a repo as
@@ -193,9 +193,9 @@ Pointers a pack declares as data install with the same selection and rules:
 Content is rendered once, into the state dir (or `paths.live_dir`); a harness
 gets only a pointer at the path it loads natively. One copy means one drift
 check (#128) and one size budget
-([#194](https://github.com/mw-ding/eng-crew/issues/194)). Each target belongs
+([#194](https://github.com/mw-ding/mdstack/issues/194)). Each target belongs
 to its runtime binding or harness adapter (#120,
-[#177](https://github.com/mw-ding/eng-crew/issues/177)); gaps use the
+[#177](https://github.com/mw-ding/mdstack/issues/177)); gaps use the
 [gap format](runtimes/README.md#gap-declaration) against
 [C1–C8](runtimes/README.md#contract).
 
@@ -224,7 +224,7 @@ committing the pointers (couples product history to an mdstack version).
 
 ## Q5. Preflight checks
 
-`mdstack doctor` ([#190](https://github.com/mw-ding/eng-crew/issues/190)) runs
+`mdstack doctor` ([#190](https://github.com/mw-ding/mdstack/issues/190)) runs
 every check read-only and prints one line each: `ok`, `fail`, `warn` or
 `human`, with the fix hint. `human` is a fix only a person can make; those
 are listed together at the end. Any `fail` stops bootstrap before it writes
@@ -241,7 +241,7 @@ anything; exit 0 only with no `fail`. `--fix` runs the fixer where one exists.
 | 7 | Engine auth | all | An auth variable [roles.md](roles.md#how-to-run-each-engine) names for an engine in the order is unset (checked by name; the value is never read into output) | Export it in the roles' environment |
 | 8 | Engine policy | all | A free-credit engine is in an order on a private repo ([hard rules](roles.md#hard-rules)); only one engine family is installed, so the reviewer engine cannot differ (invariant 2) | Edit `[engines]`, or install a second engine |
 | 9 | Nested sandbox (found 2026-10-29) | Codex in the profile | A no-op command under Codex's own sandbox fails (seen when nested in a sandboxed agent session: exit 71, `sandbox_apply: Operation not permitted`) while `CREW_SANDBOX_ENV` is unset or not `<NAME>=<value>` | Export `CREW_SANDBOX_ENV=<NAME>=<value>` with the variable the org pack names; `mdstack up` and `mdstack spawn` pass it to every window. mdstack never names it |
-| 10 | Harness prompts | tmux, session | A role run would stop on a permission or network prompt for `gh` or `git` ([#269](https://github.com/mw-ding/eng-crew/issues/269), [#288](https://github.com/mw-ding/eng-crew/issues/288), [#293](https://github.com/mw-ding/eng-crew/issues/293)) | `warn` with the issue's workaround until those land |
+| 10 | Harness prompts | tmux, session | A role run would stop on a permission or network prompt for `gh` or `git` ([#269](https://github.com/mw-ding/mdstack/issues/269), [#288](https://github.com/mw-ding/mdstack/issues/288), [#293](https://github.com/mw-ding/mdstack/issues/293)) | `warn` with the issue's workaround until those land |
 | 11 | tmux | tmux | `tmux` missing | Install tmux |
 | 12 | Codex hook trust | tmux, Codex | The host's Codex config has an untrusted hook ([troubleshooting](runbook-new-repo.md#tmux-troubleshooting)) | `human`: trust it in the host config |
 | 13 | Folder trust | Claude Code coordinator | First start in a new project | `human`: answer the dialog once (`mdstack attach ash --rw` on tmux) |
@@ -251,10 +251,10 @@ anything; exit 0 only with no `fail`. `--fix` runs the fixer where one exists.
 | 17 | Milestone and Project | all | No open `M*`; no linked Project with Todo, In Progress, In Review, Done | `--fix` when the identity can create and link the board, else `human` naming the owner's create and link commands. The board is recommended, not required: a missing one never fails |
 | 18 | CI | all | No check ran on recent PRs (`mdstack poll` wakes the reviewer only on green CI); no push CI on the default branch (`warn`) | `human`: add a PR check ([Step 4](runbook-new-repo.md#step-4-check-ci-and-branch-protection)) |
 | 19 | One automation | all | Webhooks or apps that also assign, open, review or merge ([protocol §8](protocol.md#8-safety)) | `human`: decide and record it |
-| 20 | Tool drift | all | A tool's running version differs from the installed one, or is below its pin ([#193](https://github.com/mw-ding/eng-crew/issues/193)) | Restart the tool or session; upgrade |
+| 20 | Tool drift | all | A tool's running version differs from the installed one, or is below its pin ([#193](https://github.com/mw-ding/mdstack/issues/193)) | Restart the tool or session; upgrade |
 | 21 | Local lint | all | `markdownlint-cli2` or `lychee` absent | `warn`: CI is the gate (#110 gap list) |
-| 22 | Handoff ([#639](https://github.com/mw-ding/eng-crew/issues/639)) | all | The control item is set but unreadable (every wake is read-only). `warn` when `repo.control_item` or `runtime.instance` is unset, or the [owning runtime](handoff.md#ownership-record) is another instance, draining, in transit or not yet claimed | Set the keys ([handoff](handoff.md)); fix the markers backend's read access |
-| 23 | Triage ([#777](https://github.com/mw-ding/eng-crew/issues/777)) | grok-bot | Never fails. `warn` when `triage.enabled = true`: Grok Bot installs no triage timer, and bootstrap's plan says so; triage stays the coordinator's dispositions | Set `triage.enabled = false` ([triage](triage.md)) |
+| 22 | Handoff ([#639](https://github.com/mw-ding/mdstack/issues/639)) | all | The control item is set but unreadable (every wake is read-only). `warn` when `repo.control_item` or `runtime.instance` is unset, or the [owning runtime](handoff.md#ownership-record) is another instance, draining, in transit or not yet claimed | Set the keys ([handoff](handoff.md)); fix the markers backend's read access |
+| 23 | Triage ([#777](https://github.com/mw-ding/mdstack/issues/777)) | grok-bot | Never fails. `warn` when `triage.enabled = true`: Grok Bot installs no triage timer, and bootstrap's plan says so; triage stays the coordinator's dispositions | Set `triage.enabled = false` ([triage](triage.md)) |
 
 Alternatives considered: fail-with-hint checks only, the first draft of this
 issue (#160 row 17 adopted `--fix` and the human-steps list); checks spread
@@ -349,7 +349,7 @@ its coordinator restarts by hand
 |---|---|
 | Re-run, nothing changed | Each step compares desired with live state; prints `no changes`, writes nothing, exit 0. Bootstrap needs a healthy record (`installed`, no failed self-test) equal to the one it would write: tag, source, project, pack, transport, harnesses, launches, human steps and owned targets. Every recorded target, a deselected harness's included, must match its bytes on disk, the `mdstack` link and planned exclude lines must be in place, and nothing may be pending removal or scaffolding. A deployed render must equal the new one; the record's `render_sha256` covers a render not yet deployed (a tmux install before `mdstack up`), and an `upgrade` with no deployed render deploys it. Anything else, a failed install included, re-applies (#1090) |
 | Re-run, profile changed | Re-render, show the diff, deploy on confirmation |
-| Upgrade ([#192](https://github.com/mw-ding/eng-crew/issues/192)) | `--version vX.Y.Z`: fetch and verify next to the current bundle; resolve and render with it; show the diff (render, harness targets, repo operations); a major needs the owner's OK after the `**Breaking:**` entries; deploy; move the `mdstack` link; record; then reload running roles, coordinator last, each once its in-flight pass ends (terminal worker status and idle pane) |
+| Upgrade ([#192](https://github.com/mw-ding/mdstack/issues/192)) | `--version vX.Y.Z`: fetch and verify next to the current bundle; resolve and render with it; show the diff (render, harness targets, repo operations); a major needs the owner's OK after the `**Breaking:**` entries; deploy; move the `mdstack` link; record; then reload running roles, coordinator last, each once its in-flight pass ends (terminal worker status and idle pane) |
 | Rollback | Upgrade to the previous tag ([rollback](release.md#rollback)); its bundle is still on disk |
 | Hand-edited target | A file whose hash differs from `install.json` is never overwritten: it is listed, and that target waits until the owner restores or removes it |
 | Pack pointer changed or removed | Re-planned even with an unchanged render and tag; unchanged targets are rewritten or removed, edited ones reported ([pack harness pointers](#upgrade-and-removal), #883) |
@@ -424,17 +424,17 @@ would have nothing to start).
 
 ## Release sources (design)
 
-**Status: design only** ([#882](https://github.com/mw-ding/eng-crew/issues/882)
+**Status: design only** ([#882](https://github.com/mw-ding/mdstack/issues/882)
 slice D). Built so far: slice B1, the `[install]` validator and the shared
 verifier and `transport` record in `scripts/crew-install.py`; slice B2
-([#944](https://github.com/mw-ding/eng-crew/issues/944)), the `url` and
+([#944](https://github.com/mw-ding/mdstack/issues/944)), the `url` and
 `mirror` sources in bootstrap and upgrade `--version`, the `transport`
 record, upgrade's source check and the doctor rows; slice B3
-([#945](https://github.com/mw-ding/eng-crew/issues/945)), the `git` source;
+([#945](https://github.com/mw-ding/mdstack/issues/945)), the `git` source;
 slices B4 and B5 (folded into #945), the host toolkit install, check and
 prune below.
 Decisions: Riley's
-[#649 ACs §11](https://github.com/mw-ding/eng-crew/issues/649#issuecomment-6643902567)
+[#649 ACs §11](https://github.com/mw-ding/mdstack/issues/649#issuecomment-6643902567)
 recommendations, accepted at triage: Git carries a commit-verified source,
 not a checksummed bundle (a); "never call `gh`" covers release transport
 (b); the primary's install record is the host toolkit pin (c). Install code
@@ -596,11 +596,11 @@ first bundle by hand one last time.
 
 | Slice | Paths | Adds |
 |---|---|---|
-| B1 [#943](https://github.com/mw-ding/eng-crew/issues/943) | `scripts/crew-config.py`, `scripts/crew-install.py` (new), `docs/profile.md` | `[install]` schema and refusals; the shared verifier and `transport` record |
-| B2 [#944](https://github.com/mw-ding/eng-crew/issues/944) | `scripts/crew.d/bootstrap.py`, `upgrade.py`, `doctor.py` | `url` and `mirror` fetch; no-`gh` transport; upgrade no-op; doctor rows |
-| B3 [#945](https://github.com/mw-ding/eng-crew/issues/945) | `scripts/crew-install.py` | `git` source |
-| B4 [#946](https://github.com/mw-ding/eng-crew/issues/946) | `scripts/crew.d/host.py`, `scripts/crew-remote.py` | Toolkit install in host prepare |
-| B5 [#947](https://github.com/mw-ding/eng-crew/issues/947) | the same | Host check pin and file verification; `--prune` |
+| B1 [#943](https://github.com/mw-ding/mdstack/issues/943) | `scripts/crew-config.py`, `scripts/crew-install.py` (new), `docs/profile.md` | `[install]` schema and refusals; the shared verifier and `transport` record |
+| B2 [#944](https://github.com/mw-ding/mdstack/issues/944) | `scripts/crew.d/bootstrap.py`, `upgrade.py`, `doctor.py` | `url` and `mirror` fetch; no-`gh` transport; upgrade no-op; doctor rows |
+| B3 [#945](https://github.com/mw-ding/mdstack/issues/945) | `scripts/crew-install.py` | `git` source |
+| B4 [#946](https://github.com/mw-ding/mdstack/issues/946) | `scripts/crew.d/host.py`, `scripts/crew-remote.py` | Toolkit install in host prepare |
+| B5 [#947](https://github.com/mw-ding/mdstack/issues/947) | the same | Host check pin and file verification; `--prune` |
 
 Tests across the slices: a mirror directory, a local HTTP server, a local
 bare Git repository, missing, duplicate and mismatched entries, a pin
@@ -609,12 +609,12 @@ failed verification that keeps the previous install.
 
 ## Pack harness pointers (design)
 
-**Status: built** ([#883](https://github.com/mw-ding/eng-crew/issues/883)):
-the [checks](#checks) ([#964](https://github.com/mw-ding/eng-crew/issues/964),
+**Status: built** ([#883](https://github.com/mw-ding/mdstack/issues/883)):
+the [checks](#checks) ([#964](https://github.com/mw-ding/mdstack/issues/964),
 slice B1), and install, upgrade and removal
-([#965](https://github.com/mw-ding/eng-crew/issues/965), slices B2 and B3).
+([#965](https://github.com/mw-ding/mdstack/issues/965), slices B2 and B3).
 Decisions: Riley's
-[#649 ACs §12](https://github.com/mw-ding/eng-crew/issues/649#issuecomment-6643902567),
+[#649 ACs §12](https://github.com/mw-ding/mdstack/issues/649#issuecomment-6643902567),
 accepted at triage: project-local targets only, and no executable registry
 mode. The owner later accepted one declared home root
 ([#1032](https://github.com/mw-ding/mdstack/issues/1032)): see
@@ -759,9 +759,9 @@ a minor release.
 
 | Slice | Paths | Adds |
 |---|---|---|
-| B1 [#964](https://github.com/mw-ding/eng-crew/issues/964) | `scripts/crew-config.py`, `docs/profile.md` | `pack.harness` and the registry schema; static checks |
-| B2 [#965](https://github.com/mw-ding/eng-crew/issues/965) | `scripts/crew.d/bootstrap.py` | Planning, install-time checks, launch notes, excludes, `harness_pointers` |
-| B3 [#966](https://github.com/mw-ding/eng-crew/issues/966), built in #965 | `scripts/crew.d/upgrade.py`, `scripts/crew.d/bootstrap.py`, `scripts/crew.d/_bootstrap_uninstall.py` | `no changes` test, drift, removed entries, the anchored exclude match |
+| B1 [#964](https://github.com/mw-ding/mdstack/issues/964) | `scripts/crew-config.py`, `docs/profile.md` | `pack.harness` and the registry schema; static checks |
+| B2 [#965](https://github.com/mw-ding/mdstack/issues/965) | `scripts/crew.d/bootstrap.py` | Planning, install-time checks, launch notes, excludes, `harness_pointers` |
+| B3 [#966](https://github.com/mw-ding/mdstack/issues/966), built in #965 | `scripts/crew.d/upgrade.py`, `scripts/crew.d/bootstrap.py`, `scripts/crew.d/_bootstrap_uninstall.py` | `no changes` test, drift, removed entries, the anchored exclude match |
 
 Tests across the slices: copy, pointer and launch note; an unimplemented
 adapter and an unknown one; a target collision with another entry and with a
@@ -774,21 +774,21 @@ without a registry.
 
 | Design part | Issue |
 |---|---|
-| Preflight checks, `--fix`, human steps ([Q5](#q5-preflight-checks)) | [#190](https://github.com/mw-ding/eng-crew/issues/190) (17.2) |
-| Propose → confirm → record ([Q3](#q3-config-resolution)) | [#191](https://github.com/mw-ding/eng-crew/issues/191) (17.3), after #165 |
-| Upgrade and reload ([Q8](#q8-idempotency-upgrade-and-uninstall)) | [#192](https://github.com/mw-ding/eng-crew/issues/192) (17.4) |
-| Tool drift ([Q5](#q5-preflight-checks) row 20) | [#193](https://github.com/mw-ding/eng-crew/issues/193) (17.5) |
-| Size budget ([Q7](#q7-self-test) row 4) | [#194](https://github.com/mw-ding/eng-crew/issues/194) (17.6) |
-| `resolve_profile` ([Q3](#q3-config-resolution)) | [#165](https://github.com/mw-ding/eng-crew/issues/165) |
-| Pack by path, `paths.pack` ([Q3](#q3-config-resolution)) | [#166](https://github.com/mw-ding/eng-crew/issues/166) |
+| Preflight checks, `--fix`, human steps ([Q5](#q5-preflight-checks)) | [#190](https://github.com/mw-ding/mdstack/issues/190) (17.2) |
+| Propose → confirm → record ([Q3](#q3-config-resolution)) | [#191](https://github.com/mw-ding/mdstack/issues/191) (17.3), after #165 |
+| Upgrade and reload ([Q8](#q8-idempotency-upgrade-and-uninstall)) | [#192](https://github.com/mw-ding/mdstack/issues/192) (17.4) |
+| Tool drift ([Q5](#q5-preflight-checks) row 20) | [#193](https://github.com/mw-ding/mdstack/issues/193) (17.5) |
+| Size budget ([Q7](#q7-self-test) row 4) | [#194](https://github.com/mw-ding/mdstack/issues/194) (17.6) |
+| `resolve_profile` ([Q3](#q3-config-resolution)) | [#165](https://github.com/mw-ding/mdstack/issues/165) |
+| Pack by path, `paths.pack` ([Q3](#q3-config-resolution)) | [#166](https://github.com/mw-ding/mdstack/issues/166) |
 | `mdstack bootstrap` core: locate, resolve, doctor, plan, `--dry-run`, record, the `mdstack` link; `cli/mdstack` and `environments/terminal/crew.d/` become runtime `all` in the manifest | proposed, not filed yet |
 | Bundle fetch: `--version`, `SHA256SUMS`, side-by-side extract, `--pre`, pack-pin check | proposed, not filed yet |
-| Release sources: `url`, `mirror` and `git`; host toolkit ([release sources](#release-sources-design)) | [#882](https://github.com/mw-ding/eng-crew/issues/882) slices B1 to B5 (#943 to #947) |
+| Release sources: `url`, `mirror` and `git`; host toolkit ([release sources](#release-sources-design)) | [#882](https://github.com/mw-ding/mdstack/issues/882) slices B1 to B5 (#943 to #947) |
 | Repo fixers: labels, milestone, Project, invitation ([Q6](#q6-repo-side-setup)) | proposed, not filed yet |
 | Harness targets: Claude Code files, Codex launch pointer ([Q4](#q4-install-targets)) | proposed, not filed yet |
-| Pack harness pointers: registry, copy and pointer targets, Codex launch notes ([pack harness pointers](#pack-harness-pointers-design)) | [#883](https://github.com/mw-ding/eng-crew/issues/883) slices B1 to B3 (#964; #965, which carries #966) |
-| `session` runtime binding (design) | [#340](https://github.com/mw-ding/eng-crew/issues/340) (17.13); [binding](runtimes/session.md), implementation remains follow-up |
-| Box-skill render input (Grok Bot) | [#341](https://github.com/mw-ding/eng-crew/issues/341) (17.14) |
+| Pack harness pointers: registry, copy and pointer targets, Codex launch notes ([pack harness pointers](#pack-harness-pointers-design)) | [#883](https://github.com/mw-ding/mdstack/issues/883) slices B1 to B3 (#964; #965, which carries #966) |
+| `session` runtime binding (design) | [#340](https://github.com/mw-ding/mdstack/issues/340) (17.13); [binding](runtimes/session.md), implementation remains follow-up |
+| Box-skill render input (Grok Bot) | [#341](https://github.com/mw-ding/mdstack/issues/341) (17.14) |
 | Self-test and `--smoke` ([Q7](#q7-self-test)) | proposed, not filed yet |
 | Uninstall ([Q8](#q8-idempotency-upgrade-and-uninstall)) | proposed, not filed yet |
 | Runbook leads with `mdstack bootstrap` ([Q10](#q10-relation-to-existing-issues)) | proposed, not filed yet |

@@ -1,7 +1,7 @@
 # Core memory
 
 A crew remembers in three layers (owner, 2026-11-07,
-[#1230](https://github.com/mw-ding/eng-crew/issues/1230)):
+[#1230](https://github.com/mw-ding/mdstack/issues/1230)):
 
 | Layer | Holds | Lives in | Changes by |
 |---|---|---|---|

@@ -3,7 +3,7 @@
 Onboarding module for the target repo's CI and branch protection setup,
 split out of the [onboarding runbook](../runbook-new-repo.md) under the M26
 modular organization principle
-([#676](https://github.com/mw-ding/eng-crew/issues/676)). It holds the
+([#676](https://github.com/mw-ding/mdstack/issues/676)). It holds the
 runbook's whole Step 4, between
 [Step 3: create Milestones and link a GitHub Project (v2)](../runbook-new-repo.md#step-3-create-milestones-and-link-a-github-project-v2)
 and

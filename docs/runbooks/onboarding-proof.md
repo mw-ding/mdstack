@@ -3,7 +3,7 @@
 Onboarding module for the first end-to-end proof on a new repo, split out of
 the [onboarding runbook](../runbook-new-repo.md) under the M26 modular
 organization principle
-([#676](https://github.com/mw-ding/eng-crew/issues/676)). It holds the
+([#676](https://github.com/mw-ding/mdstack/issues/676)). It holds the
 opening of the runbook's
 [Step 8: first test issue](#step-8-first-test-issue) and its
 [Template issue](#template-issue), with the creation, assignment and
@@ -192,7 +192,7 @@ mdstack issue:
   ([../../templates/README.md](../../templates/README.md#open-items)).
 - Creating and deleting routines is platform-specific and not scripted in this
   repo; this runbook names what to create, not the platform call.
-  [#27](https://github.com/mw-ding/eng-crew/issues/27) tracks a scripted routine
+  [#27](https://github.com/mw-ding/mdstack/issues/27) tracks a scripted routine
   installer for a new repo.
 - "Only the synthesizer merges" is convention while the bots share an account.
   This limitation is by design for now, with no follow-up issue.
