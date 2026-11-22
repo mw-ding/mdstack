@@ -4,7 +4,7 @@
 runner (25.02, #784) is `scripts/campaign-run.py`; the disposable sandbox
 setup (25.03, #785) is `scripts/campaign-sandbox.py`. Design:
 the M25 integration campaign proposal on
-[#782](https://github.com/mw-ding/eng-crew/issues/782). Scenario records live
+[#782](https://github.com/mw-ding/mdstack/issues/782). Scenario records live
 one per file under `docs/campaign-scenarios/` with a generated, checked index
 (M57 C1, PR #1897): built in source, in no release yet, and no installed
 campaign adoption is claimed.
@@ -62,7 +62,7 @@ operations only: never `kill-server` or global options.
 
 An inherited `$TMUX` beats `TMUX_TMPDIR`: from a crew pane, a bare
 `TMUX_TMPDIR=<sandbox> tmux kill-server` kills the owner's default server
-([#817](https://github.com/mw-ding/eng-crew/issues/817)). So every harness
+([#817](https://github.com/mw-ding/mdstack/issues/817)). So every harness
 tmux call pins the sandbox socket, `<state>/tmux/tmux-<uid>/default`, with
 `-S` and drops `TMUX` and `TMUX_PANE`. Scenario steps get the same pin from
 the `<state>/bin/tmux` shim. It refuses any `-L`, and any `-S` naming
@@ -478,9 +478,9 @@ python3 environments/terminal/remote/lab/crew-lab-scenarios.py "$SANDBOX/state/m
 ### Level c: owner-run devices and second environment
 
 Level c reuses
-[#209](https://github.com/mw-ding/eng-crew/issues/209),
-[#716](https://github.com/mw-ding/eng-crew/issues/716) and
-[#213](https://github.com/mw-ding/eng-crew/issues/213), with the same
+[#209](https://github.com/mw-ding/mdstack/issues/209),
+[#716](https://github.com/mw-ding/mdstack/issues/716) and
+[#213](https://github.com/mw-ding/mdstack/issues/213), with the same
 scenario IDs and manifest. Record each host's capability, OS, runtime, bundle
 and profile fingerprints in the run issue. Loopback counts as simulated. A
 real-device criterion stays open until the owner records the run.

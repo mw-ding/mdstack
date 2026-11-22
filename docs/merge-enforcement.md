@@ -27,7 +27,7 @@ merging and no force-push are conventions. Squash, merge commits and rebase
 merges are all currently enabled. There is no live ruleset ID to link yet;
 record it here after application and verification.
 
-This plan-level blocker is tracked in **[#80](https://github.com/mw-ding/eng-crew/issues/80)**
+This plan-level blocker is tracked in **[#80](https://github.com/mw-ding/mdstack/issues/80)**
 (Blocked: Free-plan GitHub ruleset cannot enforce Sam-only merge on private
 repos). Keep #80 open until the account can apply the target ruleset (or an
 App-based alternative lands); then close it with what was applied.
@@ -37,7 +37,7 @@ App-based alternative lands); then close it with what was applied.
 | Rule | Value | Why | §7 gate backed |
 |---|---|---|---|
 | Default-branch PR | PR required on `~DEFAULT_BRANCH` | Prevent direct pushes to `main` | PR state |
-| Approval | 1 non-author approval; no code-owner or last-push requirement | `md-mt` (Vera), the write collaborator, is the only qualifying non-author today; the user's `/crew merge-ok` is also posted as an `md-mt` APPROVE | Formal approval |
+| Approval | 1 non-author approval; no code-owner or last-push requirement | `<reviewer-account>` (Vera's write-collaborator account) is the only qualifying non-author today; the user's `/crew merge-ok` is also posted as a `<reviewer-account>` APPROVE | Formal approval |
 | Required checks | `markdownlint`, `links`, `repo-guard`; GitHub Actions app 15368 | Exact job names observed on `main` at `8eda267` | CI green at head |
 | Up-to-date branch | `strict_required_status_checks_policy=false` | Synthesizer updates behind PR branches itself; avoid extra merge-ups | CI / mergeability |
 | Stale approvals | `dismiss_stale_reviews_on_push=false` | SHA-bound markers and merge-up re-approval remain protocol checks | Formal approval at head |
@@ -56,7 +56,7 @@ merging to it. Sam retains the merge lock and serial merge duty meanwhile.
 
 The platform approval count does not validate SHA-bound crew markers, user
 permission, validation, watches, mirror holds or other §7 conditions; the
-synthesizer still checks all of §7. Optional CODEOWNERS (`* @md-mt` plus
+synthesizer still checks all of §7. Optional CODEOWNERS (`* @<reviewer-account>` plus
 `require_code_owner_review`) could pin the reviewer, but is not recommended
 now: it auto-requests review on every PR and fires `review-requested`, which
 Vera's V2 listens to.
@@ -68,7 +68,7 @@ organization (reassess this personal-repo recipe after a move). Making the
 repository public is not an option: it is private by design. MD applies only
 after MD's/Ash's explicit go; Ash records the result. This documentation
 authorizes no settings change. The Free-plan gap is the blocked issue
-[#80](https://github.com/mw-ding/eng-crew/issues/80); do not invent a waiver.
+[#80](https://github.com/mw-ding/mdstack/issues/80); do not invent a waiver.
 
 After the plan prerequisite and go, first read the existing rulesets to avoid
 creating a duplicate. If none implements this gate, write the following file
@@ -159,9 +159,9 @@ Under the [gate contract](protocol.md#gate-contract), this platform gate is
 satisfied by the verified active ruleset: required checks, one non-author
 approval, squash only, no force-push/deletion, no bypass. GitHub enforces it
 at merge time. Vera's APPROVE (or the user's `/crew merge-ok` steer posted as
-`md-mt` APPROVE) and green CI already satisfy §7, so it adds no new wait.
+`<reviewer-account>` APPROVE) and green CI already satisfy §7, so it adds no new wait.
 
-While it is not live (today — see [#80](https://github.com/mw-ding/eng-crew/issues/80)),
+While it is not live (today — see [#80](https://github.com/mw-ding/mdstack/issues/80)),
 the synthesizer's §7 checks remain the only enforcement, by convention;
 nothing changes for the crew. If a live ruleset
 blocks a merge §7 would permit (for example a renamed check), use the

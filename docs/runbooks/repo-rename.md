@@ -1,7 +1,7 @@
 # Repository rename
 
 Owner-run runbook for renaming a crew's GitHub repository
-([#1234](https://github.com/mw-ding/eng-crew/issues/1234)). The repo name
+([#1234](https://github.com/mw-ding/mdstack/issues/1234)). The repo name
 keys the install's state: the state directory `<state_dir>/<owner>__<name>`,
 the tmux session `crew-<owner>-<name>`, each host's job root
 `<root>/<owner>__<name>`, the profile's `[repo]` table and slugs, and the

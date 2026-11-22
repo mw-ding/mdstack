@@ -3,7 +3,7 @@
 Onboarding module for removing the crew from a repo, split out of the
 [onboarding runbook](../runbook-new-repo.md) under the M26 modular
 organization principle
-([#676](https://github.com/mw-ding/eng-crew/issues/676)). It holds the
+([#676](https://github.com/mw-ding/mdstack/issues/676)). It holds the
 runbook's whole
 [Rollback and offboarding](../runbook-new-repo.md#rollback-and-offboarding)
 section: the bootstrap-managed uninstall, then the ordered manual steps. The

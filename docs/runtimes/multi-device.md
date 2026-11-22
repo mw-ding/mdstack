@@ -9,10 +9,10 @@
 How one coordinator runs role sessions on several hosts (laptops, a
 desktop, cloud VMs, a machine with a simulator or phone attached) joined by
 a private overlay network (portable mdstack roadmap 20.1,
-[#158](https://github.com/mw-ding/eng-crew/issues/158); umbrella
-[#110](https://github.com/mw-ding/eng-crew/issues/110)). It extends the
+[#158](https://github.com/mw-ding/mdstack/issues/158); umbrella
+[#110](https://github.com/mw-ding/mdstack/issues/110)). It extends the
 [tmux binding](tmux.md); it is not a new binding. It carries out the
-owner's [#160 row 6 decision](https://github.com/mw-ding/eng-crew/issues/160#issuecomment-6531687881)
+owner's [#160 row 6 decision](https://github.com/mw-ding/mdstack/issues/160#issuecomment-6531687881)
 and does not re-decide it. It began as a design; a built part names its
 script, and the build issues are under [Build issues](#build-issues).
 
@@ -33,7 +33,7 @@ Q1–Q5.
 | Who places (row 6) | A pure function inside `mdstack spawn`; the coordinator only overrides, with a reason posted on the item | The coordinator choosing by judgment: not reproducible across turns, not testable | [Placement](#placement) |
 | Separate binding or tmux capability (#158 Q5) | A capability of the tmux binding: same CLI, session layout and run records, plus a host per run | A `remote-tmux` binding: `runtime.name` picks one binding, but one crew mixes local and remote runs, and every C1–C8 mechanism would be duplicated | [Contract across hosts](#runtime-contract-across-hosts) |
 | Engine auth and quota per host (#158 Q2) | Each host keeps its own logins; the profile lists them per host; the tier's engine order is walked first, then hosts. Quota routing stays manual ([roles](../roles.md#quota-routing)): steering around one host's exhausted subscription is a `--host` override or a profile edit | Host first: a warm host would override the owner's engine order (row 7). Shipping logins to hosts: breaks R1 and least privilege. Automatic per-host quota: row 7 defers quota headroom | [Placement](#placement), [Security](#security-model) |
-| Merge lock (#158 Q3) | On the primary only. If the primary is gone, nothing lands (fail closed); moving the primary is a runtime handoff ([#157](https://github.com/mw-ding/eng-crew/issues/157)) | Per-host locks: two lands at once. A lock on the tool of record: the backend interfaces offer no atomic lock, and #157's planned ownership marker says who may land | [Contract across hosts](#runtime-contract-across-hosts) |
+| Merge lock (#158 Q3) | On the primary only. If the primary is gone, nothing lands (fail closed); moving the primary is a runtime handoff ([#157](https://github.com/mw-ding/mdstack/issues/157)) | Per-host locks: two lands at once. A lock on the tool of record: the backend interfaces offer no atomic lock, and #157's planned ownership marker says who may land | [Contract across hosts](#runtime-contract-across-hosts) |
 | Security model (#158 Q4) | Credentials follow roles; the crew SSH key can run one fixed entrypoint only; no forwarding; no secret crosses the wire | Plain SSH with a shell: a leaked primary key is a shell on every host | [Security](#security-model) |
 | Remote transport (row 6) | Hardened SSH call to a fixed entrypoint; a per-account runner on the host owns the runs | Runs as children of the SSH session: die with the link and may not see the account's logins. Detached `nohup`: survives, but has no supervisor and the same login gap | [Remote call](#remote-call-and-runner) |
 | Wake across hosts | The primary pulls new status lines from each host by offset; hosts never call the primary | Hosts push to the primary: role hosts would need a credential for the primary. A long-lived stream: loses lines when the link drops | [Contract across hosts](#runtime-contract-across-hosts) |
@@ -65,7 +65,7 @@ Q1–Q5.
 
 ## Host inventory (profile extension)
 
-Proposal for [#204](https://github.com/mw-ding/eng-crew/issues/204),
+Proposal for [#204](https://github.com/mw-ding/mdstack/issues/204),
 building on the [profile schema](../profile.md) (#122). All keys are
 optional, so every existing profile stays valid; with no `[hosts]` table the
 crew is today's single-machine tmux crew.
@@ -197,18 +197,18 @@ override is a decision, so it is on the tool of record.
 ## Host readiness
 
 `mdstack host check <host> [--project <config.toml>] [--fix]` has the shape
-of `mdstack doctor` ([#190](https://github.com/mw-ding/eng-crew/issues/190)):
+of `mdstack doctor` ([#190](https://github.com/mw-ding/mdstack/issues/190)):
 read-only by default, `--fix` repairs what it can and lists the steps only a
 person can take, exit 1 on any `fail`.
 
 | # | Check | Read-only probe | `--fix` | Human step |
 |---|---|---|---|---|
 | 1 | Reachable | The entrypoint's `version` verb answers in time | none | Join the overlay; fix the SSH config or host key |
-| 2 | Version | The host's mdstack version equals the primary's; with `[install]`, a `toolkit` row: the project's pinned toolkit matches the primary's install record and every file hash ([host toolkit](../bootstrap.md#host-toolkit)) | `mdstack host prepare` installs the pinned toolkit (with `[install]`) | Install the pinned version on the host (bootstrap, [#144](https://github.com/mw-ding/eng-crew/issues/144)) |
+| 2 | Version | The host's mdstack version equals the primary's; with `[install]`, a `toolkit` row: the project's pinned toolkit matches the primary's install record and every file hash ([host toolkit](../bootstrap.md#host-toolkit)) | `mdstack host prepare` installs the pinned toolkit (with `[install]`) | Install the pinned version on the host (bootstrap, [#144](https://github.com/mw-ding/mdstack/issues/144)) |
 | 3 | Runner | The runner service is up | Install or restart the user-level runner | none |
 | 4 | Host doctor | The host's own `mdstack doctor` checks (tools, Python, tmux, state root) | Its `--fix` | Its human steps |
 | 5 | Capabilities | Declared `os` and `arch` match; each device is present (device adapter TBD: `unverified` until one exists, as in [verification](../verification.md)) | none | Correct the profile |
-| 6 | Logins | `gh` holds each identity of the host's roles; each listed engine is logged in (harness adapter, [#177](https://github.com/mw-ding/eng-crew/issues/177)) | none: never changes auth | Log in on the host |
+| 6 | Logins | `gh` holds each identity of the host's roles; each listed engine is logged in (harness adapter, [#177](https://github.com/mw-ding/mdstack/issues/177)) | none: never changes auth | Log in on the host |
 | 7 | Project mirror | The mirror exists, fetches, and has the default branch; builders' toolchain path exists | `mdstack host prepare` | Give the host's identity repo access |
 | 8 | Capacity | Free disk under `root` above a floor; live runs against `max_runs` | none | Free disk |
 
@@ -304,7 +304,7 @@ Host-side layout under `root`:
 
 ## Remote call and runner
 
-Contract for [#208](https://github.com/mw-ding/eng-crew/issues/208)
+Contract for [#208](https://github.com/mw-ding/mdstack/issues/208)
 (firstmate's remote transport, as contracts only):
 
 | Property | Contract |
@@ -524,7 +524,7 @@ Rules:
 - **Credentials follow roles.** A host holds only the logins its `roles`
   need. A reviewer-only host in a profile with a separate reviewer identity
   holds no credential that can push (#158 Q4). A single-identity profile
-  ([#111](https://github.com/mw-ding/eng-crew/issues/111)) cannot split
+  ([#111](https://github.com/mw-ding/mdstack/issues/111)) cannot split
   privilege by token; that residual risk is the same as on one machine.
 - Remote reviewer runs keep the single-host engine sandbox
   ([mdstack spawn](tmux.md#mdstack-spawn)); being remote adds no write path.
@@ -547,7 +547,7 @@ Rules:
 
 ## Connect to a host
 
-`mdstack connect` ([#1036](https://github.com/mw-ding/eng-crew/issues/1036))
+`mdstack connect` ([#1036](https://github.com/mw-ding/mdstack/issues/1036))
 is the owner's one command to get a shell on an inventory host from any
 machine that has the profile, usually a laptop:
 
@@ -607,7 +607,7 @@ connect = { alias = "b", transport = "mosh", proxy = "corp-proxy %h %p" }
 
 ## Forge-less hosts: remote test runner
 
-Owner, 2026-11-03 ([#715](https://github.com/mw-ding/eng-crew/issues/715)):
+Owner, 2026-11-03 ([#715](https://github.com/mw-ding/mdstack/issues/715)):
 the first second host has no access to the forge (GitHub), so M20 builds a
 remote test runner first and moves remote role sessions to a follow-up.
 A forge-less host is reached over SSH from the primary only. It cannot
@@ -692,18 +692,18 @@ CI stays the full-suite gate.
 
 Cases that need a real forge-less host (seeding, a real run matching a
 local one, an unreachable fallback) are logged in
-[#716](https://github.com/mw-ding/eng-crew/issues/716) and stay open until
+[#716](https://github.com/mw-ding/mdstack/issues/716) and stay open until
 the owner records them there.
 
 ## Runbook: add a runner host
 
 Adds one [forge-less host](#forge-less-hosts-remote-test-runner) that runs
 the targeted local set for the primary (20.12,
-[#349](https://github.com/mw-ding/eng-crew/issues/349)). Every step is the
+[#349](https://github.com/mw-ding/mdstack/issues/349)). Every step is the
 owner's. `<host>` is the host's overlay name, `<root>` its `root`
 (default `~/.mdstack`), and `<bundle>` the mdstack release bundle extracted on
 the host. Real-device proof of each step is logged in
-[#716](https://github.com/mw-ding/eng-crew/issues/716).
+[#716](https://github.com/mw-ding/mdstack/issues/716).
 
 1. **Overlay.** Join the host to the overlay (N1) and check that `<host>`
    resolves on the primary (N2). Set the access rules so the primary can
@@ -769,7 +769,7 @@ the host. Real-device proof of each step is logged in
    host's mirror (`ok prepare seed: project mirror`). It then runs
    `mdstack host check`, which reports the logins check as `n/a`, or `warn`
    when a forge login is present on the host. The entrypoint's `check` verb
-   ([#743](https://github.com/mw-ding/eng-crew/issues/743)) also reports
+   ([#743](https://github.com/mw-ding/mdstack/issues/743)) also reports
    `tools`, `project mirror`, `runner` and `capacity`; with all of them `ok`
    the host prints `ready`, and `mdstack runner run` without `--host` may pick
    it.
@@ -953,27 +953,27 @@ as a shell as the runner account on that host; it is never the default.
 ## Build issues
 
 The milestone M20 issues
-([#160 milestones](https://github.com/mw-ding/eng-crew/issues/160#issuecomment-6532947853)),
+([#160 milestones](https://github.com/mw-ding/mdstack/issues/160#issuecomment-6532947853)),
 mapped onto this design and re-scoped runner first (#715). The follow-up
 milestone holds the remote role sessions part.
 
 | ID | Issue | Scope from this design | Depends on | Milestone |
 |---|---|---|---|---|
-| 20.2 | [#204](https://github.com/mw-ding/eng-crew/issues/204) | [Host inventory](#host-inventory-profile-extension) keys and `validate` rules | #158 | M20 (done) |
-| 20.3 | [#205](https://github.com/mw-ding/eng-crew/issues/205) | `mdstack host check` and `mdstack hosts` ([Host readiness](#host-readiness)) | #204, #190 | M20 (done) |
-| 20.4 | [#206](https://github.com/mw-ding/eng-crew/issues/206) | `mdstack host prepare` and the host-side layout; on a forge-less host it seeds the mirror from the primary (`seed` verb) | #205, #208 | M20 |
-| 20.6 | [#208](https://github.com/mw-ding/eng-crew/issues/208) | [Remote call and runner](#remote-call-and-runner): client, entrypoint and verbs, runner, and the failure-semantics doc section | #158 | M20 |
-| 20.7 | [#209](https://github.com/mw-ding/eng-crew/issues/209) | Two-host dry run: primary plus a forge-less runner host. Owner-run ([#716](https://github.com/mw-ding/eng-crew/issues/716) case 2) | 20.13–20.16 | M20 |
-| 20.12 | [#349](https://github.com/mw-ding/eng-crew/issues/349) | Runbook "add a runner host" (overlay, forced-command key, runner, seed) and host rows in the tmux contract table | 20.15 | M20 |
-| 20.13 | [#726](https://github.com/mw-ding/eng-crew/issues/726) | `forge = false` host key, its `validate` rules, `mdstack hosts` and `mdstack host check` | #204, #205 | M20 |
-| 20.14 | [#727](https://github.com/mw-ding/eng-crew/issues/727) | Runner `job` and `result` verbs, closed command set, scrubbed env | #208, #206 | M20 |
-| 20.15 | [#728](https://github.com/mw-ding/eng-crew/issues/728) | `mdstack runner` client, results by reference, local fallback | #726, #727, #206 | M20 |
-| 20.16 | [#729](https://github.com/mw-ding/eng-crew/issues/729) | Runner capture as evidence; `docs/verification.md` row | #728 | M20 |
-| 20.5 | [#207](https://github.com/mw-ding/eng-crew/issues/207) | `place()`, `--host --reason`, the run record fields and the `mdstack status` host column | #204 | Follow-up |
-| 20.8 | [#345](https://github.com/mw-ding/eng-crew/issues/345) | Remote run lifecycle: `mdstack spawn`, `kill`, `restart` and `down` executed on the placed host; brief and review-file hand-off | #206, #207, #208 | Follow-up |
-| 20.9 | [#346](https://github.com/mw-ding/eng-crew/issues/346) | Remote wake and messages: watcher pulls and status mirror (C1, C4), `mdstack send` and `mdstack acked` through `send` (C3), `host_scan_interval` | 20.8 | Follow-up |
-| 20.10 | [#347](https://github.com/mw-ding/eng-crew/issues/347) | Partition handling for role runs: `unreachable`, reconcile on return, owner-approved abandon with tombstone. Runner jobs use the fallback above | 20.9 | Follow-up |
-| 20.11 | [#348](https://github.com/mw-ding/eng-crew/issues/348) | Remote `mdstack attach`, `mdstack attach builders` and `mdstack logs` for role windows. Runner logs come by reference (20.15) | 20.8 | Follow-up |
+| 20.2 | [#204](https://github.com/mw-ding/mdstack/issues/204) | [Host inventory](#host-inventory-profile-extension) keys and `validate` rules | #158 | M20 (done) |
+| 20.3 | [#205](https://github.com/mw-ding/mdstack/issues/205) | `mdstack host check` and `mdstack hosts` ([Host readiness](#host-readiness)) | #204, #190 | M20 (done) |
+| 20.4 | [#206](https://github.com/mw-ding/mdstack/issues/206) | `mdstack host prepare` and the host-side layout; on a forge-less host it seeds the mirror from the primary (`seed` verb) | #205, #208 | M20 |
+| 20.6 | [#208](https://github.com/mw-ding/mdstack/issues/208) | [Remote call and runner](#remote-call-and-runner): client, entrypoint and verbs, runner, and the failure-semantics doc section | #158 | M20 |
+| 20.7 | [#209](https://github.com/mw-ding/mdstack/issues/209) | Two-host dry run: primary plus a forge-less runner host. Owner-run ([#716](https://github.com/mw-ding/mdstack/issues/716) case 2) | 20.13–20.16 | M20 |
+| 20.12 | [#349](https://github.com/mw-ding/mdstack/issues/349) | Runbook "add a runner host" (overlay, forced-command key, runner, seed) and host rows in the tmux contract table | 20.15 | M20 |
+| 20.13 | [#726](https://github.com/mw-ding/mdstack/issues/726) | `forge = false` host key, its `validate` rules, `mdstack hosts` and `mdstack host check` | #204, #205 | M20 |
+| 20.14 | [#727](https://github.com/mw-ding/mdstack/issues/727) | Runner `job` and `result` verbs, closed command set, scrubbed env | #208, #206 | M20 |
+| 20.15 | [#728](https://github.com/mw-ding/mdstack/issues/728) | `mdstack runner` client, results by reference, local fallback | #726, #727, #206 | M20 |
+| 20.16 | [#729](https://github.com/mw-ding/mdstack/issues/729) | Runner capture as evidence; `docs/verification.md` row | #728 | M20 |
+| 20.5 | [#207](https://github.com/mw-ding/mdstack/issues/207) | `place()`, `--host --reason`, the run record fields and the `mdstack status` host column | #204 | Follow-up |
+| 20.8 | [#345](https://github.com/mw-ding/mdstack/issues/345) | Remote run lifecycle: `mdstack spawn`, `kill`, `restart` and `down` executed on the placed host; brief and review-file hand-off | #206, #207, #208 | Follow-up |
+| 20.9 | [#346](https://github.com/mw-ding/mdstack/issues/346) | Remote wake and messages: watcher pulls and status mirror (C1, C4), `mdstack send` and `mdstack acked` through `send` (C3), `host_scan_interval` | 20.8 | Follow-up |
+| 20.10 | [#347](https://github.com/mw-ding/mdstack/issues/347) | Partition handling for role runs: `unreachable`, reconcile on return, owner-approved abandon with tombstone. Runner jobs use the fallback above | 20.9 | Follow-up |
+| 20.11 | [#348](https://github.com/mw-ding/mdstack/issues/348) | Remote `mdstack attach`, `mdstack attach builders` and `mdstack logs` for role windows. Runner logs come by reference (20.15) | 20.8 | Follow-up |
 | — | not filed | A forge relay through the primary, if remote role sessions on forge-less hosts are ever needed | 20.8 | Follow-up |
 
 ## Design credit

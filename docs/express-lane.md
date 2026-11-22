@@ -9,9 +9,9 @@
 
 An opt-in **express** flavor in which one builder builds, self-reviews and
 tests end to end, and the change lands on green CI with no independent
-review or validation ([#636](https://github.com/mw-ding/eng-crew/issues/636);
-tracking [#611](https://github.com/mw-ding/eng-crew/issues/611); umbrella
-[#110](https://github.com/mw-ding/eng-crew/issues/110)). It carries the
+review or validation ([#636](https://github.com/mw-ding/mdstack/issues/636);
+tracking [#611](https://github.com/mw-ding/mdstack/issues/611); umbrella
+[#110](https://github.com/mw-ding/mdstack/issues/110)). It carries the
 owner's decisions of 2026-11-03: the scoped floor exceptions and exclusions
 (about 06:38Z), the self-review on a different model as the middle ground
 (about 06:42Z) and the self-review flip between `same` and `different`

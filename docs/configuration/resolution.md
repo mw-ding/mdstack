@@ -2,7 +2,7 @@
 
 Configuration module for checking and resolving a profile, split out of the
 [profile reference](../profile.md) under the M26 modular organization
-principle ([#676](https://github.com/mw-ding/eng-crew/issues/676)). It holds
+principle ([#676](https://github.com/mw-ding/mdstack/issues/676)). It holds
 the profile's former [Validate](../profile.md#validate) section: both command
 variants, the problem format and exit codes, the rejection list and the
 install-time placeholder check. It also holds the profile's former
@@ -45,7 +45,7 @@ builds the effective profile from four layers, lowest precedence first
 | Layer | Source | Present |
 |---|---|---|
 | `core` | Schema defaults in the script: `repo.default_branch`, role names/titles/emojis, `engines.coordinator`, each tier's `effort`, the `[triage]` defaults (`repos` from `[repo]`), the `[docs]` defaults when that table is present (`repos` from `[repo]`), and the chosen runtime's integer options | always |
-| `default` | `profiles/default.toml` in mdstack (13.12, [#124](https://github.com/mw-ding/eng-crew/issues/124)) | skipped while absent |
+| `default` | `profiles/default.toml` in mdstack (13.12, [#124](https://github.com/mw-ding/mdstack/issues/124)) | skipped while absent |
 | `org` | The org / environment pack profile, read from `--org-profile`, or `paths.pack/profile.toml` in the project; mdstack never holds or names one | only when given or recorded |
 | `project` | The project's `config.toml` (`--project`) | always |
 

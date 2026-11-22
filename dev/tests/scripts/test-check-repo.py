@@ -31,6 +31,8 @@ and core memory (#1230): clean, personal data, a stray file and the current tree
 and role routines (#1247): the contract's vocabulary, an action and event outside it, and the current tree,
 and campaign scenarios (#1412): no origin/main, kept cases, an unhandled assertion and a deleted case, a deleted scenario directory, and the current tree,
 and untracked files (#1414): a non-ignored one named as a warning, an ignored one quiet, and checked after `git add`.
+and bundle links (#2017): a deliverable's link to an unshipped directory, reference or untracked file,
+bundled dirs and tracked internal files passing, no manifest or no git skipped, and #2000's README link as a negative control,
 and the lessons index (#1929, M60 X1): rows X1.1-X1.8 (each metadata key missing, empty, wrong or duplicate,
 no or unclosed front matter, an unknown key, `mixed` misuse, stale, hand-edited, duplicated or out-of-order rows,
 a pending file, bad markers, the migrated tree, and two same-base lesson PRs squash-landing with no conflict).
@@ -574,6 +576,61 @@ with tempfile.TemporaryDirectory() as d:
 
 rc, out = run(os.path.dirname(SCRIPTS), "--only", "deliverables")
 expect("deliverables: the current tree passes", rc == 0, out)
+
+# Bundle links (#2017): a deliverable Markdown link must be one release-bundle.py
+# keeps (target in the bundle) or rewrites (target a tracked file).
+BUNDLE_ROWS = ("README.md\tdeliverable\tall\n"
+               "changes/**\tinternal\tn/a\n"
+               "docs/**\tdeliverable\tall\n"
+               "scripts/deliverables.txt\tinternal\tn/a\n")
+with tempfile.TemporaryDirectory() as d:
+    if git(d, "init", "-q"):
+        write(d, "changes/unreleased/1-x.md", "[up](../../README.md) [dir](../unreleased/)\n")
+        write(d, "docs/sub/a.md", "[d](../) [root](/) [frag](../../changes/unreleased/1-x.md#x)\n")
+        write(d, "README.md", "[dir](docs/sub/) [file](changes/unreleased/1-x.md) `changes/unreleased/`\n")
+        rc, out = deliverables_tree(d, BUNDLE_ROWS)
+        rc, out = run(d, "--only", "links")
+        expect("bundle-link: bundled dirs, tracked internal files, code spans and internal sources pass",
+               rc == 0, out)
+        write(d, "README.md", "[dir](changes/unreleased/)\n[ref]: ./changes\n")
+        write(d, "docs/stray.txt", "x\n")
+        write(d, "docs/b.md", "[u](stray.txt)\n")
+        git(d, "add", "README.md", "docs/b.md")
+        rc, out = run(d, "--only", "links")
+        expect("bundle-link: an unshipped directory, reference or untracked file in a deliverable fails",
+               rc == 1 and out.count("[bundle-link]") == 3 and "README.md:1: [bundle-link]" in out
+               and "README.md:2: [bundle-link]" in out and "docs/b.md:1: [bundle-link]" in out
+               and "link a shipped target or render the path as code" in out, out)
+        os.remove(os.path.join(d, "scripts/deliverables.txt"))
+        git(d, "add", "-A")
+        rc, out = run(d, "--only", "links")
+        expect("bundle-link: skipped without a manifest", rc == 0, out)
+    else:
+        print("skip bundle-link tests (git unavailable)")
+
+with tempfile.TemporaryDirectory() as d:
+    write(d, "README.md", "[dir](changes/unreleased/)\n")
+    write(d, "changes/unreleased/x.md", "x\n")
+    write(d, "scripts/deliverables.txt", BUNDLE_ROWS)
+    rc, out = run(d, "--only", "links")
+    expect("bundle-link: skipped outside a git work tree (the release-bundle stage)", rc == 0, out)
+
+ROOT = os.path.dirname(SCRIPTS)
+with tempfile.TemporaryDirectory() as d:
+    if git(d, "clone", "-q", "--no-hardlinks", ROOT, d + "/r"):
+        r = d + "/r"
+        rc, out = run(r, "--only", "links")
+        expect("bundle-link: the current tree passes", rc == 0, out)
+        with open(os.path.join(r, "README.md"), encoding="utf-8") as f:
+            text = f.read()
+        bad = text.replace("`changes/unreleased/` until", "[`changes/unreleased/`](changes/unreleased/) until", 1)
+        write(r, "README.md", bad)
+        rc, out = run(r, "--only", "links")
+        expect("bundle-link: negative control, #2000's README link to changes/unreleased/ fails",
+               bad != text and rc == 1 and "README.md:" in out and "[bundle-link]" in out
+               and "changes/unreleased/" in out, out)
+    else:
+        print("skip bundle-link current-tree control (git clone unavailable)")
 
 # Untracked files (#1414): path checks read `git ls-files`, so a default run
 # names non-ignored untracked files on stderr (a warning, exit unchanged) and

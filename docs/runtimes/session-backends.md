@@ -5,8 +5,8 @@ session backend, such as a terminal multiplexer) to create them, show them
 to the owner, ring them, probe them and stop them, so adding a backend
 means filling in one section here, not editing the runtime (portable
 mdstack, roadmap 15.5,
-[#178](https://github.com/mw-ding/eng-crew/issues/178); operations from
-[#160 row 13](https://github.com/mw-ding/eng-crew/issues/160#issuecomment-6532100410)).
+[#178](https://github.com/mw-ding/mdstack/issues/178); operations from
+[#160 row 13](https://github.com/mw-ding/mdstack/issues/160#issuecomment-6532100410)).
 Each operation names the [runtime contract](README.md#contract) capability
 it serves. This page adds no rule, gate, cap, marker field or label; the
 [protocol](../protocol.md) still owns them.
@@ -119,7 +119,7 @@ The tmux runtime binding's contract applies with these explicit gaps:
   navigation; the tiled builders view is unsupported.
 - In-place `mdstack upgrade` uses a tmux-specific respawn and is unsupported;
   stop the crew and restart with the updated install. Remote herdr is out
-  of scope ([#203](https://github.com/mw-ding/eng-crew/issues/203)).
+  of scope ([#203](https://github.com/mw-ding/mdstack/issues/203)).
 
 ## Adapter modules
 

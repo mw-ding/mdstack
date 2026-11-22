@@ -2,8 +2,8 @@
 
 How the tmux crew decides which worker to start next, crew-wide, from the
 crew's demand, each item's priority, the workers' state, the machine's state
-and owner presence ([#587](https://github.com/mw-ding/eng-crew/issues/587);
-umbrella [#110](https://github.com/mw-ding/eng-crew/issues/110)). It replaces
+and owner presence ([#587](https://github.com/mw-ding/mdstack/issues/587);
+umbrella [#110](https://github.com/mw-ding/mdstack/issues/110)). It replaces
 the per-pool admission of the [builder lead](runtimes/tmux.md#builder-lead)
 and [reviewer lead](runtimes/tmux.md#reviewer-lead) with one shared
 decision. It carries out the owner's rescope of 2026-11-02 (about 22:55Z):
@@ -30,8 +30,8 @@ this showed five failure modes:
 | F1 | Admission swung between serializing, where one suite blocked both pools, and surging, where 5–6 suites pushed load to 110–170 on 16 CPUs and caused model gateway 503 stalls | On/off gates with no hysteresis and no ramp limit; the one-minute load average lags each burst of starts |
 | F2 | Reviews and merge-ups for nearly done PRs waited behind new builds, and M19 fill-in blocked M18 validations | Each pool admits in arrival order; nothing ranks work across pools or by distance to landing |
 | F3 | Same-file PRs ran in parallel and then conflicted one after another; each merge-up cost 30–60 minutes, and the median open→merge time doubled from 30 to 61 minutes | Dispatch ignores file overlap; the train drops overlapping members instead of trying them together |
-| F4 | Idle builders and orphan processes held slots ([#572](https://github.com/mw-ding/eng-crew/issues/572)) | Worker state was not an admission input; fixed by #586 for idle builders |
-| F5 | Owner presence needed manual cap edits ([#577](https://github.com/mw-ding/eng-crew/issues/577)) | Presence was not an input; fixed by #582 |
+| F4 | Idle builders and orphan processes held slots ([#572](https://github.com/mw-ding/mdstack/issues/572)) | Worker state was not an admission input; fixed by #586 for idle builders |
+| F5 | Owner presence needed manual cap edits ([#577](https://github.com/mw-ding/mdstack/issues/577)) | Presence was not an input; fixed by #582 |
 
 ## Overview
 
@@ -305,9 +305,9 @@ the scheduler never kills an unrecorded process.
 |---|---|
 | #572 / #586 idle builders hold slots | Input, kept as built: idle-retained builders are not busy; reclaim rules unchanged |
 | #577 / #582 presence caps | Input, kept as built: `pool_cap` sets each pool's bound and T's ceiling |
-| [#598](https://github.com/mw-ding/eng-crew/issues/598) dequeue uses the full cap | Precondition: dequeue and the scheduler must read the same `pool_cap` |
+| [#598](https://github.com/mw-ding/mdstack/issues/598) dequeue uses the full cap | Precondition: dequeue and the scheduler must read the same `pool_cap` |
 | #566 two-milestone rule | Input: classes 7 and 8 and the milestone tie-break |
-| [#578](https://github.com/mw-ding/eng-crew/issues/578) wake noise | Shares the summary line and the rule that deferrals never wake the coordinator |
+| [#578](https://github.com/mw-ding/mdstack/issues/578) wake noise | Shares the summary line and the rule that deferrals never wake the coordinator |
 | `max_suites` (#573), default `cpus // 4` | Subsumed: no longer a default gate. Kept as an optional owner ceiling, unset by default |
 | Hard-coded load gate `load >= cpus` | Subsumed: replaced by the load watermarks of [Target](#target). An optional `max_load` ceiling replaces it for owners who want a hard stop above the floors |
 | Empty reviewer pool keeps one slot | Generalized: the floor applies to both pools |

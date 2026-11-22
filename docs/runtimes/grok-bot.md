@@ -36,12 +36,12 @@ How Grok Bot meets each capability of the
 | C6 Isolation | Unique worktree per run, never a shared or branch-named path, cleanup per run and on merge/close ([roles](../roles.md#worker-isolation-worktrees)) | C6 isolation: partial, compensated by cleanup timing: a worker deletes its worktree only when its pass finishes (a builder's pass ends after its push, and a reviewer's worktree holds no work to land), and the builder's merge/close cleanup ([B2](../../templates/runtimes/grok-bot/builder-b2.md), or the coordinator's message in the [lighter lane](#lighter-lane-routing)) runs only on `pr-merged` / `pr-closed`, when `refs/pull/<n>/head` on GitHub holds every pushed commit; residual risk: no landed check runs before the delete, so uncommitted or untracked paths, or commits a failed pass never pushed, are lost, and no discard reason is recorded |
 | C7 Serial land | Synthesizer takes `<state-dir>/<owner>__<repo>/locks/merge.lock` (`flock`) around the head-bound squash ([protocol §7](../protocol.md#7-merge-gate-synthesizer)) | None |
 | C8 Owner channel and SLA | Coordinator chat plus the matching GitHub post; 2h awake-hours SLA and sweeper `crew:needs-md` promotion ([protocol §6](../protocol.md#6-duties-on-wake-all-roles)) | None |
-| C9 Ownership handoff | Ownership record and read-only guard implemented ([protocol](../protocol.md#ownership-record)); prompt stop and return follow the [wiring checklist](../../templates/runtimes/grok-bot/wiring.md#handoff-stop-and-return) (#212); manifest generation is tmux-only, so a switch is still the [offboarding](../runbook-new-repo.md#rollback-and-offboarding) pause, then routine removal from each bot's parent turn | C9 ownership handoff: unsupported, compensated by the manual pause: `crew:hold` on every open crew PR and `crew:ready` issue, on which work roles no-op ([protocol §5](../protocol.md#5-rounds-and-escalation)), then routine removal; residual risk: holds are per item and manual, so a missed item can still wake a routine; each event on a held PR costs a no-op bot turn until its watches are removed; the incoming runtime rebuilds its context from GitHub ([#210](https://github.com/mw-ding/eng-crew/issues/210)–[#212](https://github.com/mw-ding/eng-crew/issues/212)) |
+| C9 Ownership handoff | Ownership record and read-only guard implemented ([protocol](../protocol.md#ownership-record)); prompt stop and return follow the [wiring checklist](../../templates/runtimes/grok-bot/wiring.md#handoff-stop-and-return) (#212); manifest generation is tmux-only, so a switch is still the [offboarding](../runbook-new-repo.md#rollback-and-offboarding) pause, then routine removal from each bot's parent turn | C9 ownership handoff: unsupported, compensated by the manual pause: `crew:hold` on every open crew PR and `crew:ready` issue, on which work roles no-op ([protocol §5](../protocol.md#5-rounds-and-escalation)), then routine removal; residual risk: holds are per item and manual, so a missed item can still wake a routine; each event on a held PR costs a no-op bot turn until its watches are removed; the incoming runtime rebuilds its context from GitHub ([#210](https://github.com/mw-ding/mdstack/issues/210)–[#212](https://github.com/mw-ding/mdstack/issues/212)) |
 
 **Owner decision 2026-11-04:** The owner accepted gaps C1, C2, C3 and C5
 as declared in the table, with their residual risk, under
-[#150](https://github.com/mw-ding/eng-crew/issues/150)
-([decision](https://github.com/mw-ding/eng-crew/issues/150#issuecomment-6637838439));
+[#150](https://github.com/mw-ding/mdstack/issues/150)
+([decision](https://github.com/mw-ding/mdstack/issues/150#issuecomment-6637838439));
 no runtime contract (#120) change. C6, C9 and the review start gap are not
 covered by this decision.
 
@@ -86,19 +86,19 @@ Bot.
 
 ### Mirror deferral provenance
 
-[#140](https://github.com/mw-ding/eng-crew/issues/140) AC3 reconciles each
+[#140](https://github.com/mw-ding/mdstack/issues/140) AC3 reconciles each
 PR that deferred its box-skill mirror. This records what the PRs themselves
 show. It adds no owner approval after the fact: a missing deferral stays a
 recorded gap, closed only by the #140 render and deploy.
 
 | PR | Changed | Deferral record | Handling |
 |---|---|---|---|
-| [#418](https://github.com/mw-ding/eng-crew/pull/418) | Wiring template: owner-feedback recipe (wiring 2b) | None found in its body, comments or reviews | Gap: no deferral record. The #140 render picks the change up |
-| [#425](https://github.com/mw-ding/eng-crew/pull/425) | `docs/protocol.md`: train options and land rules | None found in its body, comments or reviews | Gap: no deferral record. The #140 render picks the change up; Grok Bot trains immediately, not on the tmux timer |
-| [#402](https://github.com/mw-ding/eng-crew/pull/402) | Repo prerequisite fixers (scripts) | Merge receipt says no deferral used | N/A: no Grok template, protocol or roles change |
-| [#428](https://github.com/mw-ding/eng-crew/pull/428) | Bootstrap bundle fetch (scripts) | Listed in older #140 notes only | N/A: no Grok template, protocol or roles change |
-| [#433](https://github.com/mw-ding/eng-crew/pull/433) | Harness pointer install (scripts, docs) | Merge receipt says no deferral used | N/A: no Grok template, protocol or roles change |
-| [#436](https://github.com/mw-ding/eng-crew/pull/436) | Bootstrap offboarding (scripts, runbook) | Merge receipt says no deferral used | N/A: no Grok template, protocol or roles change |
+| [#418](https://github.com/mw-ding/mdstack/pull/418) | Wiring template: owner-feedback recipe (wiring 2b) | None found in its body, comments or reviews | Gap: no deferral record. The #140 render picks the change up |
+| [#425](https://github.com/mw-ding/mdstack/pull/425) | `docs/protocol.md`: train options and land rules | None found in its body, comments or reviews | Gap: no deferral record. The #140 render picks the change up; Grok Bot trains immediately, not on the tmux timer |
+| [#402](https://github.com/mw-ding/mdstack/pull/402) | Repo prerequisite fixers (scripts) | Merge receipt says no deferral used | N/A: no Grok template, protocol or roles change |
+| [#428](https://github.com/mw-ding/mdstack/pull/428) | Bootstrap bundle fetch (scripts) | Listed in older #140 notes only | N/A: no Grok template, protocol or roles change |
+| [#433](https://github.com/mw-ding/mdstack/pull/433) | Harness pointer install (scripts, docs) | Merge receipt says no deferral used | N/A: no Grok template, protocol or roles change |
+| [#436](https://github.com/mw-ding/mdstack/pull/436) | Bootstrap offboarding (scripts, runbook) | Merge receipt says no deferral used | N/A: no Grok template, protocol or roles change |
 
 ## Wake wiring: event to consuming role
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Repo guard for mdstack (spec R1, R6): secret scan, required docs/sections,
-relative markdown links, crew marker SHAs, optional name denylist,
+relative markdown links (a deliverable's link must survive the release bundle), crew marker SHAs, optional name denylist,
 deliverables manifest coverage, spec slice status, design headers naming an
 open milestone, CHANGELOG fragments,
 per-script docs, index files (inventory fresh, entries sorted, docs index
@@ -1071,8 +1071,25 @@ def check_docs(root, config, fail):
             fail(cfg_rel, n, "missing-section", "%s lacks required section '%s'%s" % (doc, heading, hint))
 
 
+def bundle_paths(root):
+    """Issue #2017: (tracked files, dirs holding a deliverable, deliverable files) per the manifest,
+    or None outside a git work tree or without a readable manifest."""
+    names, lines = tracked_files(root), read_lines(os.path.join(root, MANIFEST))
+    if names is None or lines is None:
+        return None
+    rows = [glob_regex(c[0]) for _, c in manifest_rows(lines) if len(c) > 1 and c[1] == "deliverable"]
+    shipped = {p for p in names if any(rx.match(p) for rx in rows)}
+    dirs = {"."} | {posixpath.dirname(p) for p in shipped}
+    for d in list(dirs):
+        while d not in ("", "."):
+            d = posixpath.dirname(d)
+            dirs.add(d or ".")
+    return set(names), dirs, shipped
+
+
 def check_links(root, fail):
     root_real = os.path.realpath(root)
+    bundle = bundle_paths(root)
     for full, rel in walk(root):
         if not rel.endswith(".md"):
             continue
@@ -1101,6 +1118,14 @@ def check_links(root, fail):
                     fail(rel, n, "broken-link", "link escapes the repo: " + t)
                 elif not os.path.exists(dest):
                     fail(rel, n, "broken-link", "relative link does not resolve: " + t)
+                elif bundle and rel in bundle[2]:
+                    # release-bundle.py keeps a link into the bundle and rewrites one to a tracked file
+                    folder = "" if path.startswith("/") else posixpath.dirname(rel)
+                    target = posixpath.normpath(posixpath.join(folder, path.lstrip("/")))
+                    if target not in bundle[0] and target not in bundle[1]:
+                        fail(rel, n, "bundle-link", "release-bundle.py cannot keep or rewrite this link "
+                             "(not a tracked file or a bundled directory): %s; link a shipped target or "
+                             "render the path as code" % t)
 
 
 def check_markdown(root, fail):

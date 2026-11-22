@@ -3,9 +3,9 @@
 Reference module for the docs of the projects a crew works on, split out of
 the [project docs consolidation design](project-docs.md) under the M26
 modular organization principle
-([#1024](https://github.com/mw-ding/eng-crew/issues/1024)): the essential
+([#1024](https://github.com/mw-ding/mdstack/issues/1024)): the essential
 doc set every crew-run project should have and the status banner a design
-doc carries. Owner 2026-11-07 ([#1219](https://github.com/mw-ding/eng-crew/issues/1219)):
+doc carries. Owner 2026-11-07 ([#1219](https://github.com/mw-ding/mdstack/issues/1219)):
 specs are every project's source of truth, so they are essential too. The profile's [`[docs]`](profile.md#docs) table maps a
 project's homes; the docs pass that checks them stays in the design.
 
@@ -37,7 +37,7 @@ a default; a project with an existing home for one maps it in the profile
   the docs pass reports it missing when no Markdown spec sits under it, and
   `mdstack bootstrap` seeds `project.md` there from the template's skeleton
   when it has none, never overwriting a spec
-  ([#1225](https://github.com/mw-ding/eng-crew/issues/1225)).
+  ([#1225](https://github.com/mw-ding/mdstack/issues/1225)).
   A project whose specs live outside the repository names that tracker item
   or document with `[docs] specs_external` instead
   ([profile](profile.md#docs), #1725): the coordinator's spec bookends name

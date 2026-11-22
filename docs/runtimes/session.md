@@ -30,7 +30,8 @@ cap, marker field or label: the [protocol](../protocol.md) and
 A profile selects the binding with `runtime.name = "session"`
 ([options](../configuration/runtime-options.md#session-options)):
 `max_active_milestones`, `session_backend` (`native` subagents, `cli`
-runs or `hosted` control-plane sessions), the `builders` and `reviewers` pool limits, and the synthesizer's
+runs or `hosted` control-plane sessions), `isolation` (a `worktree` per run, or
+an `assigned-checkout` each worker already has), the `builders` and `reviewers` pool limits, and the synthesizer's
 land-policy options. `crew-render` writes four briefs from
 `templates/runtimes/session/`: the coordinator, and the builder, reviewer
 and synthesizer worker briefs, plus the researcher sweep worker brief when
