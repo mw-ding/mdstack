@@ -11,10 +11,12 @@ captured. Each file runs with `TMUX` and `TMUX_PANE` removed and `TMUX_TMPDIR`
 set to a fresh private directory, removed when the file finishes, so a test's
 bare `tmux` call can never reach the caller's server (#1156), and with
 `MDSTACK_INTERNAL=1`, so `mdstack --project` is accepted as in a crew window (#1965). -j sets the
-worker count (default: CPU count, at most 8). Files in SERIAL run one at a
-time after the parallel batch. The runner prints one line per file as it
+worker count (default: CPU count, at most 8). Files named in SLOW_FIRST start
+first, slowest first, so the longest files never start last (#2082); the rest
+follow in path order. Files in SERIAL run one at a time after the parallel batch. The runner prints one line per file as it
 finishes (status and duration), then the K slowest files, then the full output
-of every failing file. A failing file's output is also written, as soon as it
+of every failing file, then a summary line with the file and failure counts,
+the wall time, the worker count and the CPU seconds the files used. A failing file's output is also written, as soon as it
 finishes, to `<log-dir>/<file name>.log` (default: a fresh temp directory, kept),
 named on its FAIL line. Exit code: 1 if any file fails, else 0.
 CI runs the full suite this way in the `repo-guard` job of
@@ -24,6 +26,7 @@ import argparse
 import concurrent.futures
 import glob
 import os
+import resource
 import shutil
 import subprocess
 import sys
@@ -37,6 +40,16 @@ MAX_DEFAULT_JOBS = 8
 # Files that cannot share a machine with other tests (ports, cwd or global
 # state). None found so far: every test uses temp dirs and ephemeral ports.
 SERIAL = set()
+# Longest files, slowest first, by their CI duration (#2082). A stale or
+# missing name only changes start order.
+SLOW_FIRST = (
+    "test-crew-reviewer-pool.py", "test-crew-train.py", "test-crew-spawn.py", "test-crew-route.py",
+    "test-crew-watch.py", "test-crew-lead.py", "test-crew-review-ready.py", "test-crew-bootstrap.py",
+    "test-crew-schedule.py", "test-crew-restart.py", "test-crew-land.py", "test-crew-up.py",
+    "test-crew-team.py", "test-crew-start.py", "test-crew-send.py", "test-crew-dequeue.py",
+    "test-status-shared.py", "test-crew-upgrade.py", "test-check-repo.py", "test-crew-kill.py",
+    "test-crew-remote.py",
+)
 
 
 def short_tmp_root():
@@ -65,6 +78,12 @@ def run_one(path):
     return path, proc.returncode, time.monotonic() - start, proc.stdout.decode(errors="replace")
 
 
+def start_order(files):
+    """SLOW_FIRST files in its order, then the rest as given."""
+    rank = {name: i for i, name in enumerate(SLOW_FIRST)}
+    return sorted(files, key=lambda f: rank.get(os.path.basename(f), len(rank)))
+
+
 def rel(path):
     return os.path.relpath(path, ROOT)
 
@@ -83,7 +102,7 @@ def main(argv=None):
     for f in files:
         if not os.path.isfile(f):
             ap.error("no such test file: %s" % f)
-    parallel = [f for f in files if os.path.basename(f) not in SERIAL]
+    parallel = start_order([f for f in files if os.path.basename(f) not in SERIAL])
     serial = [f for f in files if os.path.basename(f) in SERIAL]
 
     results = []
@@ -111,6 +130,7 @@ def main(argv=None):
     for f in serial:
         report(run_one(f))
     wall = time.monotonic() - start
+    usage = resource.getrusage(resource.RUSAGE_CHILDREN)
 
     print("\nslowest:")
     for path, _, secs, _ in sorted(results, key=lambda r: -r[2])[:args.slowest]:
@@ -118,7 +138,8 @@ def main(argv=None):
     failed = sorted((r for r in results if r[1] != 0), key=lambda r: r[0])
     for path, code, _, output in failed:
         print("\n===== FAIL %s (exit %d) =====\n%s" % (rel(path), code, output.rstrip()))
-    print("\n%d files, %d failed, %.1fs wall, -j %d" % (len(results), len(failed), wall, args.jobs))
+    print("\n%d files, %d failed, %.1fs wall, -j %d, %.1fs cpu"
+          % (len(results), len(failed), wall, args.jobs, usage.ru_utime + usage.ru_stime))
     return 1 if failed else 0
 
 
