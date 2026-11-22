@@ -190,7 +190,13 @@ into `<state-dir>/<owner>__<repo>/triage/queue.json`, then exit. A GitHub
 tracker reads `[triage] repos` through `gh`; a non-GitHub tracker backend
 reads its `tracker.list-items` binding once per `[triage] trackers` id
 (the `<tracker>` placeholder; list it in the map's `placeholders.kept`),
-comments included for owner replies, and lists no closed milestones.
+comments included for owner replies, and lists no closed milestones. A
+tracker CLI that lists items without comments binds the optional
+`tracker.read-comments`: the scan then runs it once per open listed item,
+with `<n>` the item id, and the owner-reply rules read the JSON comment
+array it prints in place of the listed comments (#1960). A failed or
+unreadable read records that item unreadable. Unbound, the scan is
+unchanged.
 
 No watcher runs on session, so a hosted scheduler maps
 `roles/eng/researcher/routines/triage-sweep.toml` to its own routine
