@@ -298,6 +298,24 @@ class StartMatrix(Base):
         with open(self.wrapper) as f:
             self.assertEqual(f.read(), "#!/bin/sh\necho mine\n")
 
+    def test_session_runtime_starts_then_attaches(self):
+        """#1957 R10 (3): start and up --attach accept a session profile: one window-0 session, no role windows, then
+        an interactive attach; a running session crew is attached with no second session."""
+        for entry in ("start", "up --attach"):
+            with self.subTest(entry=entry):
+                self.reset()
+                super().write_profile(runtime="session")
+                r = self.run_entry(entry, leads=True)  # the shipped inputs: the fixture has no session binding
+                self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+                self.assertEqual(self.names().count("new-session"), 1)
+                self.assertNotIn("new-window", self.names())
+                self.assertEqual(self.joins(), [["attach-session", "-t", TARGET]])
+                os.remove(self.log)
+                r = self.run_entry(entry, leads=True)
+                self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+                self.assertNotIn("new-session", self.names())
+                self.assertEqual(self.joins(), [["attach-session", "-t", TARGET]])
+
     def test_help_lists_start_as_the_shortcut(self):
         r = self.crew("--help")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)

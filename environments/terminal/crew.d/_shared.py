@@ -80,6 +80,21 @@ def coordinator_window(values):
     return name + "-" + values["identities.team"] if values.get("identities.team") else name
 
 
+def coordinator_launch(values, cmd, resume):
+    """Window 0's launch line: it derives GH_TOKEN only when a backend is bound to GitHub (#1957); ask takes no pointer
+    (the harness picker would read it as a search term)."""
+    github = any(v == "github" for k, v in values.items() if re.fullmatch(r"backends\.[\w-]+\.name", k))
+    line = LAUNCH if github else LAUNCH.partition("; ")[2]
+    return line.removesuffix(' "%s"') % cmd if resume == "ask" else line % (cmd, POINTER)
+
+
+def coordinator_dir(values, project):
+    """Window 0's working directory: runtime.options.launch.cwd, relative to the profile's directory, else that
+    directory (#1957)."""
+    base = os.path.dirname(os.path.abspath(project))
+    return os.path.abspath(os.path.join(base, os.path.expanduser(values.get("runtime.options.launch.cwd") or ".")))
+
+
 def window_alias(values, window):
     """A window name with the coordinator's bare name (`ash`) resolved to window 0's name."""
     return coordinator_window(values) if window == values.get("identities.coordinator.name", "ash").lower() else window
