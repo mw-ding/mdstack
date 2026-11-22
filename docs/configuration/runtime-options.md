@@ -79,7 +79,7 @@ sessions; running workers drain naturally when the cap drops:
 | `confinement` | string: `enforce` or `off` | `"off"` | none: builder confinement ([Confinement](../runtimes/tmux.md#confinement), #1252). `enforce` refuses a builder launch that cannot confine the run to its own copy, before any claim or window; `off` launches it and marks the run unconfined in its record and `mdstack doctor` |
 | `sandbox_env` | string: `NAME=VALUE` | `""` | none: sandbox variable passed to every window by `mdstack up`, `mdstack spawn` and `mdstack restart`; `CREW_SANDBOX_ENV` in the launching environment overrides it. Windows also receive `CREW_SANDBOX_ENV` so subsequent launches keep the setting |
 | `notes` | table: role name → list of file paths | `{}` | Standing runtime notes appended at launch, in list order, under headings naming each file. Roles: `coordinator`, `builder`, `reviewer`, `synthesizer`; relative paths resolve from `<state-dir>/<owner>__<repo>`, absolute paths are used as given. Missing or unreadable files fail closed ([mdstack spawn](../runtimes/tmux.md#mdstack-spawn)). The `render` subtable holds render-time notes for any role, leads included (below) |
-| `launch` | table: `coordinator`, `roles`, `resume`, `reconcile` | none (today's topology) | The `mdstack up` launch topology; see [Launch topology](#launch-topology) ([mdstack up](../runtimes/tmux.md#mdstack-up)) |
+| `launch` | table: `coordinator`, `roles`, `resume`, `reconcile`, `cwd` | none (today's topology) | The `mdstack up` launch topology; see [Launch topology](#launch-topology) ([mdstack up](../runtimes/tmux.md#mdstack-up)) |
 | `role_runtime` | table: role name → runtime name | none | Render that role's brief from another runtime's templates; see [Per-role runtime](#per-role-runtime) |
 
 Configure standing policy once; each launch reads the current file contents.
@@ -129,7 +129,7 @@ brief renders the land options as for `tmux`:
 | `notes` | table | `{}` | its `render` subtable holds render-time notes, as for `tmux`; `mdstack up` appends the `coordinator` list to the coordinator brief (#1548); no launcher reads worker notes |
 | `session` | string | `crew-<owner>-<repo>` | none: the tmux session `mdstack up` opens for the coordinator (#1548) |
 | `permission_mode` | as in [`tmux` options](#tmux-options) | `"bypass"` | none: the coordinator harness flags `mdstack up` launches with |
-| `launch` | table: `coordinator`, `resume` | none | `coordinator` and `resume` as in [Launch topology](#launch-topology); `roles` has no effect, since `mdstack up` never opens role windows on `session` and workers stay dispatched per pass |
+| `launch` | table: `coordinator`, `resume`, `cwd` | none | `coordinator`, `resume` and `cwd` as in [Launch topology](#launch-topology); `roles` has no effect, since `mdstack up` never opens role windows on `session` and workers stay dispatched per pass |
 | `role_runtime` | table | none | as in `tmux`; see [Per-role runtime](#per-role-runtime) |
 
 ## Per-role runtime
@@ -188,10 +188,14 @@ coordinator, tmux lead windows and a fresh coordinator conversation.
 | `coordinator` | `tmux` or `none` | `"tmux"` | `none`: `mdstack up` runs its preflight (profile, Slack variable, Codex hook trust, render, coordinator notes) and starts no session |
 | `roles` | `tmux`, `hosted` or `none` | `"tmux"` | `tmux` starts the pool lead windows as today. `hosted`: the coordinator dispatches role passes as hosted sessions on remote worker hosts, so `mdstack up` opens no role windows. `none` starts no role windows (`mdstack up --coordinator-only` does the same for one run). `tmux` needs `coordinator = "tmux"` |
 | `resume` | `fresh`, `ask` or a session id (`[A-Za-z0-9._:-]`, up to 128 characters) | `"fresh"` | The coordinator's harness conversation. A session id resumes it with the brief pointer; `ask` opens the harness's resume picker, without the pointer. `mdstack up --resume <id>` overrides it for one run (#1548). Claude Code and Codex only; another coordinator engine refuses `mdstack up` before any write |
+| `cwd` | directory path | the profile's directory | The coordinator's working directory (window 0), for `mdstack up`, `mdstack restart` and an upgrade reload; relative to the profile's directory, `~` expanded. `mdstack up` refuses a path that is not a directory (#1957) |
 | `reconcile` | `backend` | `"backend"` | Reconciliation reads go through the configured backends' read operations, never a hard-coded GitHub call ([reconcile binding](../runtimes/tmux.md#launch-topology)) |
 
 The window name, `CREW_ROLE`, `CREW_PROJECT`, `CREW_STATE` and the other
-tags are the same in every topology. For example, a local resumable
+tags are the same in every topology. They are exported by window 0's own
+command, never set on the tmux session, so a window the owner opens in the
+crew session carries no `CREW_*` (#1957). The launch line derives
+`GH_TOKEN` only when a backend is bound to `github`. For example, a local resumable
 coordinator with hosted role sessions on a pack backend:
 
 ```toml

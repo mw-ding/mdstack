@@ -176,6 +176,12 @@ its attach line. `launch.coordinator = "none"` is preflight only, and
 `launch.resume` or `mdstack up --resume <id>` resumes an existing Claude Code
 or Codex coordinator conversation
 ([launch options](../configuration/runtime-options.md#launch-topology)).
+The `CREW_*` variables reach window 0's command only, so another window in
+the session has none; `launch.cwd` sets the coordinator's working directory
+(default: the profile's directory); `GH_TOKEN` is derived only when a
+backend is bound to `github`. `mdstack start` and `mdstack up --attach`
+start the session coordinator as `mdstack up` does, then attach the
+owner's terminal to window 0 (#1957).
 
 ## Triage sweep routine
 
