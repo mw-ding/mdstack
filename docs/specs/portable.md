@@ -3516,7 +3516,7 @@ recorded as done for this opening slice, effective on merge.
 
 | ID | Issue | Scope | Depends on | Tier | Status |
 |---|---|---|---|---|---|
-| S0 | #2025 | [v8-reliability.md](v8-reliability.md) and this section | Owner plan-ok | default | done |
+| S0 | #2025 | [v8-reliability.md](v8-reliability.md) and this section (PR #2033) | Owner plan-ok | default | done |
 | R1 | #2024 | 7.x bootstrap re-exec of `upgrade --project` | #2025 | default | open |
 | R2 | #2023 | Launcher pins its install root | #2024 | default | open |
 | R3 | #1961 | Primary host root defaults to `paths.root` | #2023 | default | open |

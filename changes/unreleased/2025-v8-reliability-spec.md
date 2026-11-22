@@ -1,7 +1,7 @@
 ---
 type: added
 issue: 2025
-pr: TBD
+pr: 2033
 date: 2026-11-22
 box-skill: none
 ---
