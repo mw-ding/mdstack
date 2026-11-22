@@ -94,6 +94,8 @@ MAPPED = {
     "tested-update": ["strategy.update_from_base"],
     "land-step": ["land.mode"], "land-publish": ["land.opens_draft"], "land-rule": ["land.tests_against_tip"],
     "land-stack": ["land.stack"], "spec-home": ["docs.homes.specs", "docs.specs_external"],
+    "local-checks": ["builder.local_checks"], "linkage-check": ["backends.change.name"],
+    "fragment-step": ["release.fragments"],
 }
 for role, metadata in ROLES.items():
     MAPPED[role.title() + "Bot"] = [metadata["identity_key"] + ".name"]
@@ -277,6 +279,41 @@ LAND_RULE = ("\nBackend queue (`land.tests_against_tip`): the rules below and th
 LAND_PUBLISH = ("\n   The backend opens drafts (`land.opens_draft`): run `<op:change.publish>`\n"
                 "   right after opening, and again if the change is still a draft at handoff;\n"
                 "   it is harmless twice and supplies no approval, verdict or gate.")
+# Builder build-pass steps bound to a GitHub change backend, [release] or builder.local_checks (#1958): a GitHub
+# render keeps today's text byte for byte; another backend drops the linkage check and, without [release], the
+# fragment step, and names the project's own checks unless builder.local_checks names them.
+LOCAL_CHECKS = (
+    "Local checks: a build or fix round runs a targeted set before pushing, not\n"
+    "   the full suite: `scripts/check-repo.py` and `scripts/check-changelog-pr.py`\n"
+    "   always (check-repo's `markdown` check is local markdownlint parity); the\n"
+    "   `dev/tests/*/test-*.py` named for each changed script;\n"
+    "   `test-crew-render.py`, `test-render-parity.py`, `test-tmux-briefs.py` and\n"
+    "   `test-crew-bootstrap.py` when templates or fixtures change;\n"
+    "   `test-changelog-cut.py`, `test-check-changelog-pr.py` and\n"
+    "   `test-release-*.py` for a release cut. With a forge-less host in the\n"
+    "   profile, `$CREW_BIN runner run --head <head-sha> -- check-repo test-*.py...`\n"
+    "   may run that set there; it falls back to a local run by itself. A diff\n"
+    "   touching shared plumbing (`environments/terminal/crew.d/_shared.py`,\n"
+    "   `cli/mdstack`, `core/crew-config.py` or `core/crew-render.py`) runs every\n"
+    "   `dev/tests/*/test-*.py` locally, with the parallel runner once it exists. The PR\n"
+    "   Testing section lists the set, why it covers the diff, and that PR CI runs\n"
+    "   the full suite. Red CI still comes back as a ci-red round; CI is never\n"
+    "   waived. A merge-up (a push whose only new commit merges the default branch)\n"
+    "   runs `check-repo.py` and only the tests covering the conflicted files (the\n"
+    "   test named for a changed script; render and parity tests when templates or\n"
+    "   fixtures conflicted); PR CI and the recheck pass cover the rest. The\n"
+    "   merge-up note lists the tests run and why that set covers the conflict.")
+LOCAL_CHECKS_DECLARED = (
+    "Local checks: a build or fix round runs %s before pushing.\n"
+    "   The PR Testing section lists them and why they cover the diff. Red CI\n"
+    "   still comes back as a ci-red round; CI is never waived.")
+LINKAGE_CHECK = (" Cite the newest signed\n   allocation and pass `<mdstack>/scripts/check-pr-linkage.py` before opening\n"
+                 "   (`<mdstack>/docs/backends/github.md` Builder linkage check).")
+FRAGMENT_STEP = ("\n   Right after opening, before `done:`, set the fragment's `pr:` to the PR\n"
+                 "   number, pass `scripts/check-changelog-pr.py --base origin/<default-branch> --pr <pr>`,\n"
+                 "   push and post a round-0 `CI fix` note at the new head; review\n"
+                 "   waits for it. CI on the opened head may still fail on `TBD`, written\n"
+                 "   before the number existed (#1844).")
 # Configured check commands named in the reviewer brief; unset renders n/a (#648).
 OPTIONAL = {"precheck-lint": "builder.precheck.lint", "precheck-test": "builder.precheck.test"}
 MAPPED.update({name: [key] for name, key in OPTIONAL.items()})
@@ -351,6 +388,8 @@ def resolve(project, org, paths=None):
         values["strategy.update_from_base"] = meta["strategy.update_from_base"][0]
     values.setdefault("runtime.options.merge_grant_scope", ["approved"])  # absent keys keep today's scope (§7 spec change)
     values.setdefault("spec.paths", crew_config.SPEC_PATHS)
+    if "release" in merged:  # a declared [release] table, even empty, names its fragment directory (#1958)
+        values.setdefault("release.fragments", "changes/unreleased")
     return values, []
 
 
@@ -510,6 +549,16 @@ class Renderer:
                                                    SESSION_STACK_TIP[bool(self.values.get("land.stack_tests_against_tip"))]))
         if name == "land-publish":
             return self.line(LAND_PUBLISH) if self.values.get("land.opens_draft") else ""
+        github = self.values.get("backends.change.name") == "github"
+        if name == "local-checks":
+            declared = str(self.values.get("builder.local_checks", "")).strip()
+            if not declared and github:
+                return self.line(LOCAL_CHECKS)
+            return LOCAL_CHECKS_DECLARED % (declared or "the project's own checks from its `AGENTS.md`")
+        if name == "linkage-check":
+            return self.line(LINKAGE_CHECK) if github else ""
+        if name == "fragment-step":
+            return self.line(FRAGMENT_STEP) if github or "release.fragments" in self.values else ""
         if name == "TeamName":
             return str(self.values.get("identities.team", ""))
         if name == "report-status":
