@@ -752,8 +752,9 @@ An optional `[land]` table declares the
 `change_placeholder`, `head_guard` and a `[land.status]` table (#1042, see
 [Declaration](interfaces.md#declaration)). Without it the backend is `sync`.
 A [stack land](interfaces.md#stack-land) adds `stack`,
-`stack_tests_against_tip` and, from #1722, `stack_status` (`stack` or
-`per-change`); a sync stack binding also takes `change_placeholder`, and a
+`stack_tests_against_tip`, from #1722, `stack_status` (`stack` or
+`per-change`) and, from #1956, `stack_separator` (`" "` or `","`, default
+`" "`); a sync stack binding also takes `change_placeholder`, and a
 per-change one a `[land.status]` table.
 `validate` rejects `async` with `change.land-status` undeclared or
 `unsupported`, `opens_draft = true` with `change.publish` undeclared or
