@@ -3,7 +3,7 @@
 Onboarding module for what must be true before the target repo's install
 starts, split out of the [onboarding runbook](../runbook-new-repo.md) under the
 M26 modular organization principle
-([#676](https://github.com/mw-ding/eng-crew/issues/676)). It holds the opening
+([#676](https://github.com/mw-ding/mdstack/issues/676)). It holds the opening
 of the runbook's
 [Prerequisites](../runbook-new-repo.md#prerequisites) and its
 [Identities](#identities),

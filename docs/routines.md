@@ -3,7 +3,7 @@
 A routine is one of a role's recurring jobs, such as a triage sweep, a
 docs pass or a daily brief. Each role package keeps its routines in a
 `routines/` folder next to `role.toml`, `SKILL.md`, `skills/` and memory
-(owner, 2026-11-07, [#1247](https://github.com/mw-ding/eng-crew/issues/1247);
+(owner, 2026-11-07, [#1247](https://github.com/mw-ding/mdstack/issues/1247);
 [team spec §4](specs/team.md#4-target-module-layout)). A routine says
 what runs and when. Each environment decides how to run it with its own
 scheduler.

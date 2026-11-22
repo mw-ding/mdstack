@@ -1,7 +1,7 @@
 # Notion knowledge backend
 
 The first backend of the [knowledge concern](../interfaces.md#knowledge)
-([#1229](https://github.com/mw-ding/eng-crew/issues/1229)). The owner's
+([#1229](https://github.com/mw-ding/mdstack/issues/1229)). The owner's
 personal knowledge lives in Notion, never in git
 ([team spec REQ-17](../specs/team.md#req-17-knowledge-in-external-services)).
 This page adds no rule, gate, cap, marker field or label; knowledge is

@@ -205,9 +205,9 @@ listed under Available now.
 Owner-approved on 2026-11-04 for editing these docs. They guide how a doc is
 written, moved or split and add no rule, gate, marker or default of their
 own. The full design, with reasons and rejected alternatives, is
-[Riley's design on #676](https://github.com/mw-ding/eng-crew/issues/676#issuecomment-6638520989);
+[Riley's design on #676](https://github.com/mw-ding/mdstack/issues/676#issuecomment-6638520989);
 the approval and principle 11 are in the
-[decision record](https://github.com/mw-ding/eng-crew/issues/676#issuecomment-6640367783).
+[decision record](https://github.com/mw-ding/mdstack/issues/676#issuecomment-6640367783).
 
 1. **One authored definition per rule.** Each rule lives in one owner
    section carrying all its conditions and exceptions; other mentions link to

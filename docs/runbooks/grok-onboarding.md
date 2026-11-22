@@ -3,7 +3,7 @@
 Onboarding module for the Grok Bot install state and wiring, split out of the
 [onboarding runbook](../runbook-new-repo.md) under the M26 modular
 organization principle
-([#676](https://github.com/mw-ding/eng-crew/issues/676)). It holds the
+([#676](https://github.com/mw-ding/mdstack/issues/676)). It holds the
 runbook's
 [Step 6: state dir and wiring doc](#step-6-state-dir-and-wiring-doc): the
 install-state verification and the four wiring setup items, after
@@ -156,7 +156,7 @@ The direct lone-PR waiver, runner, scheduler, reap and triage timer are
 tmux-only.
 
 The templates carry the merge-up rule
-([#20](https://github.com/mw-ding/eng-crew/issues/20)): a clean merge-up after
+([#20](https://github.com/mw-ding/mdstack/issues/20)): a clean merge-up after
 APPROVE gets a formal merge-up re-approve at the new head with the same round
 number; after CHANGES, a COMMENT ack with no round and no verdict; a behavior-
 or content-changing resolution gets a normal round; and the synthesizer gate

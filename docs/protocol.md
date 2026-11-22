@@ -219,8 +219,8 @@ With `owners`, `tests=n/a` only when every changed path is no-owner-ok or
 removed (absent at head). With a mix, `tests` is `pass` or `fail` from the
 owned code paths, and the no-owner-ok paths are listed beside the marker.
 
-**Drawbacks and limits** (decision [#160, row 8](https://github.com/mw-ding/eng-crew/issues/160#issuecomment-6531125583)
-and [row 11](https://github.com/mw-ding/eng-crew/issues/160#issuecomment-6531918771)):
+**Drawbacks and limits** (decision [#160, row 8](https://github.com/mw-ding/mdstack/issues/160#issuecomment-6531125583)
+and [row 11](https://github.com/mw-ding/mdstack/issues/160#issuecomment-6531918771)):
 
 - A checklist can be skipped; a marker is a report, not independent proof.
 - It delays the first change and costs more tokens, especially for trivial work.

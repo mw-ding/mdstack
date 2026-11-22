@@ -21,49 +21,49 @@ CONTRIBUTING.md	internal	n/a	Repo process and CI: rules for building mdstack its
 LICENSE	deliverable	all	MIT license: ships with every copy of the bundle ([#1994](https://github.com/mw-ding/mdstack/issues/1994))
 README.md	deliverable	all	Bundle front page and release notes: shipped as is
 SECURITY.md	internal	n/a	Vulnerability reporting route for the repository ([#1994](https://github.com/mw-ding/mdstack/issues/1994))
-actions/*.md	internal	n/a	Design contract: generic action vocabulary, CLI contract and per-environment mapping; implemented in M32 ([#1218](https://github.com/mw-ding/eng-crew/issues/1218))
-actions/contract.py	deliverable	all	Conformance kit: the actions/ contract tests `mdstack pack test` runs against a pack's adapters ([#1236](https://github.com/mw-ding/eng-crew/issues/1236))
+actions/*.md	internal	n/a	Design contract: generic action vocabulary, CLI contract and per-environment mapping; implemented in M32 ([#1218](https://github.com/mw-ding/mdstack/issues/1218))
+actions/contract.py	deliverable	all	Conformance kit: the actions/ contract tests `mdstack pack test` runs against a pack's adapters ([#1236](https://github.com/mw-ding/mdstack/issues/1236))
 changes/**	internal	n/a	Unreleased CHANGELOG fragments: assembled into `CHANGELOG.md` at the cut, then deleted ([CONTRIBUTING](../CONTRIBUTING.md#changelog))
-cli/README.md	deliverable	all	Module README: purpose, contents and how the module plugs in ([#1237](https://github.com/mw-ding/eng-crew/issues/1237))
+cli/README.md	deliverable	all	Module README: purpose, contents and how the module plugs in ([#1237](https://github.com/mw-ding/mdstack/issues/1237))
 cli/mdstack	deliverable	all	Runtime CLI: mdstack entry point, including bootstrap and doctor
-connectors/README.md	deliverable	all	Module README: purpose, contents and how the module plugs in ([#1237](https://github.com/mw-ding/eng-crew/issues/1237))
+connectors/README.md	deliverable	all	Module README: purpose, contents and how the module plugs in ([#1237](https://github.com/mw-ding/mdstack/issues/1237))
 connectors/github/crew-repo.py	deliverable	all	Install CLI: shared GitHub repository checks and dry-run fixers
-connectors/github/manifest.toml	deliverable	all	Connector: GitHub capability declaration ([#1223](https://github.com/mw-ding/eng-crew/issues/1223))
+connectors/github/manifest.toml	deliverable	all	Connector: GitHub capability declaration ([#1223](https://github.com/mw-ding/mdstack/issues/1223))
 connectors/github/status.py	deliverable	all	Connector: GitHub binding of the optional status concern, read-records and publish-record ([#1313](https://github.com/mw-ding/mdstack/issues/1313))
-connectors/notion/knowledge.py	deliverable	all	Knowledge connector: Notion binding of knowledge-read and knowledge-propose-edit ([#1229](https://github.com/mw-ding/eng-crew/issues/1229))
-connectors/notion/manifest.toml	deliverable	all	Connector: Notion knowledge capability declaration ([#1229](https://github.com/mw-ding/eng-crew/issues/1229))
-core/README.md	deliverable	all	Module README: purpose, contents and how the module plugs in ([#1237](https://github.com/mw-ding/eng-crew/issues/1237))
-core/crew-config.py	deliverable	all	Install CLI: validate and resolve a profile; imports `core/secret-patterns.py` and `core/path-glob.py` ([#281](https://github.com/mw-ding/eng-crew/issues/281))
-core/crew-memory.py	deliverable	all	Install CLI: core memory lint (layout, size limits, no personal data) and the section the renderer appends to each brief ([#1230](https://github.com/mw-ding/eng-crew/issues/1230))
-core/crew-pack.py	deliverable	all	Install CLI: pack plug-in loader (pack.toml, discovery, version range, floors, commit pin) ([#1236](https://github.com/mw-ding/eng-crew/issues/1236))
+connectors/notion/knowledge.py	deliverable	all	Knowledge connector: Notion binding of knowledge-read and knowledge-propose-edit ([#1229](https://github.com/mw-ding/mdstack/issues/1229))
+connectors/notion/manifest.toml	deliverable	all	Connector: Notion knowledge capability declaration ([#1229](https://github.com/mw-ding/mdstack/issues/1229))
+core/README.md	deliverable	all	Module README: purpose, contents and how the module plugs in ([#1237](https://github.com/mw-ding/mdstack/issues/1237))
+core/crew-config.py	deliverable	all	Install CLI: validate and resolve a profile; imports `core/secret-patterns.py` and `core/path-glob.py` ([#281](https://github.com/mw-ding/mdstack/issues/281))
+core/crew-memory.py	deliverable	all	Install CLI: core memory lint (layout, size limits, no personal data) and the section the renderer appends to each brief ([#1230](https://github.com/mw-ding/mdstack/issues/1230))
+core/crew-pack.py	deliverable	all	Install CLI: pack plug-in loader (pack.toml, discovery, version range, floors, commit pin) ([#1236](https://github.com/mw-ding/mdstack/issues/1236))
 core/crew-render.py	deliverable	all	Install CLI: render briefs from the resolved profile
 core/crew-roles.py	deliverable	all	Install CLI: validate a domain's role definitions
-core/crew-routines.py	deliverable	all	Install CLI: validate role routines (schedule, skill, generic actions, miss policy) and decide when one is due ([#1247](https://github.com/mw-ding/eng-crew/issues/1247))
-core/markdown-scan.py	deliverable	all	Shared module: markdown fence, code-span, comment and link scanning for `docs-scan.py` and the repo guard ([#281](https://github.com/mw-ding/eng-crew/issues/281))
-core/path-glob.py	deliverable	all	Shared module: path glob matching for `crew-config.py` and the repo guard ([#281](https://github.com/mw-ding/eng-crew/issues/281))
+core/crew-routines.py	deliverable	all	Install CLI: validate role routines (schedule, skill, generic actions, miss policy) and decide when one is due ([#1247](https://github.com/mw-ding/mdstack/issues/1247))
+core/markdown-scan.py	deliverable	all	Shared module: markdown fence, code-span, comment and link scanning for `docs-scan.py` and the repo guard ([#281](https://github.com/mw-ding/mdstack/issues/281))
+core/path-glob.py	deliverable	all	Shared module: path glob matching for `crew-config.py` and the repo guard ([#281](https://github.com/mw-ding/mdstack/issues/281))
 core/post-title.py	deliverable	all	Shared module: the one role post title format (protocol §4) for `crew-render.py`, crew.d posters and report scripts ([#1946](https://github.com/mw-ding/mdstack/issues/1946))
-core/secret-patterns.py	deliverable	all	Shared module: secret-scan patterns for `crew-config.py` and the repo guard ([#281](https://github.com/mw-ding/eng-crew/issues/281))
+core/secret-patterns.py	deliverable	all	Shared module: secret-scan patterns for `crew-config.py` and the repo guard ([#281](https://github.com/mw-ding/mdstack/issues/281))
 core/status-record.py	deliverable	all	Shared module: shared-status record S v1 schema, slot body and content identity for `crew-config.py` and the status commands ([#1313](https://github.com/mw-ding/mdstack/issues/1313))
 core/summary-card.py	deliverable	all	Install CLI: the advisory review summary card and its one landing-risk rule (protocol §4) for `mdstack verdict` and the gate-status post ([#1947](https://github.com/mw-ding/mdstack/issues/1947))
 dev/**	internal	n/a	Guards and tests: tests per module, shared test helpers and fixtures (dev/tests/), run by CI and release validation, not installed
 docs/README.md	internal	n/a	Maintainer docs: the docs index, not loaded by roles
 docs/architecture.md	deliverable	all	Protocol bundle (core): the text roles load and cite
 docs/backends/github.md	deliverable	all	Protocol bundle (backend binding): GitHub backend binding
-docs/backends/notion.md	deliverable	all	Protocol bundle (backend binding): Notion knowledge backend binding ([#1229](https://github.com/mw-ding/eng-crew/issues/1229))
+docs/backends/notion.md	deliverable	all	Protocol bundle (backend binding): Notion knowledge backend binding ([#1229](https://github.com/mw-ding/mdstack/issues/1229))
 docs/bootstrap.md	deliverable	all	Install and upgrade docs: how to install, pin and upgrade
-docs/campaign-harness.md	internal	n/a	Guards and tests: M25 integration campaign contract ([#783](https://github.com/mw-ding/eng-crew/issues/783))
+docs/campaign-harness.md	internal	n/a	Guards and tests: M25 integration campaign contract ([#783](https://github.com/mw-ding/mdstack/issues/783))
 docs/campaign-scenarios/*.md	internal	n/a	Guards and tests: one M25 campaign scenario per file, indexed in docs/campaign-harness.md ([#1419](https://github.com/mw-ding/mdstack/issues/1419))
 docs/concepts.md	deliverable	all	Protocol bundle (core): the text roles load and cite
-docs/configuration/resolution.md	deliverable	all	Profile and pack contract: profile validation reference split from the profile ([#857](https://github.com/mw-ding/eng-crew/issues/857))
-docs/configuration/runtime-options.md	deliverable	all	Profile and pack contract: runtime keys and shared coordinator option split from the profile ([#859](https://github.com/mw-ding/eng-crew/issues/859))
-docs/configuration/team-files.md	deliverable	all	Profile and pack contract: team file schema and example split from the profile ([#855](https://github.com/mw-ding/eng-crew/issues/855))
-docs/decisions.md	internal	n/a	Maintainer docs: mdstack's own decisions log, seeded from the #985 decision log ([#1219](https://github.com/mw-ding/eng-crew/issues/1219))
+docs/configuration/resolution.md	deliverable	all	Profile and pack contract: profile validation reference split from the profile ([#857](https://github.com/mw-ding/mdstack/issues/857))
+docs/configuration/runtime-options.md	deliverable	all	Profile and pack contract: runtime keys and shared coordinator option split from the profile ([#859](https://github.com/mw-ding/mdstack/issues/859))
+docs/configuration/team-files.md	deliverable	all	Profile and pack contract: team file schema and example split from the profile ([#855](https://github.com/mw-ding/mdstack/issues/855))
+docs/decisions.md	internal	n/a	Maintainer docs: mdstack's own decisions log, seeded from the #985 decision log ([#1219](https://github.com/mw-ding/mdstack/issues/1219))
 docs/deliverables.md	deliverable	all	Install and upgrade docs: how to install, pin and upgrade
 docs/diagrams/**	internal	n/a	Maintainer docs: diagrams, not loaded by roles
-docs/express-lane.md	deliverable	tmux	Profile and pack contract: express flavor design for the tmux binding ([#636](https://github.com/mw-ding/eng-crew/issues/636))
+docs/express-lane.md	deliverable	tmux	Profile and pack contract: express flavor design for the tmux binding ([#636](https://github.com/mw-ding/mdstack/issues/636))
 docs/findings/**	internal	n/a	Maintainer docs: findings buffer, not loaded by roles
-docs/flavors.md	deliverable	all	Profile and pack contract: flavor keys and the floor ([#156](https://github.com/mw-ding/eng-crew/issues/156))
-docs/guides/*.md	deliverable	all	Install and upgrade docs: getting-started, configuration, connector, pack author and migration guides ([#1238](https://github.com/mw-ding/eng-crew/issues/1238))
+docs/flavors.md	deliverable	all	Profile and pack contract: flavor keys and the floor ([#156](https://github.com/mw-ding/mdstack/issues/156))
+docs/guides/*.md	deliverable	all	Install and upgrade docs: getting-started, configuration, connector, pack author and migration guides ([#1238](https://github.com/mw-ding/mdstack/issues/1238))
 docs/handoff.md	deliverable	all	Coordinator procedure: runtime handoff the coordinator runs (#157)
 docs/interfaces.md	deliverable	all	Protocol bundle (core): the text roles load and cite
 docs/lessons/**	internal	n/a	Maintainer docs: lessons log, history not loaded by roles
@@ -83,86 +83,86 @@ docs/observe.md	deliverable	all	Protocol bundle (core): the text roles load and 
 docs/packs.md	deliverable	all	Profile and pack contract: schema packs and installs validate against
 docs/personnel.md	deliverable	all	Personnel content boundary, pinned host import and fake-host consumer proof (#1180)
 docs/profile.md	deliverable	all	Profile and pack contract: schema packs and installs validate against
-docs/project-doc-set.md	deliverable	all	Protocol bundle (core): essential doc set and status banners for target projects, split from the project docs design ([#1024](https://github.com/mw-ding/eng-crew/issues/1024))
-docs/project-docs.md	deliverable	all	Protocol bundle (core): project docs consolidation design for target projects ([#754](https://github.com/mw-ding/eng-crew/issues/754))
+docs/project-doc-set.md	deliverable	all	Protocol bundle (core): essential doc set and status banners for target projects, split from the project docs design ([#1024](https://github.com/mw-ding/mdstack/issues/1024))
+docs/project-docs.md	deliverable	all	Protocol bundle (core): project docs consolidation design for target projects ([#754](https://github.com/mw-ding/mdstack/issues/754))
 docs/protocol.md	deliverable	all	Protocol bundle (core): the text roles load and cite
-docs/reading-paths.md	deliverable	all	Protocol bundle (core): role reading paths, navigation to the text roles load and cite ([#760](https://github.com/mw-ding/eng-crew/issues/760))
+docs/reading-paths.md	deliverable	all	Protocol bundle (core): role reading paths, navigation to the text roles load and cite ([#760](https://github.com/mw-ding/mdstack/issues/760))
 docs/release.md	deliverable	all	Install and upgrade docs: how to install, pin and upgrade
 docs/roles-registry.md	deliverable	all	Role registry contract: schema for domain roles (15.7, #317)
 docs/roles.md	deliverable	all	Protocol bundle (core): the text roles load and cite
 docs/routines.md	deliverable	all	Role routines contract: routine file schema, miss handling and environment bindings (#1247)
 docs/runbook-new-repo.md	deliverable	all	Install and upgrade docs: how to install, pin and upgrade
-docs/runbook.md	deliverable	all	Install and upgrade docs: runbook entry point linking the install, run, release and recover owner docs ([#1219](https://github.com/mw-ding/eng-crew/issues/1219))
-docs/runbooks/github-ci-protection.md	deliverable	all	Install and upgrade docs: onboarding Step 4 CI discovery and current branch protection inspection, split from the runbook ([#895](https://github.com/mw-ding/eng-crew/issues/895))
-docs/runbooks/github-reviewer-access.md	deliverable	all	Install and upgrade docs: onboarding Step 2, reviewer collaborator access, split from the runbook ([#844](https://github.com/mw-ding/eng-crew/issues/844))
-docs/runbooks/github-tracking.md	deliverable	all	Install and upgrade docs: onboarding Step 1 `crew:*` label setup, split from the runbook ([#854](https://github.com/mw-ding/eng-crew/issues/854))
-docs/runbooks/grok-onboarding.md	deliverable	all	Install and upgrade docs: onboarding Step 6 Grok Bot install-state verification and wiring setup, split from the runbook ([#900](https://github.com/mw-ding/eng-crew/issues/900))
-docs/runbooks/offboarding.md	deliverable	all	Install and upgrade docs: onboarding rollback and offboarding, bootstrap uninstall and the ordered manual steps, split from the runbook ([#908](https://github.com/mw-ding/eng-crew/issues/908))
-docs/runbooks/onboarding-proof.md	deliverable	all	Install and upgrade docs: onboarding Step 8 first smoke issue template and dispatch, split from the runbook ([#904](https://github.com/mw-ding/eng-crew/issues/904))
-docs/runbooks/prerequisites.md	deliverable	all	Install and upgrade docs: onboarding prerequisites, identities and per-identity `gh` usage, split from the runbook ([#891](https://github.com/mw-ding/eng-crew/issues/891))
-docs/runbooks/product-preflight.md	deliverable	all	Install and upgrade docs: onboarding Step 5 product-safety preflight (automation ownership, product namespace, fork PRs), split from the runbook ([#898](https://github.com/mw-ding/eng-crew/issues/898))
-docs/runbooks/profile-install.md	deliverable	all	Install and upgrade docs: onboarding Step 0 bootstrap install from a profile, split from the runbook ([#852](https://github.com/mw-ding/eng-crew/issues/852))
-docs/runbooks/repo-rename.md	deliverable	all	Install and upgrade docs: owner-run repository rename with `mdstack migrate --rename-to` ([#1234](https://github.com/mw-ding/eng-crew/issues/1234))
-docs/runbooks/tmux-onboarding-history.md	deliverable	tmux	Install and upgrade docs: dated tmux onboarding run (2026-10-30) split from the runbook as history ([#843](https://github.com/mw-ding/eng-crew/issues/843))
-docs/runbooks/tmux-onboarding.md	deliverable	tmux	Install and upgrade docs: tmux onboarding operator module split from the runbook ([#839](https://github.com/mw-ding/eng-crew/issues/839))
+docs/runbook.md	deliverable	all	Install and upgrade docs: runbook entry point linking the install, run, release and recover owner docs ([#1219](https://github.com/mw-ding/mdstack/issues/1219))
+docs/runbooks/github-ci-protection.md	deliverable	all	Install and upgrade docs: onboarding Step 4 CI discovery and current branch protection inspection, split from the runbook ([#895](https://github.com/mw-ding/mdstack/issues/895))
+docs/runbooks/github-reviewer-access.md	deliverable	all	Install and upgrade docs: onboarding Step 2, reviewer collaborator access, split from the runbook ([#844](https://github.com/mw-ding/mdstack/issues/844))
+docs/runbooks/github-tracking.md	deliverable	all	Install and upgrade docs: onboarding Step 1 `crew:*` label setup, split from the runbook ([#854](https://github.com/mw-ding/mdstack/issues/854))
+docs/runbooks/grok-onboarding.md	deliverable	all	Install and upgrade docs: onboarding Step 6 Grok Bot install-state verification and wiring setup, split from the runbook ([#900](https://github.com/mw-ding/mdstack/issues/900))
+docs/runbooks/offboarding.md	deliverable	all	Install and upgrade docs: onboarding rollback and offboarding, bootstrap uninstall and the ordered manual steps, split from the runbook ([#908](https://github.com/mw-ding/mdstack/issues/908))
+docs/runbooks/onboarding-proof.md	deliverable	all	Install and upgrade docs: onboarding Step 8 first smoke issue template and dispatch, split from the runbook ([#904](https://github.com/mw-ding/mdstack/issues/904))
+docs/runbooks/prerequisites.md	deliverable	all	Install and upgrade docs: onboarding prerequisites, identities and per-identity `gh` usage, split from the runbook ([#891](https://github.com/mw-ding/mdstack/issues/891))
+docs/runbooks/product-preflight.md	deliverable	all	Install and upgrade docs: onboarding Step 5 product-safety preflight (automation ownership, product namespace, fork PRs), split from the runbook ([#898](https://github.com/mw-ding/mdstack/issues/898))
+docs/runbooks/profile-install.md	deliverable	all	Install and upgrade docs: onboarding Step 0 bootstrap install from a profile, split from the runbook ([#852](https://github.com/mw-ding/mdstack/issues/852))
+docs/runbooks/repo-rename.md	deliverable	all	Install and upgrade docs: owner-run repository rename with `mdstack migrate --rename-to` ([#1234](https://github.com/mw-ding/mdstack/issues/1234))
+docs/runbooks/tmux-onboarding-history.md	deliverable	tmux	Install and upgrade docs: dated tmux onboarding run (2026-10-30) split from the runbook as history ([#843](https://github.com/mw-ding/mdstack/issues/843))
+docs/runbooks/tmux-onboarding.md	deliverable	tmux	Install and upgrade docs: tmux onboarding operator module split from the runbook ([#839](https://github.com/mw-ding/mdstack/issues/839))
 docs/runtimes/README.md	deliverable	all	Protocol bundle (runtime contract): contract every binding answers
 docs/runtimes/grok-bot.md	deliverable	grok-bot	Protocol bundle (runtime binding): runtime gates, watches, routines
 docs/runtimes/harness-adapters.md	deliverable	all	Protocol bundle (harness adapter interface): how a runtime launches, wakes and probes each agent CLI
-docs/runtimes/multi-device.md	deliverable	tmux	Protocol bundle (runtime binding): multi-device design for the tmux binding ([#158](https://github.com/mw-ding/eng-crew/issues/158))
+docs/runtimes/multi-device.md	deliverable	tmux	Protocol bundle (runtime binding): multi-device design for the tmux binding ([#158](https://github.com/mw-ding/mdstack/issues/158))
 docs/runtimes/session-backends.md	deliverable	all	Protocol bundle (session backend interface): how a runtime creates, shows, rings, probes and stops role sessions
 docs/runtimes/session.md	deliverable	all	Protocol bundle (runtime binding): single-session binding and declared contract gaps (#340, #914)
 docs/runtimes/tmux.md	deliverable	tmux	Protocol bundle (runtime binding): tmux binding and `mdstack` usage
-docs/scheduling.md	deliverable	tmux	Protocol bundle (runtime binding): crew-wide scheduler design for the tmux binding ([#587](https://github.com/mw-ding/eng-crew/issues/587))
+docs/scheduling.md	deliverable	tmux	Protocol bundle (runtime binding): crew-wide scheduler design for the tmux binding ([#587](https://github.com/mw-ding/mdstack/issues/587))
 docs/self-improve.md	deliverable	all	Protocol bundle (core): the text roles load and cite
 docs/specs/**	internal	n/a	Maintainer docs: specs and planning, not loaded by roles
-docs/triage.md	deliverable	tmux	Protocol bundle (runtime binding): always-on triage design for the tmux binding ([#659](https://github.com/mw-ding/eng-crew/issues/659))
+docs/triage.md	deliverable	tmux	Protocol bundle (runtime binding): always-on triage design for the tmux binding ([#659](https://github.com/mw-ding/mdstack/issues/659))
 docs/verification.md	deliverable	all	Protocol bundle (core): the text roles load and cite
-environments/README.md	deliverable	all	Module README: purpose, contents and how the module plugs in ([#1237](https://github.com/mw-ding/eng-crew/issues/1237))
-environments/terminal/README.md	deliverable	all	Module README: purpose, contents and how the module plugs in ([#1237](https://github.com/mw-ding/eng-crew/issues/1237))
+environments/README.md	deliverable	all	Module README: purpose, contents and how the module plugs in ([#1237](https://github.com/mw-ding/mdstack/issues/1237))
+environments/terminal/README.md	deliverable	all	Module README: purpose, contents and how the module plugs in ([#1237](https://github.com/mw-ding/mdstack/issues/1237))
 environments/terminal/copy-claim.py	deliverable	all	Runtime CLI: host-wide working-copy claims across crews, shared by spawn, the remote entrypoint and `mdstack copy-claim` ([#391](https://github.com/mw-ding/mdstack/issues/391))
-environments/terminal/crew-proc.py	deliverable	tmux	Runtime CLI: OS process helpers every session backend shares ([#1183](https://github.com/mw-ding/eng-crew/issues/1183))
-environments/terminal/crew-session.py	deliverable	tmux	Runtime CLI: session backend adapter discovery from `sessions/<backend>/adapter.py` ([#1183](https://github.com/mw-ding/eng-crew/issues/1183))
-environments/terminal/crew.d/**	deliverable	all	Runtime CLI: per-command modules ([#224](https://github.com/mw-ding/eng-crew/issues/224))
-environments/terminal/remote/crew-remote.py	deliverable	tmux	Runtime CLI: hardened remote call: host entrypoint, runner and client ([#208](https://github.com/mw-ding/eng-crew/issues/208))
+environments/terminal/crew-proc.py	deliverable	tmux	Runtime CLI: OS process helpers every session backend shares ([#1183](https://github.com/mw-ding/mdstack/issues/1183))
+environments/terminal/crew-session.py	deliverable	tmux	Runtime CLI: session backend adapter discovery from `sessions/<backend>/adapter.py` ([#1183](https://github.com/mw-ding/mdstack/issues/1183))
+environments/terminal/crew.d/**	deliverable	all	Runtime CLI: per-command modules ([#224](https://github.com/mw-ding/mdstack/issues/224))
+environments/terminal/remote/crew-remote.py	deliverable	tmux	Runtime CLI: hardened remote call: host entrypoint, runner and client ([#208](https://github.com/mw-ding/mdstack/issues/208))
 environments/terminal/remote/hostos/*.py	deliverable	tmux	Runtime CLI: one host OS adapter per OS the remote entrypoint runs on ([#1358](https://github.com/mw-ding/mdstack/issues/1358))
-environments/terminal/remote/lab/**	internal	n/a	Local lab: test-host image spec and PID-1 supervisor for testing remote hosts in containers ([#1356](https://github.com/mw-ding/eng-crew/issues/1356))
-environments/terminal/sessions/**	deliverable	tmux	Runtime CLI: one adapter module per session backend ([#1183](https://github.com/mw-ding/eng-crew/issues/1183))
-harnesses/*/adapter.py	deliverable	all	Runtime CLI: one adapter module per harness ([#1182](https://github.com/mw-ding/eng-crew/issues/1182))
-harnesses/README.md	deliverable	all	Module README: purpose, contents and how the module plugs in ([#1237](https://github.com/mw-ding/eng-crew/issues/1237))
-harnesses/crew-harness.py	deliverable	all	Runtime CLI: harness adapter discovery and the engine tables derived from `harnesses/<engine>/adapter.py` ([#1182](https://github.com/mw-ding/eng-crew/issues/1182))
-memory/**	internal	n/a	mdstack's own crew core memory (owner profile, per-role files), injected into its briefs; another project keeps its own ([#1230](https://github.com/mw-ding/eng-crew/issues/1230))
-packs/README.md	deliverable	all	Module README: purpose, contents and how the module plugs in ([#1237](https://github.com/mw-ding/eng-crew/issues/1237))
-profiles/README.md	deliverable	all	Module README: purpose, contents and how the module plugs in ([#1237](https://github.com/mw-ding/eng-crew/issues/1237))
+environments/terminal/remote/lab/**	internal	n/a	Local lab: test-host image spec and PID-1 supervisor for testing remote hosts in containers ([#1356](https://github.com/mw-ding/mdstack/issues/1356))
+environments/terminal/sessions/**	deliverable	tmux	Runtime CLI: one adapter module per session backend ([#1183](https://github.com/mw-ding/mdstack/issues/1183))
+harnesses/*/adapter.py	deliverable	all	Runtime CLI: one adapter module per harness ([#1182](https://github.com/mw-ding/mdstack/issues/1182))
+harnesses/README.md	deliverable	all	Module README: purpose, contents and how the module plugs in ([#1237](https://github.com/mw-ding/mdstack/issues/1237))
+harnesses/crew-harness.py	deliverable	all	Runtime CLI: harness adapter discovery and the engine tables derived from `harnesses/<engine>/adapter.py` ([#1182](https://github.com/mw-ding/mdstack/issues/1182))
+memory/**	internal	n/a	mdstack's own crew core memory (owner profile, per-role files), injected into its briefs; another project keeps its own ([#1230](https://github.com/mw-ding/mdstack/issues/1230))
+packs/README.md	deliverable	all	Module README: purpose, contents and how the module plugs in ([#1237](https://github.com/mw-ding/mdstack/issues/1237))
+profiles/README.md	deliverable	all	Module README: purpose, contents and how the module plugs in ([#1237](https://github.com/mw-ding/mdstack/issues/1237))
 profiles/default.toml	deliverable	grok-bot	Profile: default profile (spec P7)
 profiles/session.toml	deliverable	session	Example profile: session example profile
 profiles/tmux.toml	deliverable	tmux	Example profile: tmux example profile
-roles/README.md	deliverable	all	Module README: purpose, contents and how the module plugs in ([#1237](https://github.com/mw-ding/eng-crew/issues/1237))
+roles/README.md	deliverable	all	Module README: purpose, contents and how the module plugs in ([#1237](https://github.com/mw-ding/mdstack/issues/1237))
 roles/eng/**	deliverable	tmux	Domain registry: one engineering role definition per file, loaded by the tmux runtime, and each role's `routines/`
 roles/seats/**	deliverable	all	Owner-facing seat placeholder packages and the seat template; content authored elsewhere
 scripts/README.md	deliverable	all	Script usage: script guide and guard rules; each script's own usage is its module docstring, printed by `--help`
 scripts/campaign-attended.py	internal	n/a	Guards and tests: M25 attended owner-channel and sleep run driver, not installed ([#1463](https://github.com/mw-ding/mdstack/issues/1463))
-scripts/campaign-guard.py	internal	n/a	Guards and tests: M25 campaign run-manifest and isolation guard, not installed ([#783](https://github.com/mw-ding/eng-crew/issues/783))
+scripts/campaign-guard.py	internal	n/a	Guards and tests: M25 campaign run-manifest and isolation guard, not installed ([#783](https://github.com/mw-ding/mdstack/issues/783))
 scripts/campaign-lint.py	internal	n/a	Guards and tests: campaign step assertion lint and required-case retention, not installed ([#1412](https://github.com/mw-ding/mdstack/issues/1412))
 scripts/campaign-report.py	internal	n/a	Maintainer tool: A31 campaign-history report from actual campaign records ([#1462](https://github.com/mw-ding/mdstack/issues/1462))
-scripts/campaign-run.py	internal	n/a	Guards and tests: M25 campaign scenario runner and durable results, not installed ([#784](https://github.com/mw-ding/eng-crew/issues/784))
-scripts/campaign-sandbox.py	internal	n/a	Guards and tests: M25 disposable sandbox setup, teardown and level-b plan, not installed ([#785](https://github.com/mw-ding/eng-crew/issues/785))
+scripts/campaign-run.py	internal	n/a	Guards and tests: M25 campaign scenario runner and durable results, not installed ([#784](https://github.com/mw-ding/mdstack/issues/784))
+scripts/campaign-sandbox.py	internal	n/a	Guards and tests: M25 disposable sandbox setup, teardown and level-b plan, not installed ([#785](https://github.com/mw-ding/mdstack/issues/785))
 scripts/changelog-cut.py	deliverable	all	Release helper: cut the CHANGELOG and fragments into a version section; the `release.cut` binding runs it from the installed bundle ([#1033](https://github.com/mw-ding/mdstack/issues/1033))
 scripts/check-changelog-pr.py	internal	n/a	Guards and tests: PR fragment requirement, run by CI, not installed
-scripts/check-markdown.py	deliverable	all	Install CLI: local markdownlint parity; `check-repo.py` loads it for its `markdown` check ([#644](https://github.com/mw-ding/eng-crew/issues/644))
+scripts/check-markdown.py	deliverable	all	Install CLI: local markdownlint parity; `check-repo.py` loads it for its `markdown` check ([#644](https://github.com/mw-ding/mdstack/issues/644))
 scripts/check-pr-linkage.py	deliverable	all	Role helper: builder's PR body linkage check, allocation and closing keywords ([#1418](https://github.com/mw-ding/mdstack/issues/1418))
-scripts/check-repo.py	internal	n/a	Guards and tests: the repo guard, run by CI and builders, not installed; shared primitives ship in `core/` ([#281](https://github.com/mw-ding/eng-crew/issues/281))
-scripts/check-skill-drift.py	deliverable	all	Drift check: render-vs-live check ([#128](https://github.com/mw-ding/eng-crew/issues/128))
-scripts/crew-install.py	deliverable	all	Install CLI: shared release verifier and `transport` record for bootstrap, upgrade and host prepare ([#882](https://github.com/mw-ding/eng-crew/issues/882))
+scripts/check-repo.py	internal	n/a	Guards and tests: the repo guard, run by CI and builders, not installed; shared primitives ship in `core/` ([#281](https://github.com/mw-ding/mdstack/issues/281))
+scripts/check-skill-drift.py	deliverable	all	Drift check: render-vs-live check ([#128](https://github.com/mw-ding/mdstack/issues/128))
+scripts/crew-install.py	deliverable	all	Install CLI: shared release verifier and `transport` record for bootstrap, upgrade and host prepare ([#882](https://github.com/mw-ding/mdstack/issues/882))
 scripts/crew-precheck.py	deliverable	all	Role helper: check enabled builder pre-review markers at head
 scripts/deliverables.txt	internal	n/a	Guards and tests: the manifest this inventory is generated from
 scripts/deps-baseline.txt	internal	n/a	Guards and tests: dependency-rule baseline of known couplings, run by CI, not installed
-scripts/design-headers.txt	internal	n/a	Guards and tests: design-header allowlist for the `design-headers` check, run by CI, not installed ([#259](https://github.com/mw-ding/eng-crew/issues/259))
-scripts/docs-scan.py	deliverable	all	Role helper: zero-model project docs scan ([#1025](https://github.com/mw-ding/eng-crew/issues/1025))
-scripts/evidence-cli.py	deliverable	all	Role helper: capture CLI evidence pairs mechanically ([#652](https://github.com/mw-ding/eng-crew/issues/652))
+scripts/design-headers.txt	internal	n/a	Guards and tests: design-header allowlist for the `design-headers` check, run by CI, not installed ([#259](https://github.com/mw-ding/mdstack/issues/259))
+scripts/docs-scan.py	deliverable	all	Role helper: zero-model project docs scan ([#1025](https://github.com/mw-ding/mdstack/issues/1025))
+scripts/evidence-cli.py	deliverable	all	Role helper: capture CLI evidence pairs mechanically ([#652](https://github.com/mw-ding/mdstack/issues/652))
 scripts/flavor-suggest.py	deliverable	all	Role helper: offline flavor signals and owner-decided suggestions
 scripts/intake-sweep.py	deliverable	all	Role helpers: builder and coordinator helpers
 scripts/item-flavor.py	deliverable	all	Role helper: item rigor records, defaults and lowering reasons
-scripts/metrics-baseline.py	internal	n/a	Maintainer tool: baseline pipeline metrics before the reorganization ([#1220](https://github.com/mw-ding/eng-crew/issues/1220))
+scripts/metrics-baseline.py	internal	n/a	Maintainer tool: baseline pipeline metrics before the reorganization ([#1220](https://github.com/mw-ding/mdstack/issues/1220))
 scripts/metrics-decide.py	deliverable	all	Role helpers: builder and coordinator helpers
 scripts/metrics-refresh.py	deliverable	all	Role helpers: builder and coordinator helpers
 scripts/personnel-bundle.py	deliverable	all	Producer-only personnel content exporter (#1180)
@@ -181,23 +181,23 @@ scripts/run-usage.py	deliverable	all	Role helper: a pass's usage line, wall-cloc
 scripts/step-summary.py	deliverable	all	Role helpers: builder and coordinator helpers
 scripts/triage-apply.py	deliverable	all	Role helper: the one apply entry point for triage sweep writes, checked against the write allowlist ([#753](https://github.com/mw-ding/mdstack/issues/753))
 scripts/triage-clusters.py	deliverable	all	Role helper: triage clusters of related open issues with stable slugs and cap-counted proposals ([#1298](https://github.com/mw-ding/mdstack/issues/1298))
-scripts/triage-metrics.py	deliverable	all	Role helper: triage shadow-mode spot check, precision bar, metrics and eval set ([#750](https://github.com/mw-ding/eng-crew/issues/750))
-scripts/worktree-purge.py	internal	n/a	Guards and tests: one-off crew-host worktree purge, dry-run first, not installed ([#1161](https://github.com/mw-ding/eng-crew/issues/1161))
+scripts/triage-metrics.py	deliverable	all	Role helper: triage shadow-mode spot check, precision bar, metrics and eval set ([#750](https://github.com/mw-ding/mdstack/issues/750))
+scripts/worktree-purge.py	internal	n/a	Guards and tests: one-off crew-host worktree purge, dry-run first, not installed ([#1161](https://github.com/mw-ding/mdstack/issues/1161))
 templates/README.md	deliverable	all	Templates: evidence adapters, product README seed, cards and step lines
 templates/backends/github.toml	deliverable	all	Render input: `<op:...>` command mapping
 templates/backends/slack.toml	deliverable	tmux	Render input: away-only Slack notify and recorded GitHub asks
 templates/evidence/**	deliverable	all	Templates: evidence adapters, product README seed, cards and step lines
 templates/flavor-suggestion-issue.md	deliverable	all	Template: owner-decided flavor suggestion issue
-templates/handoff-manifest.md	deliverable	all	Template: runtime handoff manifest that `mdstack handoff manifest` fills ([#211](https://github.com/mw-ding/eng-crew/issues/211))
+templates/handoff-manifest.md	deliverable	all	Template: runtime handoff manifest that `mdstack handoff manifest` fills ([#211](https://github.com/mw-ding/mdstack/issues/211))
 templates/intake-candidate.md	deliverable	all	Templates: evidence adapters, product README seed, cards and step lines
 templates/metrics-regression-issue.md	deliverable	all	Templates: evidence adapters, product README seed, cards and step lines
 templates/owner-return-brief.md	deliverable	all	Template: standalone owner return brief for recorded away mode
 templates/personnel/**	deliverable	all	Personnel composition input for hosts bringing their own machinery (#1180)
-templates/policy/**	deliverable	all	Render input: role policy fragments the runtime templates include, and role skills (Agent Skills format) that index them ([#1184](https://github.com/mw-ding/eng-crew/issues/1184), [#1221](https://github.com/mw-ding/eng-crew/issues/1221))
+templates/policy/**	deliverable	all	Render input: role policy fragments the runtime templates include, and role skills (Agent Skills format) that index them ([#1184](https://github.com/mw-ding/mdstack/issues/1184), [#1221](https://github.com/mw-ding/mdstack/issues/1221))
 templates/product-readme.md	deliverable	all	Templates: evidence adapters, product README seed, cards and step lines
 templates/runtimes/grok-bot/**	deliverable	grok-bot	Render input: routines and trigger JSON, rendered at install
 templates/runtimes/session/**	deliverable	session	Template: session coordinator and worker briefs
 templates/runtimes/tmux/**	deliverable	tmux	Render input: coordinator and role briefs, rendered at install
-templates/spec.md	deliverable	all	Template: spec seed for a project's `docs/specs/` with banner and structured requirements ([#1219](https://github.com/mw-ding/eng-crew/issues/1219))
+templates/spec.md	deliverable	all	Template: spec seed for a project's `docs/specs/` with banner and structured requirements ([#1219](https://github.com/mw-ding/mdstack/issues/1219))
 templates/step-summary.md	deliverable	all	Templates: evidence adapters, product README seed, cards and step lines
 templates/triage-flavor.md	deliverable	all	Template: coordinator item rigor record and lowering reason

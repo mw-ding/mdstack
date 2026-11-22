@@ -4,7 +4,7 @@ Onboarding module for the product-safety checks done before the crew goes
 live on the target repo, split out of the
 [onboarding runbook](../runbook-new-repo.md) under the M26 modular
 organization principle
-([#676](https://github.com/mw-ding/eng-crew/issues/676)). It holds the runbook's
+([#676](https://github.com/mw-ding/mdstack/issues/676)). It holds the runbook's
 [Step 5: product-safety checks](../runbook-new-repo.md#step-5-product-safety-checks)
 with its items 1 to 3 in
 [Automation, namespace and fork preflight](#automation-namespace-and-fork-preflight)

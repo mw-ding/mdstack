@@ -11,19 +11,19 @@ How the owner pauses one crew runtime on a repo and resumes the same work
 in another, for example from the Grok Bot crew to a Claude Code or Codex
 session (tmux or the session runtime) when orchestration quota runs short,
 and back again (roadmap 21.1,
-[#157](https://github.com/mw-ding/eng-crew/issues/157); umbrella
-[#110](https://github.com/mw-ding/eng-crew/issues/110)). It carries out the
+[#157](https://github.com/mw-ding/mdstack/issues/157); umbrella
+[#110](https://github.com/mw-ding/mdstack/issues/110)). It carries out the
 owner's
-[#160 row 16 decision](https://github.com/mw-ding/eng-crew/issues/160#issuecomment-6532279114)
+[#160 row 16 decision](https://github.com/mw-ding/mdstack/issues/160#issuecomment-6532279114)
 and does not re-decide it: keep #157's cross-runtime scope, and adopt
 read-only fallback, dependency-closed idempotent transfer, retry-until-ack
 with a handoff id and prompt stop of the outgoing runtime's wake sources.
 
 The ownership record and guards are implemented by #210 in
 [protocol §4](protocol.md#ownership-record), the manifest generator by
-[#211](https://github.com/mw-ding/eng-crew/issues/211) ([Manifest](#manifest)),
+[#211](https://github.com/mw-ding/mdstack/issues/211) ([Manifest](#manifest)),
 and on tmux the resume, hold lift and prompt stop by
-[#212](https://github.com/mw-ding/eng-crew/issues/212)
+[#212](https://github.com/mw-ding/mdstack/issues/212)
 ([Resume and reconcile](#resume-and-reconcile), [Prompt stop](#prompt-stop)).
 The remaining transfer flow below is a design: this page itself adds no
 rule, gate, cap or label. It proposes them, and each lands through the [build issues](#build-issues); a change to
@@ -92,7 +92,7 @@ Q1–Q5.
 | Manifest format | A short human summary plus one fenced JSON block, references only | TOML: no stdlib writer. YAML: no stdlib parser. Prose only: not machine-readable | [Manifest](#manifest) |
 | What moves (row 16 #3) | Dependency-closed sets; the incoming runtime adopts or holds whole sets and skips what it already owns | Item by item: a stacked change or a merge train split by a hold breaks its order. All or nothing: one diverged item blocks the whole handoff | [Resume and reconcile](#resume-and-reconcile) |
 | Delivery proof (row 16 #4) | An `acked` marker keyed by the handoff id. Both sides re-read before posting and retry until posted, so a retry is never a second handoff | A message between runtimes: no channel spans two runtimes ([C3](runtimes/README.md#c3-messages-by-reference-with-proof-of-delivery) is within one). No id: a retried offer looks like a new handoff | [Ownership record](#ownership-record) |
-| Old runtime stops (row 16 #5) | Read-only from `offered` (from `takeover` in a takeover); wake sources stop after `acked`. Grok Bot routines no-op at once, then are removed | Drain, then stop, with no prompt rule: a lingering watcher or routine acts after ownership moved. Keep no-op routines for good: each event still costs a bot turn ([#109](https://github.com/mw-ding/eng-crew/issues/109)) | [Prompt stop](#prompt-stop) |
+| Old runtime stops (row 16 #5) | Read-only from `offered` (from `takeover` in a takeover); wake sources stop after `acked`. Grok Bot routines no-op at once, then are removed | Drain, then stop, with no prompt rule: a lingering watcher or routine acts after ownership moved. Keep no-op routines for good: each event still costs a bot turn ([#109](https://github.com/mw-ding/mdstack/issues/109)) | [Prompt stop](#prompt-stop) |
 | Truth after handoff (row 16 #6) | Live state wins; the manifest is a hint. A pass marker posted while ownership is in transit is re-run, not trusted | Manifest as truth: stale the moment it is posted | [Resume and reconcile](#resume-and-reconcile) |
 | Rounds | A handoff never resets rounds: it posts no per-change `cutover` or `resume` marker | A `cutover` per change: resets the round count ([§5](protocol.md#5-rounds-and-escalation)), so a handoff would escape the round cap | [Resume and reconcile](#resume-and-reconcile) |
 | Session rules (#157 Q3; row 16 #8) | Rules live in the profile and flavors; the manifest lists their resolved values, and links only to rules not yet in config. A difference is an owner ask before the ack | Rules as manifest text: comment threads again. The incoming runtime adopts the outgoing's rules: a rule changes without the owner | [Session rules as config](#session-rules-as-config) |
@@ -437,7 +437,7 @@ so the deadline wakes fire.
 
 Rules that lived in comment threads during the #110 run, and where each
 lives instead (#157 Q3, decided by
-[#160 row 15](https://github.com/mw-ding/eng-crew/issues/160#issuecomment-6532247500)):
+[#160 row 15](https://github.com/mw-ding/mdstack/issues/160#issuecomment-6532247500)):
 
 | Rule | Source | Config | Status |
 |---|---|---|---|
@@ -470,7 +470,7 @@ and the GitHub mapping.
 
 ## Tracker-native control item
 
-Design for [#875](https://github.com/mw-ding/eng-crew/issues/875): a
+Design for [#875](https://github.com/mw-ding/mdstack/issues/875): a
 `repo.control_item` that is the tracker backend's own item id, such as
 `OPS-1042`, not only a GitHub issue number. Every ownership and handoff
 read and post goes through `markers.read-item` and `markers.write-item`.
@@ -690,19 +690,19 @@ for the coordinator to file. Rows F1–F4 build the
 
 | ID | Issue | Scope from this design | Depends on |
 |---|---|---|---|
-| 21.2 | [#210](https://github.com/mw-ding/eng-crew/issues/210) | [Ownership record](#ownership-record): `pass=handoff` and its states in §4; the owner function; the guard at §6 step 1 and before each push, post and land; the owning-runtime gate under the gate contract (owner merge-ok); profile keys `repo.control_item` and `runtime.instance`; item-level marker operations; guard lines in the Grok Bot templates and in tmux `mdstack poll`, `spawn`, `restart`, `guard` and the synthesizer brief; tests for the owner function (claim race, one open handoff, ignored markers, unreadable record). Likely two PRs: protocol and templates (mirror), then tmux code | #157 |
-| 21.3 | [#211](https://github.com/mw-ding/eng-crew/issues/211) | [Manifest](#manifest): the template from [Manifest template](#manifest-template) and a generator `mdstack handoff manifest` (`scripts/crew.d/handoff.py`; its tests in `dev/tests/environments/test-crew-handoff.py` run under CI's `test-crew-*` glob, with no workflow edit); sets; secret scan; size rule; tests for retry (same id, same post), partial (one set held, the rest adopted) and duplicate (a second ack ignored) | #210 |
-| 21.4 | [#212](https://github.com/mw-ding/eng-crew/issues/212) | [Prompt stop](#prompt-stop) per runtime; [resume](#resume-and-reconcile) steps 1–8 and the reconcile table; lifting `holds_added`; the Grok Bot [return](#return-path) checklist; tests | #211, A |
-| 21.5 | [#213](https://github.com/mw-ding/eng-crew/issues/213) | Dry run between two full teams, tmux team a → tmux team b → team a, on a sandbox repo ([Owner assumption](#owner-assumption), [campaign A29](campaign-scenarios/A29.md)), recorded and linked from #157 (#157 AC3). The Grok Bot example is replaced; #140 does not block it | #212 |
-| A | [#637](https://github.com/mw-ding/eng-crew/issues/637) | Owner commands and drain: `/crew handoff to`, `drain`, `stop`, `deadline`, `abort` and `/crew takeover from` in §9 as chat commands; the `draining` state per runtime | #210 |
-| B | [#638](https://github.com/mw-ding/eng-crew/issues/638) | Session runtime guard: the coordinator-session brief carries the guard and the outgoing and incoming steps until the session binding that [bootstrap](bootstrap.md#build-issues) proposes exists | #210 |
-| C | [#639](https://github.com/mw-ding/eng-crew/issues/639) | `mdstack doctor` rows: control item set and readable, `runtime.instance` set, current owning runtime (a scope note for #190) | #210, #190 |
-| D | [#640](https://github.com/mw-ding/eng-crew/issues/640) | Quota suggestion in the coordinator's duties | #212, #109 |
+| 21.2 | [#210](https://github.com/mw-ding/mdstack/issues/210) | [Ownership record](#ownership-record): `pass=handoff` and its states in §4; the owner function; the guard at §6 step 1 and before each push, post and land; the owning-runtime gate under the gate contract (owner merge-ok); profile keys `repo.control_item` and `runtime.instance`; item-level marker operations; guard lines in the Grok Bot templates and in tmux `mdstack poll`, `spawn`, `restart`, `guard` and the synthesizer brief; tests for the owner function (claim race, one open handoff, ignored markers, unreadable record). Likely two PRs: protocol and templates (mirror), then tmux code | #157 |
+| 21.3 | [#211](https://github.com/mw-ding/mdstack/issues/211) | [Manifest](#manifest): the template from [Manifest template](#manifest-template) and a generator `mdstack handoff manifest` (`scripts/crew.d/handoff.py`; its tests in `dev/tests/environments/test-crew-handoff.py` run under CI's `test-crew-*` glob, with no workflow edit); sets; secret scan; size rule; tests for retry (same id, same post), partial (one set held, the rest adopted) and duplicate (a second ack ignored) | #210 |
+| 21.4 | [#212](https://github.com/mw-ding/mdstack/issues/212) | [Prompt stop](#prompt-stop) per runtime; [resume](#resume-and-reconcile) steps 1–8 and the reconcile table; lifting `holds_added`; the Grok Bot [return](#return-path) checklist; tests | #211, A |
+| 21.5 | [#213](https://github.com/mw-ding/mdstack/issues/213) | Dry run between two full teams, tmux team a → tmux team b → team a, on a sandbox repo ([Owner assumption](#owner-assumption), [campaign A29](campaign-scenarios/A29.md)), recorded and linked from #157 (#157 AC3). The Grok Bot example is replaced; #140 does not block it | #212 |
+| A | [#637](https://github.com/mw-ding/mdstack/issues/637) | Owner commands and drain: `/crew handoff to`, `drain`, `stop`, `deadline`, `abort` and `/crew takeover from` in §9 as chat commands; the `draining` state per runtime | #210 |
+| B | [#638](https://github.com/mw-ding/mdstack/issues/638) | Session runtime guard: the coordinator-session brief carries the guard and the outgoing and incoming steps until the session binding that [bootstrap](bootstrap.md#build-issues) proposes exists | #210 |
+| C | [#639](https://github.com/mw-ding/mdstack/issues/639) | `mdstack doctor` rows: control item set and readable, `runtime.instance` set, current owning runtime (a scope note for #190) | #210, #190 |
+| D | [#640](https://github.com/mw-ding/mdstack/issues/640) | Quota suggestion in the coordinator's duties | #212, #109 |
 | E | proposed | Contract tables: C9 rows in the [multi-device](runtimes/multi-device.md#runtime-contract-across-hosts) design, and the session binding's table | #212 |
-| F1 | [#936](https://github.com/mw-ding/eng-crew/issues/936) | [Tracker-native control item](#tracker-native-control-item): the `[ids]` declaration loaded by `resolve`; `control_item` as an integer or a matching string; the `<control-item>` placeholder; `scripts/crew-config.py`, `scripts/crew-render.py` | #875 |
-| F2 | [#937](https://github.com/mw-ding/eng-crew/issues/937) | Read-item and write-item bindings and contracts for the ownership guard and every control-item read and post in `mdstack handoff`; `scripts/crew.d/_ownership.py`, `up.py`, `handoff.py`. Changes what reads the owning-runtime gate: owner merge-ok | #936 |
-| F3 | [#938](https://github.com/mw-ding/eng-crew/issues/938) | `mdstack handoff` live reads through declared operations and native ids in the manifest; `change.read-branch-head` | #937 |
-| F4 | [#939](https://github.com/mw-ding/eng-crew/issues/939) | Remaining reconcile, ack and lift consumers (run records, claims, `holds_added`) and the doctor row | #938 |
+| F1 | [#936](https://github.com/mw-ding/mdstack/issues/936) | [Tracker-native control item](#tracker-native-control-item): the `[ids]` declaration loaded by `resolve`; `control_item` as an integer or a matching string; the `<control-item>` placeholder; `scripts/crew-config.py`, `scripts/crew-render.py` | #875 |
+| F2 | [#937](https://github.com/mw-ding/mdstack/issues/937) | Read-item and write-item bindings and contracts for the ownership guard and every control-item read and post in `mdstack handoff`; `scripts/crew.d/_ownership.py`, `up.py`, `handoff.py`. Changes what reads the owning-runtime gate: owner merge-ok | #936 |
+| F3 | [#938](https://github.com/mw-ding/mdstack/issues/938) | `mdstack handoff` live reads through declared operations and native ids in the manifest; `change.read-branch-head` | #937 |
+| F4 | [#939](https://github.com/mw-ding/mdstack/issues/939) | Remaining reconcile, ack and lift consumers (run records, claims, `holds_added`) and the doctor row | #938 |
 
 ## Out of scope
 

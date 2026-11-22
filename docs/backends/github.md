@@ -2,8 +2,8 @@
 
 How the GitHub backend expresses the core rules in
 [protocol.md](../protocol.md) (portable mdstack, roadmap 13.3,
-[#115](https://github.com/mw-ding/eng-crew/issues/115), and 13.4,
-[#116](https://github.com/mw-ding/eng-crew/issues/116)). GitHub is today's
+[#115](https://github.com/mw-ding/mdstack/issues/115), and 13.4,
+[#116](https://github.com/mw-ding/mdstack/issues/116)). GitHub is today's
 backend for every concern ([concepts: backend](../concepts.md#backend)). The
 core states each rule; this page states the GitHub mechanics for it. Neither
 page changes a rule, gate, cap, marker field or label.
@@ -192,7 +192,7 @@ with assignment (`issue-assigned` wakes the builder), labels (`crew:ready`,
 
 How GitHub implements each operation of the
 [backend interfaces](../interfaces.md) (roadmap 13.9,
-[#121](https://github.com/mw-ding/eng-crew/issues/121)). `<o>/<r>` is
+[#121](https://github.com/mw-ding/mdstack/issues/121)). `<o>/<r>` is
 `<owner>/<repo>`. Every call runs under the identity named in
 [Identities](#identities): the reviewer identity for verdicts and steering
 signals, the author identity for everything else.

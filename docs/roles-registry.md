@@ -8,7 +8,7 @@
 > - **Last checked:** 2026-11-07 at `70f11f7`
 
 `roles/<domain>/<role>.toml` describes one role of a domain as data (roadmap
-15.7, [#317](https://github.com/mw-ding/eng-crew/issues/317), part of #110).
+15.7, [#317](https://github.com/mw-ding/mdstack/issues/317), part of #110).
 Each file is that role's one authored definition, and its file stem is the
 role ID. The registry is the union of a domain's files, in `rank` order with
 unranked roles after, by ID (#1185).
