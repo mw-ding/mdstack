@@ -23,6 +23,8 @@ that reviewer's verdicts too.
 A fresh review starts only once the head's published, builder-signed record for its operation is readable (#1878):
 the PR body for the opened head, else a `fix`, `ci-fix` or `merge-up` note at head after the newest verdict or reset;
 until then the reviewer lead parks it as a `waiting: #<n> evidence` wait that a new builder note at head wakes.
+A builder `done:` for an approved merge-up whose head has no signed builder note yet waits the same way: poll can
+see the push before the note, so delta review is decided once the note reads back (#2015).
 Synthesizers remain alive while land requests lack completion or other inbox messages lack acknowledgment, and through
 a merged PR's close-out while their own spawn PR lacks completion (its direct-land main CI check, #1339);
 the inbox check and reap share the queue lock with send's inbox append.
@@ -245,6 +247,14 @@ def own_view(values, pr):
                              not any(m.get("role") == "reviewer-validator" for m in markers(r["body"]))])
 
 
+def head_notes(pr, head, builder):
+    """Bodies of the signed builder fix, ci-fix or merge-up notes pinned to this PR and head."""
+    sign = re.compile(r"^— (?:.* )?%s \(" % re.escape(builder), re.M)
+    return [r["body"] for r in pr["reviews"] if sign.search(r["body"]) and any(
+        m.get("role") == "builder" and m.get("pass") in ("fix", "ci-fix", "merge-up") and
+        m.get("pr") == str(pr["number"]) and m.get("sha") == head for m in markers(r["body"]))]
+
+
 def merge_up_delta(pr, head, builder):
     """A signed, head-pinned builder fix or merge-up note recording a resolved conflict or differing patch needs
     delta review.
@@ -252,14 +262,7 @@ def merge_up_delta(pr, head, builder):
     builder: the builder's display name; the signature may carry any emoji, none, or a team (#431, #1291).
     The published merge-up form (`pass=merge-up`, "conflicts ... are resolved") counts (#1682). The builder marker
     decides, never the visible title, in either title form (#1946)."""
-    sign = re.compile(r"^— (?:.* )?%s \(" % re.escape(builder), re.M)
-    for review in pr["reviews"]:
-        body = review["body"]
-        if not sign.search(body):
-            continue
-        if not any(m.get("role") == "builder" and m.get("pass") in ("fix", "ci-fix", "merge-up") and
-                   m.get("pr") == str(pr["number"]) and m.get("sha") == head for m in markers(body)):
-            continue
+    for body in head_notes(pr, head, builder):
         if re.search(r"(?<!no )\b(?:resolved|fixed|resolving)\b[^\n]*\bconflicts?\b|"
                      r"(?<!no )\bconflicts?\b[^\n.]*\b(?:resolved|fixed)\b|"
                      r"(?<!no )(?<!without a )\bdiffering patch\b", body, re.I):
@@ -932,6 +935,8 @@ def route_record(args, values, state, w):
         snapshot = commands()["poll"].pr_snapshot(own, values=values)
         pending = open_rereview(pr, head)
         if not pending and not delta and approved_merge_up(own, repo, values["repo.default_branch"]):
+            if getattr(args, "reviewer_lead", False) and not head_notes(pr, head, values["identities.builder.name"]):
+                raise NotReady(n, "builder merge-up at %s without its signed note yet; delta unknown" % head)  # #2015
             return True
         if pending or delta or snapshot["verdict"] is None or snapshot["fixed"]:
             review(args, state, pr, head, "review", snapshot["round"])

@@ -384,6 +384,78 @@ class ReviewerPool(route_tests.Route):
             self.live["reviews"] = [dict(body=body)]
             self.assertFalse(route.merge_up_delta(self.live, self.sha, "Ben"))
 
+    def pr2000(self, clean=False):
+        """#2000's approved merge-up (#2015): round 1 passed at the previous head; poll's merge-up event; and the
+        verbatim merge-up note (review 5967122260, README conflict resolved, patch differs), re-pinned to this head; `clean`
+        swaps in a builder merge-up note with no conflict."""
+        previous = self.approved_push()
+        self.live["reviews"] = [self.signed("<!-- crew:v1 role=reviewer-validator pass=verdict pr=12 sha=%s round=1 "
+                                            "verdict=pass -->" % previous)]
+        self.live["labels"] = [{"name": "crew:approved"}]
+        self.save()
+        poll, values = self.mod.commands()["poll"], self.mod.profile(self.args)[0]
+        with mock.patch.dict(os.environ, self.env):
+            approved = poll.merge_up(self.live, {"head": previous}, "acme/widgets", "main")
+        events, _ = poll.decide({"prs": {"12": {"head": previous}}}, [self.live], [], {"12": approved}, values=values)
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures", "merge-up",
+                               "pr2000-review-5967122260.txt")) as f:
+            old = "5d284f97a32a908d0e905912cd9d63ee7187d5cc"
+            note = f.read().replace(old, self.sha).replace(old[:7], self.sha[:7]).replace("pr=2000", "pr=12")
+        note = self.builder_note("merge-up", "n/a", "The merge was clean; no conflicts.") if clean else \
+            dict(body=note, author={"login": "acme-bot"})
+        return next(e for e in events if e["event"] == "merge-up"), note
+
+    def passes(self):
+        return [n for n in self.names() if n.endswith(("review", "validate"))]
+
+    def merge_up_before_note(self, clean=False):
+        """Poll sees the merge-up push before the builder posts its note, and the builder's `done:` reaches the
+        reviewer lead before the note reads back: the approved merge-up must not be consumed as identical."""
+        event, note = self.pr2000(clean)
+        self.put("render/runtime/synthesizer-lead.md", "Land approved PRs.\n")  # setUp's panes shim serves it
+        self.queue(dict(event, reason="poll", id="poll-1"))
+        self.route()
+        self.pool()
+        self.assertEqual((self.land_queue(), self.passes()), (["merge-up"], []))  # no note yet: portability
+        self.queue(dict(reason="status", window="ben-7", line="done: #7 #12 " + self.sha))
+        self.route()
+        self.pool()
+        self.assertEqual(self.passes(), [])
+        self.assertEqual(len(self.messages()), 1)  # parked, not an empty-pool done
+        with open(os.path.join(self.state, "status", "vera-lead.status")) as f:
+            self.assertIn("waiting: #12 evidence id=%s" % self.messages()[0]["id"], f.read())
+        self.live["reviews"].append(note)
+        self.save()
+        self.pool()
+        self.assertEqual(self.messages(), [])
+
+    def test_merge_up_seen_before_its_note_starts_delta_review(self):  # #2015, the #2000 shape
+        self.merge_up_before_note()
+        self.assertEqual(self.passes(), ["vera-12-r1-review"])
+        self.assertEqual(self.record("vera-12-r1-review")["head"], self.sha)
+
+    def test_clean_merge_up_note_after_the_wait_needs_no_delta_review(self):  # #2015 negative control
+        self.merge_up_before_note(clean=True)
+        self.assertEqual(self.passes(), [])
+        self.assertEqual(self.land_queue(), ["merge-up"])
+
+    def test_coordinator_rereview_handoff_starts_a_review_of_the_head(self):  # #2015
+        event, note = self.pr2000(clean=True)  # identical merge-up: routing alone starts no review
+        self.live["reviews"].append(note)
+        self.save()
+        self.handoff("rereview", ["#12", "f" * 40])  # a stale head retires with no worker
+        self.pool()
+        self.assertEqual((self.messages(), self.passes()), ([], []))
+        before = len(self.gh_calls())
+        self.handoff("rereview", ["#12", self.sha])
+        self.pool()
+        self.assertEqual(self.passes(), ["vera-12-r1-review"])
+        self.assertEqual(self.record("vera-12-r1-review")["head"], self.sha)
+        self.assertEqual(self.messages(), [])
+        writes = [c for c in self.gh_calls()[before:] if c[:2] in (["pr", "review"], ["pr", "edit"], ["pr", "comment"],
+                                                                    ["pr", "merge"]) or "-X" in c]
+        self.assertEqual(writes, [])  # no verdict, merge-ok, label or gate input
+
     def test_full_cap_then_completed_slot_admits_validation(self):
         self.env["CREW_POOL"] = "reviewer"
         with open(self.project) as f:
