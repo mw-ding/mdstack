@@ -23,7 +23,8 @@
    `git diff --no-color --no-renames origin/<default-branch>...HEAD` to
    `sensitive --diff` instead. Apply `crew:sensitive` and record matches
    (carry, re-check and override: PR conventions).<linkage-check> Open a non-draft PR: `<op:change.open>`, body per §3, written once, never
-   edited; label it `crew:in-review`.<land-publish><fragment-step>
+   edited; label it `crew:in-review`. Labels, fragment and posts use only
+   the opened number, never a guess (#2019).<land-publish><fragment-step>
    After each push, read the head back (`<op:change.read-head>`); use that
    full SHA, never a local hash, in markers, evidence and `done:`.
    A CLI change that only runs against test fakes may use a named test

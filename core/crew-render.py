@@ -309,11 +309,10 @@ LOCAL_CHECKS_DECLARED = (
     "   still comes back as a ci-red round; CI is never waived.")
 LINKAGE_CHECK = (" Cite the newest signed\n   allocation and pass `<mdstack>/scripts/check-pr-linkage.py` before opening\n"
                  "   (`<mdstack>/docs/backends/github.md` Builder linkage check).")
-FRAGMENT_STEP = ("\n   Right after opening, before `done:`, set the fragment's `pr:` to the PR\n"
-                 "   number, pass `scripts/check-changelog-pr.py --base origin/<default-branch> --pr <pr>`,\n"
+FRAGMENT_STEP = ("\n   Right after opening, before `done:`, set the fragment's `pr:`, pass\n"
+                 "   `scripts/check-changelog-pr.py --base origin/<default-branch> --pr <pr>`,\n"
                  "   push and post a round-0 `CI fix` note at the new head; review\n"
-                 "   waits for it. CI on the opened head may still fail on `TBD`, written\n"
-                 "   before the number existed (#1844).")
+                 "   waits for it. CI on the opened head may still fail on `TBD` (#1844).")
 # Configured check commands named in the reviewer brief; unset renders n/a (#648).
 OPTIONAL = {"precheck-lint": "builder.precheck.lint", "precheck-test": "builder.precheck.test"}
 MAPPED.update({name: [key] for name, key in OPTIONAL.items()})
