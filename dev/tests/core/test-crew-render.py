@@ -38,6 +38,15 @@ FIX = os.path.join(TESTS, "fixtures", "render")
 PROJECT = os.path.join(FIX, "crew.toml")
 
 
+def other_backend(builder):
+    """A GitHub builder brief as a non-GitHub change backend without [release] renders it (#1958): the project's
+    own checks, no linkage check and no fragment step."""
+    builder = builder.replace(cr.Renderer({}, None).line(cr.LOCAL_CHECKS), cr.LOCAL_CHECKS_DECLARED
+                              % "the project's own checks from its `AGENTS.md`")
+    builder = re.sub(r" Cite the newest signed\n   allocation .*?Builder linkage check\)\.", "", builder, flags=re.S)
+    return re.sub(r"\n   Right after opening, before `done:`.*?\(#1844\)\.", "", builder, flags=re.S)
+
+
 def tree(root):
     """{relative path: text} for every file under root."""
     out = {}
@@ -919,6 +928,7 @@ class PackOverlay(unittest.TestCase):
         self.assertEqual(code, 0, out)
         expected = {rel: text.replace("`gh` command", "`ex` command") for rel, text in tree(upstream).items()}
         expected["runtime/solo.md"] += "\nPack rule.\n"
+        expected["runtime/builder.md"] = other_backend(expected["runtime/builder.md"])
         self.assertNotEqual(expected, tree(upstream))
         for project, extra in ((self.project(), ["--org-profile", self.org]),
                                (self.project('[paths]\npack = "pack"\n'), [])):
@@ -1678,8 +1688,10 @@ class SessionRuntime(unittest.TestCase):
                 for role in ("builder", "reviewer", "synthesizer"):
                     brief = got["runtime/%s.md" % role]
                     self.assertIn("Ownership: at each wake and before dispatch, run", brief)
-                    self.assertEqual(brief.replace(brief[brief.index("Ownership:"):brief.index("Flavor:")], ""),
-                                     none["runtime/%s.md" % role])
+                    want = none["runtime/%s.md" % role]
+                    if extra and role == "builder":  # the example pack is not a GitHub change backend (#1958)
+                        want = other_backend(want)
+                    self.assertEqual(brief.replace(brief[brief.index("Ownership:"):brief.index("Flavor:")], ""), want)
 
 
     def test_hosted_backend_renders_control_plane_dispatch(self):  # #1052
