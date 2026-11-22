@@ -169,6 +169,19 @@ class KillLanded(KillLandedBase):
         with open(os.path.join(self.project_dir, ".git", "info", "exclude")) as f:
             self.assertEqual(f.read().split().count(".crew/"), 1)
 
+    def test_researcher_artifact_under_crew_removed_elsewhere_refused(self):  # #1941
+        for path, removed in ((".crew/lavish/summary.html", True), (".lavish/summary.html", False)):
+            with self.subTest(path=path):
+                self.assertEqual(self.spawn("researcher", "--issue", "7").returncode, 0)
+                wt = self.record("riley-7")["worktree"]
+                os.makedirs(os.path.dirname(os.path.join(wt, path)), exist_ok=True)
+                with open(os.path.join(wt, path), "w") as f:
+                    f.write("<html></html>\n")
+                r = self.crew("kill", "riley-7", "--project", self.project)
+                self.assertEqual((r.returncode, os.path.isdir(wt)), (0, False) if removed else (1, True), r.stdout)
+                if not removed:
+                    self.assertIn("uncommitted: ?? " + path, r.stdout)
+
     def test_local_only_commit_refused(self):
         wt = self.builder()
         self.git("checkout", "-q", "-b", "infra/7-x", cwd=wt)

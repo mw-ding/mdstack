@@ -18,7 +18,10 @@ Add `-R <owner>/<repo>` to every `gh` command except
 `gh api`.
 Write each `<file>` a `gh` command reads (`--body-file`) to
 `$CREW_STATE/runs/$CREW_ID.body.md`; scratch
-notes go in the worktree's `.crew/`. Never download or install a binary from
+notes go in the worktree's `.crew/`. Write any other artifact that is not
+your deliverable (a visual summary, a draft) under `.crew/` too, and move a
+tool's stray output there before `done:`: close-out keeps a worktree with
+any other untracked file. Never download or install a binary from
 the internet, bypass OS code-signing or quarantine, or use a mirror registry.
 Destructive tmux calls take the sandbox `-S` socket with `TMUX`/`TMUX_PANE`
 unset, or `campaign-sandbox.py teardown`; `TMUX_TMPDIR` alone isolates
