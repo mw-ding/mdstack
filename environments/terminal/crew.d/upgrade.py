@@ -8,7 +8,8 @@ Usage: mdstack upgrade --project FILE [--version vX.Y.Z | --latest] [--dry-run] 
 releases/current present), a --version upgrade also upgrades every other project whose install.json, under the
 same state root, runs from that releases directory (a record from before #1317 by the project file in its
 `Run mdstack up` step), then flips that root's releases/current, so its <root>/bin launcher follows and another root's stays (#1317,
-#1324). A release already on disk is reused once a fresh fetch matches it: that is rollback.
+#1324). Under a user-level install it also rewrites every stale launcher in that root's bin/ (#2023); --dry-run lists
+them. A release already on disk is reused once a fresh fetch matches it: that is rollback.
 A tmux install with no install.json is adopted first when its link, release VERSION (beside releases/current)
 and profile copy verify; otherwise the refusal names the mismatch (#1616).
 Run from a separate operator terminal with dispatch paused. Waits for every current pass to finish
@@ -204,6 +205,9 @@ def run(args):
             if args.dev:
                 raise ValueError("--version and --dev cannot be combined")
             return bootstrap.fetch(args)
+        installer = commands()["install"]
+        root = installer.bundle_root()
+        launchers = installer.stale_launchers(root) if root else []  # rewritten with the install (#2023)
         tag = bootstrap.source(args.dev, args.pre)
         bootstrap.pack_pin(args.org_profile, tag, args.project)
         previous = json.loads(manifest.read_text())
@@ -227,15 +231,21 @@ def run(args):
                     and previous["source"] == str(bootstrap.ROOT) and bootstrap.same_source(previous, install)
                     and previous.get("bundle_sha256") == (fetched or previous.get("bundle_sha256"))
                     and previous.get("pack") == bootstrap.pack_record(args.org_profile, args.project)
-                    and (Path(state) / "config.toml").read_bytes() == bootstrap.profile_file(args.project).read_bytes()):
+                    and (Path(state) / "config.toml").read_bytes() == bootstrap.profile_file(args.project).read_bytes()
+                    and not launchers):
                 print("crew upgrade: no changes")
                 return 0
             if bootstrap.run(Namespace(**{**vars(args), "dry_run": True})):
                 return 1
             if args.dry_run:
+                for launcher, _ in launchers:
+                    print("crew upgrade: would write launcher %s" % launcher)
                 return 0
             if not args.yes:
                 raise ValueError("confirmation required; review --dry-run then use --yes")
+            for launcher, spelled in launchers:
+                installer.write_launcher(launcher, spelled)
+                print("crew upgrade: wrote launcher %s" % launcher, flush=True)
             if not session:  # a session profile has no role windows to wait on or reload
                 if not require_ownership(values) or bootstrap.run(args):
                     return 1

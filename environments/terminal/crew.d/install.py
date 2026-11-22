@@ -10,7 +10,8 @@ can write and that holds no other mdstack (for example ~/.local/bin), else print
 shell profile. It never edits a shell rc file. --name NAME names the launcher and its PATH link NAME instead, so a
 second root does not take the first root's `mdstack`; it never replaces another root's command. --dry-run prints
 the plan and writes nothing. Doctor reports a missing or stale launcher and a PATH that resolves its name to
-something else. Re-running is idempotent.
+something else. A launcher for a root other than ~/.mdstack sets CREW_ROOT=<root>, so a bare command reads that
+root's config.toml (#2023). Re-running is idempotent and rewrites a stale launcher.
 """
 import json
 import os
@@ -25,9 +26,46 @@ def home():
     return Path(crew_render.crew_config.user_root())
 
 
+LAUNCHER_HEAD = "#!/bin/sh\n# mdstack launcher, written by mdstack install (#1317): runs the current release.\n"
+
+
 def launcher_text(root):
-    return ("#!/bin/sh\n# mdstack launcher, written by mdstack install (#1317): runs the current release.\n"
-            'exec %s "$@"\n' % shlex.quote(str(root / "releases" / "current" / "cli" / "mdstack")))
+    """A root other than ~/.mdstack pins CREW_ROOT, so a bare command reads <root>/config.toml (#2023); an explicit
+    --project, $CREW_PROJECT or $MDSTACK_CONFIG still wins. The ~/.mdstack launcher's bytes are unchanged."""
+    pin = "" if os.path.realpath(root) == os.path.realpath(Path.home() / ".mdstack") else (
+        "CREW_ROOT=%s " % shlex.quote(str(root)))
+    return LAUNCHER_HEAD + '%sexec %s "$@"\n' % (pin, shlex.quote(str(root / "releases" / "current" / "cli" / "mdstack")))
+
+
+def bundle_root():
+    """The root of the user-level install this bundle runs from (<root>/releases/<bundle>, releases/current present),
+    else None (a checkout or a bundle outside a releases directory)."""
+    root, bundle = Path(ROOT).parent.parent, Path(ROOT).resolve()
+    releases = root / "releases"
+    return root if bundle.parent == releases.resolve() and (releases / "current").is_symlink() else None
+
+
+def named_root(text, root):
+    """The spelling of root a launcher's exec line names, when it is root by realpath (a re-exec'd bundle path is
+    resolved, the launcher's need not be), else root."""
+    words = shlex.split(text.splitlines()[-1]) if text.strip() else []
+    target = next((w for w in words if w.endswith("/releases/current/cli/mdstack")), "")
+    named = Path(target.removesuffix("/releases/current/cli/mdstack") or root)
+    return named if os.path.realpath(named) == os.path.realpath(root) else root
+
+
+def stale_launchers(root):
+    """(launcher, its root spelling) for every launcher mdstack install wrote in <root>/bin, under any --name, whose
+    text is not that root's launcher_text (#2023)."""
+    found = []
+    for path in sorted((root / "bin").glob("*")):
+        text = path.read_text(errors="replace") if path.is_file() and not path.name.startswith(".") else ""
+        if not text.startswith(LAUNCHER_HEAD):
+            continue
+        spelled = named_root(text, root)
+        if text != launcher_text(spelled):
+            found.append((spelled / "bin" / path.name, spelled))
+    return found
 
 
 def write_launcher(launcher, root):
