@@ -11,9 +11,10 @@ captured. Each file runs with `TMUX` and `TMUX_PANE` removed and `TMUX_TMPDIR`
 set to a fresh private directory, removed when the file finishes, so a test's
 bare `tmux` call can never reach the caller's server (#1156), and with
 `MDSTACK_INTERNAL=1`, so `mdstack --project` is accepted as in a crew window (#1965). -j sets the
-worker count (default: CPU count, at most 8). Files named in SLOW_FIRST start
-first, slowest first, so the longest files never start last (#2082); the rest
-follow in path order. Files in SERIAL run one at a time after the parallel batch.
+worker count (default: 1.5 times the CPU count, at most 8: files wait on
+subprocesses, and CI's 4 CPUs sat about 13% idle at -j 4, #2082). Files named
+in SLOW_FIRST start first, slowest first, so the longest files never start
+last (#2082); the rest follow in path order. Files in SERIAL run one at a time after the parallel batch.
 With no FILE, before any file starts, the runner writes bytecode for the repo's
 Python files: `mdstack` turns off bytecode writing (`crew-remote.py`), so
 otherwise every CLI call a test makes recompiles each module it loads (#2082).
@@ -89,6 +90,10 @@ def run_one(path):
     return path, proc.returncode, time.monotonic() - start, proc.stdout.decode(errors="replace")
 
 
+def default_jobs():
+    return min((os.cpu_count() or 1) * 3 // 2 or 1, MAX_DEFAULT_JOBS)
+
+
 def start_order(files):
     """SLOW_FIRST files in its order, then the rest as given."""
     rank = {name: i for i, name in enumerate(SLOW_FIRST)}
@@ -101,7 +106,7 @@ def rel(path):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("-j", "--jobs", type=int, default=min(os.cpu_count() or 1, MAX_DEFAULT_JOBS))
+    ap.add_argument("-j", "--jobs", type=int, default=default_jobs())
     ap.add_argument("--slowest", type=int, default=10, metavar="K")
     ap.add_argument("--log-dir", metavar="DIR")
     ap.add_argument("files", nargs="*")

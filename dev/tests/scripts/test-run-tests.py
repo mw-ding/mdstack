@@ -133,6 +133,16 @@ class RunTestsTest(unittest.TestCase):
         self.assertTrue(os.path.exists(importlib.util.cache_from_source(kept)))
         self.assertFalse(os.path.exists(importlib.util.cache_from_source(hidden)))
 
+    def test_default_jobs_is_one_and_a_half_cpus_capped_at_eight(self):  # #2082
+        spec = importlib.util.spec_from_file_location("run_tests", RUNNER)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        real = os.cpu_count
+        self.addCleanup(setattr, os, "cpu_count", real)
+        for cpus, jobs in ((None, 1), (1, 1), (2, 3), (4, 6), (5, 7), (16, 8)):
+            os.cpu_count = lambda: cpus
+            self.assertEqual(mod.default_jobs(), jobs, cpus)
+
     def test_summary_reports_the_files_cpu_seconds(self):  # #2082
         busy = self.write("test-busy.py", "import time\nt = time.process_time()\n"
                                           "while time.process_time() - t < 0.5:\n    pass\n")
