@@ -20,7 +20,9 @@ ROOT_BYPASS = ("crew: Claude Code refuses permission_mode=bypass when running as
                "runtime.options.permission_mode to auto or safe for Claude Code roles")
 RESUME = ["--resume"]
 # Blocking prompts (#289): permission (proceed, make this edit, create) and folder trust, old and current.
-PROMPTS = [(r"Do you want to .+\?", r"Esc to cancel"),
+# Bypass does not suppress the built-in safety dialog, which uses the permission prompt (#1968).
+PERMISSION_PROMPTS = [(r"Do you want to .+\?", r"Esc to cancel")]
+PROMPTS = PERMISSION_PROMPTS + [
            (r"Do you trust the files in this folder\?$", r"Enter to confirm · Esc to cancel"),
            (r"Accessing workspace:$", r"Enter to confirm · Esc to cancel")]
 FATAL = r'⎿\s+API Error: [45]\d\d\b.*"type": ?"error"'  # ⎿  API Error: 400 {"type":"error",...}
