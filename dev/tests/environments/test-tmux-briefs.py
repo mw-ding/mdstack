@@ -663,6 +663,11 @@ class DocsPassBrief(unittest.TestCase):
                      "won't re-propose them until the cited text changes"):
             self.assertIn(rule, design)
 
+    def test_non_deliverable_artifacts_go_under_crew(self):  # #1941: a stray .lavish/ file kept the worktree
+        for rule in ("Write any other artifact that is not your deliverable (a visual summary, a draft) under "
+                     "`.crew/` too", "move a tool's stray output there before `done:`"):
+            self.assertIn(rule, self.text)
+
     def test_record_fields_match_protocol(self):
         line = re.search(r"<!-- crew:v1 role=researcher pass=docs-pass .*? -->", self.text)[0]
         with open(os.path.join(ROOT, "docs", "protocol.md"), encoding="utf-8") as f:
