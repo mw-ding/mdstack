@@ -3650,6 +3650,30 @@ release: v8.1.0 (2026-11-21) predates them, and their fragments wait in
 - A closing slice regenerates the lessons index: members that add lessons
   do not touch it, so S1's `--fix` is where their rows land.
 
+### M65: 8.x crew reliability
+
+Opening spec slice #2093 (S0) and closing slice #2094 (S1) bookend
+[#2095](https://github.com/mw-ding/mdstack/issues/2095), under the
+[owner's plan-ok](https://github.com/mw-ding/mdstack/issues/985#issuecomment-7225981037).
+The settled fixes, member ACs and the order between members are in
+[v8-crew-reliability.md](v8-crew-reliability.md); this table holds the
+statuses. S0 is recorded as done for this opening slice, effective on merge.
+
+| ID | Issue | Scope | Depends on | Tier | Status |
+|---|---|---|---|---|---|
+| S0 | #2093 | [v8-crew-reliability.md](v8-crew-reliability.md) and this section | Owner plan-ok | default | done |
+| A1 | #2032 | Issue-assigned admission | #2093 | default | open |
+| A2 | #2036 | Dependent handoff once; drain takes the route lock | #2032 | default | open |
+| W1 | #2050 | Watcher survives a transient spawn failure | #2093 | default | open |
+| W2 | #2072 | Delivery probe busy-pane classification | #2050 | default | open |
+| W3 | #2081 | Owner-answer count skips crew-signed posts | #2093 | default | open |
+| V1 | #2075 | Validation skip actor and eligibility alignment | #2093 | default | open |
+| V2 | #2076 | Kill retains a finished validate section | #2075 | default | open |
+| E1 | #2044 | Guard negative control before `done:` | #2093 | default | open |
+| E2 | #2061 | Builder brief names the `PROOF` forms | #2044 | default | open |
+| N1 | #2089 | Policy block fails the run; transport error restarts once | #2093 | default | open |
+| S1 | #2094 | Status sync and acceptance ledger | Every admitted member landed | default | open |
+
 ## 6. Decisions
 
 | Date | Decision | Source |
