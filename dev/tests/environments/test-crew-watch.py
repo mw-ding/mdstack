@@ -1255,6 +1255,24 @@ class Watch(LivenessBase):
         self.assertEqual(p.returncode, 128 + signal.SIGTERM)
         self.assertLess(time.monotonic() - start, 20)
 
+    def test_watch_signal_flood_still_exits_with_the_signal_code(self):  # #2101: none lands in interpreter teardown
+        for run in range(5):  # unblocked, about half the runs died by the signal (-15) in teardown
+            with self.subTest(run=run):
+                started = os.path.join(self.tmp, "child-started-%d" % run)
+                code = "import time; open(%r, 'w'); time.sleep(60)" % started
+                p = self.watch("--source", shlex.join([sys.executable, "-c", code]), "--source-timeout", "60")
+                for _ in range(200):
+                    if os.path.exists(started):
+                        break
+                    time.sleep(0.05)
+                start = time.monotonic()
+                while p.poll() is None and time.monotonic() - start < 20:  # still sending while it exits
+                    p.send_signal(signal.SIGTERM)
+                    time.sleep(0.001)
+                p.communicate(timeout=10)
+                self.assertEqual(p.returncode, 128 + signal.SIGTERM)
+                self.assertFalse(os.path.exists(os.path.join(self.state, "wake", "watcher.pid")))
+
     def test_watch_sighup_like_sigterm(self):  # #234 N8
         p = self.watch()
         self.armed(p)
