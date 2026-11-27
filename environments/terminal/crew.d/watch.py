@@ -821,13 +821,18 @@ def run(args):
         os.replace(path + ".tmp", path)
 
     held, sleeping = [], False  # a signal is held while a child may be starting, so none is orphaned (#272)
+    exits = (signal.SIGTERM, signal.SIGINT, signal.SIGHUP)
+
+    def leave(signum):  # later signals stay pending through cleanup and teardown: the exit is always 128+signum (#2101)
+        signal.pthread_sigmask(signal.SIG_BLOCK, exits)
+        raise SystemExit(128 + signum)
 
     def stop(signum, _frame):
         held.append(signum)
         if sleeping or len(held) > 1:  # between scans, or a second signal: exit at once
-            raise SystemExit(128 + signum)
+            leave(signum)
 
-    for sig in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):  # a killed watcher removes its PID file, saves offsets
+    for sig in exits:  # a killed watcher removes its PID file, saves offsets
         signal.signal(sig, stop)
     sweep = routine("coordinator", "stale-sweep")  # the team head's backstop (#1247)
     backstop = args.backstop or commands()["up"].crew_routines.interval(sweep, values)
@@ -879,7 +884,7 @@ def run(args):
                 save(seen)
                 sleeping = True
                 if held:
-                    raise SystemExit(128 + held[0])
+                    leave(held[0])
                 time.sleep(pause(state, time.time(), args.interval))
                 sleeping = False
                 continue
@@ -954,11 +959,11 @@ def run(args):
                 save(seen)
             sleeping = True
             if held:
-                raise SystemExit(128 + held[0])
+                leave(held[0])
             time.sleep(pause(state, time.time(), args.interval))
             sleeping = False
         if held:  # held during the last scan, whose wakes are queued
-            raise SystemExit(128 + held[0])
+            leave(held[0])
         announce(args, session, state, wake, seen, wakes + others, home)
         return 0
     finally:
